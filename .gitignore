@@ -1,0 +1,31 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio / VS Code local state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/.ropeproject/
+
+# .NET generated files
+TestResults/
+*.nupkg
+*.snupkg
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Archives / backups
+*.zip
+*.rar
+*.7z
+*.bak
+
+# OS files
+Thumbs.db
+Desktop.ini

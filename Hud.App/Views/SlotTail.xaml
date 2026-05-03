@@ -1,0 +1,593 @@
+<UserControl x:Class="Hud.App.Views.SlotTail"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Hud.App.Views">
+  <UserControl.Resources>
+    <views:StatToBrushConverter x:Key="StatToBrush"/>
+
+    <SolidColorBrush x:Key="HudBlueDark"
+                     Color="#0D1B2A"/>
+    <!-- pasivo -->
+    <SolidColorBrush x:Key="HudBlue"
+                     Color="#1B263B"/>
+    <SolidColorBrush x:Key="HudGreenSoft"
+                     Color="#7AE582"/>
+    <!-- sano -->
+    <SolidColorBrush x:Key="HudYellow"
+                     Color="#F2E863"/>
+    <SolidColorBrush x:Key="HudOrange"
+                     Color="#F4A261"/>
+    <SolidColorBrush x:Key="HudRedSoft"
+                     Color="#FF7A7A"/>
+    <SolidColorBrush x:Key="HudRed"
+                     Color="#E63946"/>
+    <!-- agresivo -->
+
+    <!-- CONVERTERS -->
+    <views:LastHandsToStringConverter x:Key="Last9Conv"/>
+    <views:EqualsToBoolConverter x:Key="Eq"/>
+
+    <!-- PALETA -->
+    <SolidColorBrush x:Key="BgDark"
+                     Color="#121418"/>
+    <SolidColorBrush x:Key="PanelDark"
+                     Color="#1B1E24"/>
+    <SolidColorBrush x:Key="BorderDark"
+                     Color="#2A2F36"/>
+    <SolidColorBrush x:Key="FgLight"
+                     Color="#F2F4F8"/>
+    <SolidColorBrush x:Key="FgDim"
+                     Color="#B7BDC7"/>
+    <SolidColorBrush x:Key="FgAccent"
+                     Color="#69D1FF"/>
+    <SolidColorBrush x:Key="HeroRow"
+                     Color="#1E3A5F"/>
+    <SolidColorBrush x:Key="HeroRowSelected"
+                     Color="#2B5B95"/>
+    <SolidColorBrush x:Key="HeroRowAccent"
+                     Color="#69D1FF"/>
+    <SolidColorBrush x:Key="BtnBg"
+                     Color="#2D6CDF"/>
+    <SolidColorBrush x:Key="BtnBgHover"
+                     Color="#2457B0"/>
+    <SolidColorBrush x:Key="BtnFg"
+                     Color="#FFFFFF"/>
+
+    <!-- ESTILOS BASE -->
+    <Style TargetType="TextBlock">
+      <Setter Property="FontSize"
+              Value="12"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource FgLight}"/>
+    </Style>
+
+    <Style TargetType="Button">
+      <Setter Property="FontSize"
+              Value="12"/>
+      <Setter Property="Background"
+              Value="{StaticResource BtnBg}"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource BtnFg}"/>
+      <Setter Property="BorderBrush"
+              Value="{StaticResource BorderDark}"/>
+      <Setter Property="BorderThickness"
+              Value="1"/>
+      <Setter Property="Padding"
+              Value="6,2"/>
+      <Setter Property="Cursor"
+              Value="Hand"/>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver"
+                 Value="True">
+          <Setter Property="Background"
+                  Value="{StaticResource BtnBgHover}"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style TargetType="DataGrid">
+      <Setter Property="FontSize"
+              Value="12"/>
+      <Setter Property="RowHeaderWidth"
+              Value="0"/>
+      <Setter Property="RowHeight"
+              Value="26"/>
+      <Setter Property="HeadersVisibility"
+              Value="All"/>
+      <Setter Property="GridLinesVisibility"
+              Value="None"/>
+      <Setter Property="Background"
+              Value="{StaticResource BgDark}"/>
+      <Setter Property="RowBackground"
+              Value="{StaticResource BgDark}"/>
+      <Setter Property="AlternatingRowBackground"
+              Value="{StaticResource BgDark}"/>
+      <Setter Property="BorderBrush"
+              Value="{StaticResource BorderDark}"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource FgLight}"/>
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+      <Setter Property="Background"
+              Value="{StaticResource PanelDark}"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource FgLight}"/>
+      <Setter Property="BorderBrush"
+              Value="{StaticResource BorderDark}"/>
+      <Setter Property="FontWeight"
+              Value="SemiBold"/>
+      <Setter Property="HorizontalContentAlignment"
+              Value="Center"/>
+      <Setter Property="Padding"
+              Value="4,2"/>
+      <Setter Property="FontSize"
+              Value="12"/>
+    </Style>
+
+    <Style TargetType="DataGridRow">
+      <Setter Property="Background"
+              Value="{StaticResource BgDark}"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource FgLight}"/>
+      <Setter Property="BorderBrush"
+              Value="{StaticResource BorderDark}"/>
+      <Setter Property="BorderThickness"
+              Value="0,0,0,1"/>
+    </Style>
+
+    <Style TargetType="DataGridCell">
+      <Setter Property="Background"
+              Value="{StaticResource BgDark}"/>
+      <Setter Property="Foreground"
+              Value="{StaticResource FgLight}"/>
+      <Setter Property="BorderBrush"
+              Value="{StaticResource BorderDark}"/>
+      <Setter Property="BorderThickness"
+              Value="0,0,0,1"/>
+      <Setter Property="Padding"
+              Value="6,2"/>
+    </Style>
+
+  </UserControl.Resources>
+
+  <Border Background="{StaticResource BgDark}"
+          BorderBrush="{StaticResource BorderDark}"
+          BorderThickness="1"
+          CornerRadius="10"
+          Padding="8">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- BARRA SUPERIOR -->
+      <StackPanel Orientation="Horizontal"
+                  Grid.Row="0"
+                  Grid.ColumnSpan="2"
+                  VerticalAlignment="Center">
+        <TextBlock x:Name="PathText"
+                   Text="(mesa)"
+                   Foreground="{StaticResource FgAccent}"
+                   Margin="0,0,8,0"/>
+        <Button x:Name="BtnPick"
+                Content="＋"
+                Width="26"
+                Height="26"
+                Margin="0,0,4,0"
+                Click="Pick_Click"/>
+        <Button x:Name="BtnStart"
+                Content="▶"
+                Width="26"
+                Height="26"
+                Margin="0,0,4,0"
+                Click="Start_Click"/>
+        <Button x:Name="BtnStop"
+                Content="⏹"
+                Width="26"
+                Height="26"
+                Click="Stop_Click"/>
+
+        <TextBlock Text="Líneas:"
+                   Foreground="{StaticResource FgDim}"
+                   Margin="12,0,4,0"
+                   VerticalAlignment="Center"/>
+        <TextBlock x:Name="Lines"
+                   Text="0"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"/>
+        <TextBlock Text="Última:"
+                   Foreground="{StaticResource FgDim}"
+                   Margin="12,0,4,0"
+                   VerticalAlignment="Center"/>
+        <TextBlock x:Name="Last"
+                   Text="—"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"/>
+
+        <TextBlock Text="Héroe:"
+                   Foreground="{StaticResource FgDim}"
+                   Margin="12,0,4,0"
+                   VerticalAlignment="Center"/>
+        <TextBox Width="130"
+                 Height="24"
+                 VerticalAlignment="Center"
+                 Text="{Binding HeroName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <ItemsControl x:Name="LastLines"
+                      Margin="12,0,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Foreground="{StaticResource FgDim}"
+                         FontSize="11"
+                         Text="{Binding}"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- TABLA -->
+      <DataGrid Grid.Row="1"
+                Grid.ColumnSpan="2"
+                ItemsSource="{Binding Players}"
+                AutoGenerateColumns="False"
+                SelectionUnit="FullRow"
+                EnableRowVirtualization="True"
+                HeadersVisibility="All">
+
+        <!-- RowStyle: sombreado integral + barra lateral -->
+        <DataGrid.RowStyle>
+          <Style TargetType="DataGridRow"
+                 BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="Template">
+              <Setter.Value>
+                <ControlTemplate TargetType="DataGridRow">
+                  <Grid>
+                    <Border x:Name="HeroAccent"
+                            Width="3"
+                            HorizontalAlignment="Left"
+                            Background="{StaticResource HeroRowAccent}"
+                            Opacity="0"/>
+                    <Border x:Name="RowBg"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                      <SelectiveScrollingGrid>
+                        <SelectiveScrollingGrid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto"/>
+                          <ColumnDefinition Width="*"/>
+                        </SelectiveScrollingGrid.ColumnDefinitions>
+                        <SelectiveScrollingGrid.RowDefinitions>
+                          <RowDefinition Height="*"/>
+                          <RowDefinition Height="Auto"/>
+                        </SelectiveScrollingGrid.RowDefinitions>
+                        <DataGridCellsPresenter Grid.Column="1"/>
+                        <DataGridDetailsPresenter Grid.Column="1"
+                                                  Grid.Row="1"
+                                                  Visibility="{TemplateBinding DetailsVisibility}"/>
+                      </SelectiveScrollingGrid>
+                    </Border>
+                  </Grid>
+                  <ControlTemplate.Triggers>
+                    <!-- héroe -->
+                    <DataTrigger Value="True">
+                      <DataTrigger.Binding>
+                        <MultiBinding Converter="{StaticResource Eq}">
+                          <Binding Path="Name"/>
+                          <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                                   Path="DataContext.HeroName"/>
+                        </MultiBinding>
+                      </DataTrigger.Binding>
+                      <Setter TargetName="RowBg"
+                              Property="Background"
+                              Value="{StaticResource HeroRow}"/>
+                      <Setter TargetName="HeroAccent"
+                              Property="Opacity"
+                              Value="1"/>
+                      <Setter Property="FontWeight"
+                              Value="Bold"/>
+                    </DataTrigger>
+
+                    <!-- seleccionado -->
+                    <Trigger Property="IsSelected"
+                             Value="True">
+                      <Setter TargetName="RowBg"
+                              Property="Background"
+                              Value="{StaticResource HeroRowSelected}"/>
+                    </Trigger>
+                  </ControlTemplate.Triggers>
+                </ControlTemplate>
+              </Setter.Value>
+            </Setter>
+          </Style>
+        </DataGrid.RowStyle>
+
+        <!-- CellStyle: refuerzo para que ninguna celda sobrescriba el fondo -->
+        <DataGrid.CellStyle>
+          <Style TargetType="DataGridCell"
+                 BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Style.Triggers>
+              <DataTrigger Value="True">
+                <DataTrigger.Binding>
+                  <MultiBinding Converter="{StaticResource Eq}">
+                    <Binding Path="DataContext.Name"
+                             RelativeSource="{RelativeSource AncestorType=DataGridRow}"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                             Path="DataContext.HeroName"/>
+                  </MultiBinding>
+                </DataTrigger.Binding>
+                <Setter Property="Background"
+                        Value="{StaticResource HeroRow}"/>
+                <Setter Property="FontWeight"
+                        Value="Bold"/>
+              </DataTrigger>
+
+              <Trigger Property="IsSelected"
+                       Value="True">
+                <Setter Property="Background"
+                        Value="{StaticResource HeroRowSelected}"/>
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </DataGrid.CellStyle>
+
+        <!-- Columnas -->
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Jugador"
+                              Binding="{Binding Name}"
+                              Width="150"/>
+          <DataGridTextColumn Header="#Manos"
+                              Binding="{Binding HandsReceived}"
+                              Width="64"/>
+
+          <!-- Preflop -->
+          <DataGridTemplateColumn Header="VPIP%"
+                                  Width="64">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:F0}%}"
+                           TextAlignment="Center"
+                           Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="VPIPPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos (gating) -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                               Path="DataContext.Stake"/>
+                      <!-- stake -->
+                      <Binding Source="VPIP"/>
+                      <!-- clave preset -->
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="PFR%"
+                                  Width="60">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding PFRPct, StringFormat={}{0:F0}%}"
+                           TextAlignment="Center"
+                           Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="PFRPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                               Path="DataContext.Stake"/>
+                      <Binding Source="PFR"/>
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <DataGridTemplateColumn Header="3Bet%"
+                                  Width="64">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:F0}%}"
+                           TextAlignment="Center"
+                           Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="ThreeBetPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                               Path="DataContext.Stake"/>
+                      <Binding Source="THREEBET"/>
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Postflop / Agg -->
+          <DataGridTemplateColumn Header="AF"
+                                  Width="52">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding AF, StringFormat={}{0:F2}}"
+                           TextAlignment="Center"
+                           Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="AF"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                               Path="DataContext.Stake"/>
+                      <Binding Source="AF"/>
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="AFq%"
+              Width="60">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding AFqPct, StringFormat={}{0:F0}%}"
+                    TextAlignment="Center"
+                    Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="AFqPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                          Path="DataContext.Stake"/>
+                      <Binding Source="AFQ"/>
+                      <!-- clave -->
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+          <!-- CBet -->
+          <DataGridTemplateColumn Header="CBet%"
+              Width="64">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:F0}%}"
+                    TextAlignment="Center"
+                    Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="CBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                          Path="DataContext.Stake"/>
+                      <Binding Source="CBF"/>
+                      <!-- clave -->
+                      <!-- Si algún día expones "CBetOppFlop" como oportunidades, pásalo como 5º binding -->
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- REEMPLAZA ESTA -->
+          <!-- <DataGridTextColumn Header="FvCBet%" Binding="{Binding FoldVsCBetFlopPct, StringFormat={}{0:F0}%}" Width="70"/> -->
+
+          <!-- POR ESTA -->
+          <DataGridTemplateColumn Header="FvCBet%"
+                                  Width="70">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:F0}%}"
+                           TextAlignment="Center"
+                           Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="FoldVsCBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                               Path="DataContext.Stake"/>
+                      <Binding Source="FVCBF"/>
+                      <!-- esta clave ya está marcada Invert=true en los presets -->
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Showdown -->
+          <DataGridTemplateColumn Header="WTSD%"
+              Width="60">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:F0}%}"
+                    TextAlignment="Center"
+                    Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="WTSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                          Path="DataContext.Stake"/>
+                      <Binding Source="WTSD"/>
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <DataGridTemplateColumn Header="W$SD%"
+              Width="60">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding WSDPct, StringFormat={}{0:F0}%}"
+                    TextAlignment="Center"
+                    Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="WSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                          Path="DataContext.Stake"/>
+                      <Binding Source="WSD"/>
+                      <!-- clave (invertida) -->
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <DataGridTemplateColumn Header="WWSF%"
+              Width="60">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:F0}%}"
+                    TextAlignment="Center"
+                    Padding="2">
+                  <TextBlock.Background>
+                    <MultiBinding Converter="{StaticResource StatToBrush}">
+                      <Binding Path="WWSFPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                          Path="DataContext.Stake"/>
+                      <Binding Source="WWSF"/>
+                    </MultiBinding>
+                  </TextBlock.Background>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+          <!-- Últimas 9 / Secuencia -->
+          <DataGridTemplateColumn Header="Últimas 9"
+                                  Width="170">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding LastHands, Converter={StaticResource Last9Conv}}"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="Secuencia"
+                              Binding="{Binding LastActionSeq}"
+                              Width="140"/>
+        </DataGrid.Columns>
+      </DataGrid>
+    </Grid>
+  </Border>
+</UserControl>

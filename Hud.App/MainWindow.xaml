@@ -1,0 +1,91 @@
+﻿<Window x:Class="Hud.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="APH — Analyzer Poker Hands"
+        Height="720" Width="1100"
+        WindowStartupLocation="CenterScreen">
+
+  <!-- Fondo con patrón tenue de palos -->
+  <Window.Background>
+    <VisualBrush TileMode="Tile" Viewport="0,0,80,80" ViewportUnits="Absolute"
+                 Viewbox="0,0,80,80" ViewboxUnits="Absolute" Opacity="0.04">
+      <VisualBrush.Visual>
+        <Grid>
+          <TextBlock Text="♠" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"/>
+          <TextBlock Text="♥" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"/>
+          <TextBlock Text="♦" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8"/>
+          <TextBlock Text="♣" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="8"/>
+        </Grid>
+      </VisualBrush.Visual>
+    </VisualBrush>
+  </Window.Background>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- HERO -->
+    <Border Style="{StaticResource HeroCard}" Margin="24,24,24,6">
+      <DockPanel>
+        <Border Width="52" Height="52" CornerRadius="12" Background="#11261A" BorderBrush="#214E38" BorderThickness="1" Margin="0,0,14,0">
+          <Viewbox Stretch="Uniform">
+            <TextBlock Text="♠" FontFamily="Segoe UI Symbol" Foreground="{StaticResource Brush.Accent}" FontWeight="Bold"/>
+          </Viewbox>
+        </Border>
+        <StackPanel>
+          <TextBlock Text="APH — Analyzer Poker Hands" FontSize="26" FontWeight="Bold"/>
+          <TextBlock Text="Menú principal" Foreground="{StaticResource Brush.TextDim}" Margin="0,2,0,0"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Acciones -->
+    <Grid Grid.Row="1" Margin="24,6,24,24">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,10,0,18">
+        <TextBlock Text="Análisis de historial" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
+
+        <UniformGrid Columns="3" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
+          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnAll_Click">
+            <StackPanel>
+              <TextBlock Text="📈 Análisis global" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Ganancias y KPIs de todas las partidas" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Button>
+
+          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnOne_Click">
+            <StackPanel>
+              <TextBlock Text="🧭 Por partida" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Selecciona una y mira su gráfica" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Button>
+
+          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnBestWorst_Click">
+            <StackPanel>
+              <TextBlock Text="🎴 Mejores &amp; peores manos" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Ranking por ganancia/pérdida" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Button>
+        </UniformGrid>
+      </StackPanel>
+
+      <!-- Tiempo real -->
+      <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,10,0,0">
+        <TextBlock Text="Tiempo real" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
+        <Button Style="{StaticResource CardButton.Secondary}" Margin="6" Click="BtnRT_Click" ToolTip="Abrir analizador en tiempo real (8)">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBlock Text="⏱️" Margin="0,0,8,0" FontSize="18"/>
+            <TextBlock Text="Iniciar analizador RT (8)" FontSize="18" FontWeight="SemiBold"/>
+          </StackPanel>
+        </Button>
+        <TextBlock x:Name="InfoText" Text="(Esperando selección…)" Foreground="{StaticResource Brush.Accent}" Margin="12,8,0,0"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>
