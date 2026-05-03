@@ -35,7 +35,7 @@ namespace Hud.App.Services
 
 
         private static readonly Regex BlindsRx =
-            new(@"\((?<sb>\$?\d+(?:\.\d{1,2})?)\s*/\s*(?<bb>\$?\d+(?:\.\d{1,2})?)\)",
+            new(@"\((?<sb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)\s*/\s*(?<bb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)(?:\s+[A-Z]{3})?\)",
                 RegexOptions.Compiled);
 
 
@@ -78,7 +78,13 @@ namespace Hud.App.Services
                     var m = BlindsRx.Match(l);
                     if (!m.Success) continue;
 
-                    var bbTxt = m.Groups["bb"].Value.Replace("$", "");
+                    var bbTxt = m.Groups["bb"].Value
+                        .Replace("$", "")
+                        .Replace("€", "")
+                        .Replace("US", "", StringComparison.OrdinalIgnoreCase)
+                        .Replace("\u00A0", "")
+                        .Replace(" ", "")
+                        .Replace(",", ".");
                     if (double.TryParse(bbTxt, NumberStyles.Number, CultureInfo.InvariantCulture, out var bb))
                     {
                         if (bb <= 0.10) return StakeProfile.Low;   // NL2–NL25 aprox

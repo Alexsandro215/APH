@@ -14,7 +14,7 @@ namespace Hud.App.Views
     public partial class SlotTail : UserControl
     {
         private static readonly Regex BlindsInHeaderRx =
-            new(@"\((?<sb>\$?\d+(?:\.\d{1,2})?)\s*/\s*(?<bb>\$?\d+(?:\.\d{1,2})?)\)",
+            new(@"\((?<sb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)\s*/\s*(?<bb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)(?:\s+[A-Z]{3})?\)",
                 RegexOptions.Compiled);
         private static readonly Regex HeaderTimestampRx =
             new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)",
@@ -235,7 +235,7 @@ namespace Hud.App.Views
                     {
                         var blindsMatch = BlindsInHeaderRx.Match(line);
                         if (blindsMatch.Success)
-                            blinds = $"{blindsMatch.Groups["sb"].Value}/{blindsMatch.Groups["bb"].Value}";
+                            blinds = $"{FormatBlind(blindsMatch.Groups["sb"].Value)}/{FormatBlind(blindsMatch.Groups["bb"].Value)}";
                     }
 
                     if (blinds is not null && tableName != fileName)
@@ -245,6 +245,26 @@ namespace Hud.App.Views
             catch { }
 
             return blinds is null ? tableName : $"{tableName} ({blinds})";
+        }
+
+        private static string FormatBlind(string raw)
+        {
+            var isCash = raw.Contains('$') ||
+                raw.Contains('€') ||
+                raw.Contains("US", StringComparison.OrdinalIgnoreCase) ||
+                raw.Contains('.') ||
+                raw.Contains(',');
+
+            raw = raw.Replace("$", "")
+                .Replace("€", "")
+                .Replace("US", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("\u00A0", "")
+                .Replace(" ", "")
+                .Replace(",", ".");
+
+            return double.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)
+                ? $"{(isCash ? "$" : "")}{value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}"
+                : raw.Trim();
         }
 
         /// <summary>
