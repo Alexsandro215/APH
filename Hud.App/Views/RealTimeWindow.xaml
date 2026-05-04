@@ -3,23 +3,17 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Hud.App.Views"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        Title="APH — Tiempo real (8)"
+        Title="APH &#x2014; Tiempo real (8)"
         Height="800" Width="680" WindowStartupLocation="CenterOwner"
         Background="{StaticResource Brush.Bg}">
 
-  <!-- Recurso de escala global -->
   <Window.Resources>
     <system:Double x:Key="GlobalScale">0.80</system:Double>
   </Window.Resources>
 
-  <!-- ✅ Grid raíz para poder tener el ScrollViewer y el Label ScaleProxy como hijos -->
   <Grid>
-
-    <!-- Contenido original dentro del ScrollViewer -->
     <ScrollViewer VerticalScrollBarVisibility="Disabled"
                   HorizontalScrollBarVisibility="Disabled">
-
-      <!-- Envoltura con LayoutTransform; dentro conservamos tu StackPanel original -->
       <Border>
         <Border.LayoutTransform>
           <ScaleTransform x:Name="RootScale"
@@ -27,10 +21,7 @@
                           ScaleY="{Binding ElementName=ScaleProxy, Path=Tag}"/>
         </Border.LayoutTransform>
 
-        <!-- *** CONTENIDO ORIGINAL *** -->
         <StackPanel Margin="16">
-
-          <!-- Toggle modo compacto -->
           <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
             <CheckBox x:Name="ChkCompact" Content="Modo compacto" IsChecked="True" VerticalAlignment="Center"/>
             <TextBlock Text="   " Width="8"/>
@@ -38,8 +29,8 @@
                        Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center"/>
           </StackPanel>
 
-          <TextBlock Text="Tiempo real — 8 mesas" FontSize="22" FontWeight="Bold" Margin="0,0,0,12"/>
-          <TextBlock Text="Pulsa ＋ para seleccionar el .txt de la mesa. Usa ⏹ para detener."
+          <TextBlock Text="Tiempo real &#x2014; 8 mesas" FontSize="22" FontWeight="Bold" Margin="0,0,0,12"/>
+          <TextBlock Text="Pulsa + para seleccionar el .txt de la mesa. Usa &#x25A0; para detener."
                      Foreground="{StaticResource Brush.TextDim}" Margin="0,0,0,16"/>
 
           <StackPanel>
@@ -53,11 +44,9 @@
             <local:SlotTail Margin="0,0,0,0"/>
           </StackPanel>
         </StackPanel>
-        <!-- *** FIN CONTENIDO ORIGINAL *** -->
       </Border>
     </ScrollViewer>
 
-    <!-- ✅ Proxy oculto para alternar la escala desde code-behind -->
     <Label x:Name="ScaleProxy" Visibility="Collapsed" Tag="{StaticResource GlobalScale}"/>
   </Grid>
 </Window>

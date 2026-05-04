@@ -70,7 +70,22 @@ namespace Hud.App
 
         private void BtnAll_Click(object sender, RoutedEventArgs e)
         {
-            BtnPickFolder_Click(sender, e);
+            if (RecentTables.Count == 0)
+            {
+                InfoText.Text = "Selecciona una carpeta primero para cargar el analisis global.";
+                BtnPickFolder_Click(sender, e);
+                return;
+            }
+
+            var window = new GlobalAnalysisWindow(RecentTables, DashboardInfoText.Text)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = "Analisis global abierto.";
         }
 
         private void BtnOne_Click(object sender, RoutedEventArgs e)
@@ -227,13 +242,18 @@ namespace Hud.App
 
             var (tableName, blindsLabel, bigBlind) = DetectTableInfo(path, lines);
             var lastPlayedAt = DetectLastPlayedAt(lines);
-            var netBb = bigBlind > 0 ? EstimateHeroNet(lines, heroName) / bigBlind : 0;
+            var netAmount = EstimateHeroNet(lines, heroName);
+            var netBb = bigBlind > 0 ? netAmount / bigBlind : 0;
+            var isCash = blindsLabel.Contains('$');
 
             return new TableSessionStats(
                 $"{tableName} ({blindsLabel})",
                 DetectGameFormat(lines),
                 lastPlayedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 lastPlayedAt,
+                path,
+                heroName,
+                bigBlind,
                 GetStakeFromBigBlind(bigBlind),
                 heroStats.HandsReceived,
                 heroStats.VPIPPct,
@@ -246,7 +266,10 @@ namespace Hud.App
                 heroStats.WTSDPct,
                 heroStats.WSDPct,
                 heroStats.WWSFPct,
-                netBb);
+                netBb,
+                netAmount,
+                isCash,
+                FormatNetAmount(netAmount, isCash));
         }
 
         private static (string TableName, string BlindsLabel, double BigBlind) DetectTableInfo(string path, IReadOnlyList<string> lines)
@@ -476,6 +499,16 @@ namespace Hud.App
             raw.Contains('.') ||
             raw.Contains(',');
 
+        private static string FormatNetAmount(double amount, bool isCash)
+        {
+            var sign = amount >= 0 ? "+" : "-";
+            var absolute = Math.Abs(amount);
+
+            return isCash
+                ? $"{sign}${absolute.ToString("0.00", CultureInfo.InvariantCulture)}"
+                : $"{sign}{absolute.ToString("0", CultureInfo.InvariantCulture)} fichas";
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void OnPropertyChanged(string propertyName) =>
@@ -488,6 +521,9 @@ namespace Hud.App
             string GameFormat,
             string PlayedDate,
             DateTime LastPlayedAt,
+            string SourcePath,
+            string HeroName,
+            double BigBlind,
             StakeProfile Stake,
             int HandsReceived,
             double VPIPPct,
@@ -500,9 +536,13 @@ namespace Hud.App
             double WTSDPct,
             double WSDPct,
             double WWSFPct,
-            double NetBb)
+            double NetBb,
+            double NetAmount,
+            bool IsCash,
+            string NetAmountLabel)
         {
             public bool IsWin => NetBb >= 100;
+            public bool IsProfitable => NetBb >= 0;
             public string TrendIcon => IsWin ? "▲" : "▼";
         }
     }
