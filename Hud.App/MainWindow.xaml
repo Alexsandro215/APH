@@ -8,6 +8,11 @@
 
   <Window.Resources>
     <views:StatToBrushConverter x:Key="StatToBrush"/>
+    <views:StatTextBrushConverter x:Key="StatTextBrush"/>
+    <Style TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
   </Window.Resources>
 
   <!-- Fondo con patrón tenue de palos -->
@@ -151,7 +156,7 @@
               <DataGridTemplateColumn Header="VPIP%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="VPIPPct"/>
@@ -168,7 +173,7 @@
               <DataGridTemplateColumn Header="PFR%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="PFRPct"/>
@@ -185,7 +190,7 @@
               <DataGridTemplateColumn Header="3Bet%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="ThreeBetPct"/>
@@ -202,7 +207,7 @@
               <DataGridTemplateColumn Header="AF" Width="0.85*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AF"/>
@@ -219,7 +224,7 @@
               <DataGridTemplateColumn Header="AFq%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AFqPct"/>
@@ -236,7 +241,7 @@
               <DataGridTemplateColumn Header="CBet%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="CBetFlopPct"/>
@@ -253,7 +258,7 @@
               <DataGridTemplateColumn Header="FvCBet%" Width="1.15*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="FoldVsCBetFlopPct"/>
@@ -270,7 +275,7 @@
               <DataGridTemplateColumn Header="WTSD%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WTSDPct"/>
@@ -287,7 +292,7 @@
               <DataGridTemplateColumn Header="W$SD%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WSDPct"/>
@@ -304,7 +309,7 @@
               <DataGridTemplateColumn Header="WWSF%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="Black">
+                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WWSFPct"/>
@@ -405,7 +410,7 @@
               <DataGridTemplateColumn Header="VPIP%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="VPIPPct"/>
@@ -422,7 +427,7 @@
               <DataGridTemplateColumn Header="PFR%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="PFRPct"/>
@@ -439,7 +444,7 @@
               <DataGridTemplateColumn Header="3Bet%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="ThreeBetPct"/>
@@ -456,7 +461,7 @@
               <DataGridTemplateColumn Header="AF" Width="0.58*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AF"/>
@@ -473,7 +478,7 @@
               <DataGridTemplateColumn Header="AFq%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AFqPct"/>
@@ -490,7 +495,7 @@
               <DataGridTemplateColumn Header="CBet%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="CBetFlopPct"/>
@@ -507,7 +512,7 @@
               <DataGridTemplateColumn Header="FvCBet%" Width="0.72*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="FoldVsCBetFlopPct"/>
@@ -524,7 +529,7 @@
               <DataGridTemplateColumn Header="WTSD%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WTSDPct"/>
@@ -541,7 +546,7 @@
               <DataGridTemplateColumn Header="W$SD%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WSDPct"/>
@@ -558,7 +563,7 @@
               <DataGridTemplateColumn Header="WWSF%" Width="0.66*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="Black">
+                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WWSFPct"/>
@@ -623,15 +628,15 @@
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnOne_Click">
             <StackPanel>
-              <TextBlock Text="&#xE916; Por partida" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Selecciona una y mira su gráfica" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="&#xE8A5; Mis Tablas" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Mapa de acciones por mano inicial" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnBestWorst_Click">
             <StackPanel>
-              <TextBlock Text="&#xE734; Mejores &amp; peores manos" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Ranking por ganancia/pérdida" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="&#xE716; Data Villans" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Rivales recientes y bb contra ellos" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
         </UniformGrid>

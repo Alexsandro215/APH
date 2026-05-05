@@ -90,12 +90,42 @@ namespace Hud.App
 
         private void BtnOne_Click(object sender, RoutedEventArgs e)
         {
-            InfoText.Text = "Partida especifica: selector y grafica individual (placeholder).";
+            if (RecentTables.Count == 0)
+            {
+                InfoText.Text = "Selecciona una carpeta primero para cargar Mis Tablas.";
+                BtnPickFolder_Click(sender, e);
+                return;
+            }
+
+            var window = new MisTablasWindow(RecentTables, DashboardInfoText.Text)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = "Mis Tablas abierto.";
         }
 
         private void BtnBestWorst_Click(object sender, RoutedEventArgs e)
         {
-            InfoText.Text = "Mejores/peores manos: ranking por ganancia/perdida (placeholder).";
+            if (RecentTables.Count == 0)
+            {
+                InfoText.Text = "Selecciona una carpeta primero para cargar Data Villans.";
+                BtnPickFolder_Click(sender, e);
+                return;
+            }
+
+            var window = new DataVillainsWindow(RecentTables, DashboardInfoText.Text)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = "Data Villans abierto.";
         }
 
         private void BtnRT_Click(object sender, RoutedEventArgs e)

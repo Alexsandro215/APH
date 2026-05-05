@@ -20,14 +20,18 @@ namespace Hud.App.Views
         private Ellipse? _hoverMarker;
         private Border? _hoverTooltip;
         private TableHandViewModel? _hoveredHand;
+        private readonly int? _initialHandNumber;
+        private readonly string? _trackedVillainName;
 
-        public TableDetailWindow(MainWindow.TableSessionStats table)
+        public TableDetailWindow(MainWindow.TableSessionStats table, int? initialHandNumber = null, string? trackedVillainName = null)
         {
             InitializeComponent();
             Height = Math.Max(760, SystemParameters.WorkArea.Height - 36);
             MaxHeight = SystemParameters.WorkArea.Height;
+            _initialHandNumber = initialHandNumber;
+            _trackedVillainName = string.IsNullOrWhiteSpace(trackedVillainName) ? null : trackedVillainName.Trim();
 
-            _viewModel = new TableDetailViewModel(table);
+            _viewModel = new TableDetailViewModel(table, _initialHandNumber, _trackedVillainName);
             DataContext = _viewModel;
             Title = $"APH - {table.TableName}";
 
@@ -37,7 +41,22 @@ namespace Hud.App.Views
                     DrawChart();
             };
 
-            Loaded += (_, _) => DrawChart();
+            Loaded += (_, _) =>
+            {
+                if (_initialHandNumber is int handNumber)
+                    SelectHand(handNumber);
+                DrawChart();
+            };
+        }
+
+        private void SelectHand(int handNumber)
+        {
+            var hand = _viewModel.Hands.FirstOrDefault(item => item.Index == handNumber);
+            if (hand is null)
+                return;
+
+            _viewModel.SelectedHand = hand;
+            HandsList.ScrollIntoView(hand);
         }
 
         private void ProfitChart_SizeChanged(object sender, SizeChangedEventArgs e) => DrawChart();
@@ -423,10 +442,10 @@ namespace Hud.App.Views
 
             public ObservableCollection<TableHandViewModel> Hands { get; }
 
-            public TableDetailViewModel(MainWindow.TableSessionStats table)
+            public TableDetailViewModel(MainWindow.TableSessionStats table, int? trackedHandNumber = null, string? trackedVillainName = null)
             {
                 Table = table;
-                Hands = new ObservableCollection<TableHandViewModel>(LoadHands(table));
+                Hands = new ObservableCollection<TableHandViewModel>(LoadHands(table, trackedHandNumber, trackedVillainName));
                 SelectedHand = Hands.FirstOrDefault();
             }
 
@@ -478,7 +497,10 @@ namespace Hud.App.Views
             private void OnPropertyChanged(string propertyName) =>
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-            private static IReadOnlyList<TableHandViewModel> LoadHands(MainWindow.TableSessionStats table)
+            private static IReadOnlyList<TableHandViewModel> LoadHands(
+                MainWindow.TableSessionStats table,
+                int? trackedHandNumber,
+                string? trackedVillainName)
             {
                 if (!File.Exists(table.SourcePath))
                     return Array.Empty<TableHandViewModel>();
@@ -492,21 +514,23 @@ namespace Hud.App.Views
                     if (!TryExtractHeroCards(hand, table.HeroName, out var cards))
                         continue;
 
+                    var handIndex = result.Count + 1;
+                    var shouldTrackVillain = trackedHandNumber == handIndex && !string.IsNullOrWhiteSpace(trackedVillainName);
                     var positions = BuildPositionMap(hand);
                     var netAmount = EstimateHeroNetForHand(hand, table.HeroName);
                     var netBb = table.BigBlind > 0 ? netAmount / table.BigBlind : 0;
                     cumulative += netBb;
 
                     result.Add(new TableHandViewModel(
-                        result.Count + 1,
+                        handIndex,
                         FormatCards(cards),
                         positions.TryGetValue(table.HeroName, out var heroPosition) ? $"Posicion {heroPosition}" : "Posicion ?",
                         netBb,
                         cumulative,
-                        ExtractStreetActions(hand, "PREFLOP", table.HeroName, positions),
-                        ExtractStreetActions(hand, "FLOP", table.HeroName, positions),
-                        ExtractStreetActions(hand, "TURN", table.HeroName, positions),
-                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions)));
+                        ExtractStreetActions(hand, "PREFLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
+                        ExtractStreetActions(hand, "FLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
+                        ExtractStreetActions(hand, "TURN", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
+                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null)));
                 }
 
                 return result;
@@ -640,15 +664,16 @@ namespace Hud.App.Views
                 IReadOnlyList<string> hand,
                 string street,
                 string heroName,
-                IReadOnlyDictionary<string, string> positions)
+                IReadOnlyDictionary<string, string> positions,
+                string? trackedVillainName)
             {
                 var lines = GetStreetLines(hand, street)
                     .Where(IsActionOrBoardLine)
-                    .Select(line => CreateAction(line, heroName, positions))
+                    .Select(line => CreateAction(line, heroName, positions, trackedVillainName))
                     .ToList();
 
                 return lines.Count == 0
-                    ? new[] { new StreetActionViewModel("Sin accion registrada.", false, true, false) }
+                    ? new[] { new StreetActionViewModel("Sin accion registrada.", false, true, false, false) }
                     : lines;
             }
 
@@ -716,17 +741,20 @@ namespace Hud.App.Views
             private static StreetActionViewModel CreateAction(
                 string line,
                 string heroName,
-                IReadOnlyDictionary<string, string> positions)
+                IReadOnlyDictionary<string, string> positions,
+                string? trackedVillainName)
             {
                 var actor = ExtractActor(line);
                 var isHero = string.Equals(actor, heroName, StringComparison.Ordinal);
+                var isTrackedVillain = !string.IsNullOrWhiteSpace(trackedVillainName) &&
+                    string.Equals(actor, trackedVillainName, StringComparison.Ordinal);
                 var isSystem = actor.Length == 0;
                 var clean = TranslateActionLine(line, actor, heroName, positions);
                 var isBoardHeader = line.StartsWith("*** FLOP ***", StringComparison.Ordinal) ||
                                     line.StartsWith("*** TURN ***", StringComparison.Ordinal) ||
                                     line.StartsWith("*** RIVER ***", StringComparison.Ordinal);
 
-                return new StreetActionViewModel(clean, isHero, isSystem, isBoardHeader);
+                return new StreetActionViewModel(clean, isHero, isSystem, isBoardHeader, isTrackedVillain);
             }
 
             private static string ExtractActor(string line)
@@ -956,20 +984,25 @@ namespace Hud.App.Views
 
         private sealed class StreetActionViewModel
         {
-            public StreetActionViewModel(string text, bool isHero, bool isSystem, bool isBoardHeader)
+            public StreetActionViewModel(string text, bool isHero, bool isSystem, bool isBoardHeader, bool isTrackedVillain)
             {
                 Text = text;
                 IsHero = isHero;
                 IsSystem = isSystem;
                 IsBoardHeader = isBoardHeader;
+                IsTrackedVillain = isTrackedVillain;
 
-                var baseForeground = isHero
+                var baseForeground = isTrackedVillain
+                    ? new SolidColorBrush(Color.FromRgb(255, 132, 146))
+                    : isHero
                     ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
                     : isSystem
                         ? new SolidColorBrush(Color.FromRgb(143, 211, 244))
                         : Brushes.White;
 
-                Background = isHero
+                Background = isTrackedVillain
+                    ? new SolidColorBrush(Color.FromRgb(61, 22, 30))
+                    : isHero
                     ? new SolidColorBrush(Color.FromRgb(16, 37, 28))
                     : isSystem
                         ? new SolidColorBrush(Color.FromRgb(16, 28, 41))
@@ -982,6 +1015,7 @@ namespace Hud.App.Views
             public bool IsHero { get; }
             public bool IsSystem { get; }
             public bool IsBoardHeader { get; }
+            public bool IsTrackedVillain { get; }
             public Brush Background { get; }
             public IReadOnlyList<TextSegmentViewModel> Segments { get; }
         }

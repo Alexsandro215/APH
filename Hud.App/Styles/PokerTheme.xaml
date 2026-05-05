@@ -91,8 +91,6 @@
   </Style>
 
   <Style TargetType="TextBlock">
-    <Setter Property="Foreground"
-        Value="{StaticResource Brush.Text}"/>
     <Setter Property="TextWrapping"
         Value="Wrap"/>
   </Style>
@@ -104,6 +102,72 @@
         Value="1"/>
     <Setter Property="Margin"
         Value="0,8,0,8"/>
+  </Style>
+
+  <!-- Controles claros embebidos en popups: el calendario no debe heredar texto claro. -->
+  <Style TargetType="Calendar">
+    <Setter Property="Foreground" Value="Black"/>
+    <Setter Property="Background" Value="#EEF2F6"/>
+  </Style>
+
+  <Style TargetType="CalendarDayButton">
+    <Setter Property="Foreground" Value="Black"/>
+    <Setter Property="Background" Value="#EEF2F6"/>
+    <Setter Property="MinWidth" Value="22"/>
+    <Setter Property="MinHeight" Value="18"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CalendarDayButton">
+          <Border x:Name="DayBorder"
+                  Background="{TemplateBinding Background}"
+                  CornerRadius="2"
+                  Padding="2">
+            <TextBlock Text="{TemplateBinding Content}"
+                       Foreground="Black"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="DayBorder" Property="Background" Value="#DCE6EF"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="DayBorder" Property="Background" Value="#87D7F7"/>
+            </Trigger>
+            <Trigger Property="IsInactive" Value="True">
+              <Setter TargetName="DayBorder" Property="Opacity" Value="0.55"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="CalendarButton">
+    <Setter Property="Foreground" Value="Black"/>
+    <Setter Property="Background" Value="#EEF2F6"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CalendarButton">
+          <Border x:Name="CalendarButtonBorder"
+                  Background="{TemplateBinding Background}"
+                  CornerRadius="3"
+                  Padding="4">
+            <TextBlock Text="{TemplateBinding Content}"
+                       Foreground="Black"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="CalendarButtonBorder" Property="Background" Value="#DCE6EF"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <!-- HERO -->
