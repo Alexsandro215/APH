@@ -84,8 +84,7 @@ namespace Hud.App.Views
 
             var window = new TableDetailWindow(table)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 

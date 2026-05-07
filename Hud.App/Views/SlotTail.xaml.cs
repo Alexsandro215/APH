@@ -7,7 +7,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using Hud.App.Services;
+using HandReader.Core.Models;
 
 namespace Hud.App.Views
 {
@@ -61,6 +64,56 @@ namespace Hud.App.Views
         }
 
         private void Stop_Click(object sender, RoutedEventArgs e) => Stop();
+
+        private void PlayersGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not DataGrid grid)
+                return;
+            var row = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject);
+            if (row?.Item is not PlayerStats player)
+                return;
+            if (string.IsNullOrWhiteSpace(_path) || !File.Exists(_path))
+                return;
+            if (string.Equals(player.Name, _service.HeroName, StringComparison.Ordinal))
+                return;
+
+            var tables = Array.Empty<MainWindow.TableSessionStats>() as IReadOnlyList<MainWindow.TableSessionStats>;
+            DataVillainsWindow.DataVillainRow villain;
+            if (VillainHistoryStore.TryGet(player.Name, out var historical))
+            {
+                villain = historical;
+                tables = VillainHistoryStore.Tables;
+            }
+            else
+            {
+                var hero = FindHeroStats();
+                var table = BuildCurrentTableStats(hero);
+                villain = BuildVillainRow(player, table);
+                tables = new[] { table };
+            }
+
+            var window = new DataVillainDetailWindow(villain, tables)
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            grid.SelectedItem = null;
+        }
+
+        private static T? FindAncestor<T>(DependencyObject? current)
+            where T : DependencyObject
+        {
+            while (current is not null)
+            {
+                if (current is T match)
+                    return match;
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
+        }
 
         private void Start(string path)
         {
@@ -265,6 +318,80 @@ namespace Hud.App.Views
             return double.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)
                 ? $"{(isCash ? "$" : "")}{value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}"
                 : raw.Trim();
+        }
+
+        private PlayerStats? FindHeroStats()
+        {
+            foreach (var player in _service.Players)
+            {
+                if (string.Equals(player.Name, _service.HeroName, StringComparison.Ordinal))
+                    return player;
+            }
+
+            return null;
+        }
+
+        private MainWindow.TableSessionStats BuildCurrentTableStats(PlayerStats? hero)
+        {
+            var tableName = PathText.Text;
+            var lastPlayed = _lastHandTime ?? DateTime.Now;
+            var bigBlind = ExtractBigBlindFromLabel(tableName);
+            return new MainWindow.TableSessionStats(
+                tableName,
+                "NLH",
+                lastPlayed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                lastPlayed,
+                _path ?? "",
+                _service.HeroName ?? "",
+                bigBlind,
+                Stake,
+                hero?.HandsReceived ?? 0,
+                hero?.VPIPPct ?? 0,
+                hero?.PFRPct ?? 0,
+                hero?.ThreeBetPct ?? 0,
+                hero?.AF ?? 0,
+                hero?.AFqPct ?? 0,
+                hero?.CBetFlopPct ?? 0,
+                hero?.FoldVsCBetFlopPct ?? 0,
+                hero?.WTSDPct ?? 0,
+                hero?.WSDPct ?? 0,
+                hero?.WWSFPct ?? 0,
+                0,
+                0,
+                tableName.Contains('$'),
+                "0");
+        }
+
+        private DataVillainsWindow.DataVillainRow BuildVillainRow(PlayerStats player, MainWindow.TableSessionStats table) =>
+            new(
+                player.Name,
+                table.TableName,
+                table.GameFormat,
+                table.IsCash,
+                player.HandsReceived,
+                player.HandsReceived,
+                player.HandsReceived,
+                player.VPIPPct,
+                player.PFRPct,
+                player.ThreeBetPct,
+                player.AF,
+                player.AFqPct,
+                player.CBetFlopPct,
+                player.FoldVsCBetFlopPct,
+                player.WTSDPct,
+                player.WSDPct,
+                player.WWSFPct,
+                0,
+                0,
+                table.Stake,
+                _lastHandTime ?? DateTime.Now);
+
+        private static double ExtractBigBlindFromLabel(string label)
+        {
+            var match = Regex.Match(label, @"\((?:\$)?(?<sb>\d+(?:\.\d+)?)\/(?:\$)?(?<bb>\d+(?:\.\d+)?)\)");
+            return match.Success && double.TryParse(match.Groups["bb"].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var bb)
+                ? bb
+                : 1;
         }
 
         /// <summary>

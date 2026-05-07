@@ -661,20 +661,9 @@
             <DataGridTemplateColumn Header="Mano exacta" Width="0.9*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
-                  <ItemsControl ItemsSource="{Binding ExactCardSegments}" HorizontalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Text}"
-                                   Foreground="{Binding Foreground}"
-                                   FontWeight="{Binding FontWeight}"/>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                  <ContentControl Content="{Binding ExactCardChips}"
+                                  ContentTemplate="{StaticResource CardChipListTemplate}"
+                                  HorizontalAlignment="Center"/>
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -682,20 +671,9 @@
             <DataGridTemplateColumn Header="Spot" Width="1.35*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
-                  <ItemsControl ItemsSource="{Binding SpotSegments}" HorizontalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Text}"
-                                   Foreground="{Binding Foreground}"
-                                   FontWeight="{Binding FontWeight}"/>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                  <ContentControl Content="{Binding SpotCardChips}"
+                                  ContentTemplate="{StaticResource CardChipListTemplate}"
+                                  HorizontalAlignment="Center"/>
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

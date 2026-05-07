@@ -94,8 +94,7 @@ namespace Hud.App.Views
 
             var window = new TableDetailWindow(table, row.HandNumber, _viewModel.VillainName)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
@@ -128,8 +127,7 @@ namespace Hud.App.Views
 
             var window = new TableDetailWindow(table, row.HandNumber, _viewModel.VillainName)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
@@ -150,6 +148,17 @@ namespace Hud.App.Views
                 return;
 
             _viewModel.ShowAllDataSummary = SummaryModeToggle.IsChecked == true;
+        }
+
+        private void BtnDictionary_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new DataVillainDictionaryWindow
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
         }
 
         private sealed class DataVillainViewModel : System.ComponentModel.INotifyPropertyChanged
@@ -424,7 +433,7 @@ namespace Hud.App.Views
                         var playedAt = ExtractTimestamp(hand) ?? table.LastPlayedAt;
                         var netBb = table.BigBlind > 0 ? EstimateNetForPlayer(hand, villainName) / table.BigBlind : 0;
                         var handIdentity = $"{table.SourcePath}:{handNumber}";
-                        var boardCards = ExtractBoardCards(hand);
+                        var finalBoardCards = ExtractBoardCardsForStreet(hand, "RIVER");
 
                         foreach (var street in new[] { "PREFLOP", "FLOP", "TURN", "RIVER" })
                         {
@@ -443,7 +452,8 @@ namespace Hud.App.Views
                                 position,
                                 action.Value,
                                 netBb,
-                                boardCards,
+                                finalBoardCards,
+                                ExtractBoardCardsForStreet(hand, street),
                                 playedAt);
                         }
                     }
@@ -533,26 +543,56 @@ namespace Hud.App.Views
             return false;
         }
 
-        private static string ExtractBoardCards(IReadOnlyList<string> hand)
+        private static string ExtractBoardCardsForStreet(IReadOnlyList<string> hand, string targetStreet)
         {
+            if (targetStreet == "PREFLOP")
+                return "";
+
             var cards = new List<string>();
             foreach (var line in hand)
             {
-                if (!line.StartsWith("*** FLOP ***", StringComparison.Ordinal) &&
-                    !line.StartsWith("*** TURN ***", StringComparison.Ordinal) &&
-                    !line.StartsWith("*** RIVER ***", StringComparison.Ordinal))
-                {
+                var street = StreetFromBoardLine(line);
+                if (street is null)
                     continue;
-                }
 
-                foreach (Match match in BoardCardsRx.Matches(line))
-                {
-                    cards.AddRange(match.Groups["cards"].Value
-                        .Split(' ', StringSplitOptions.RemoveEmptyEntries));
-                }
+                cards = ExtractBoardStateFromLine(line);
+
+                if (street == targetStreet)
+                    return string.Join(" ", cards);
             }
 
             return string.Join(" ", cards);
+        }
+
+        private static string? StreetFromBoardLine(string line)
+        {
+            if (line.StartsWith("*** FLOP ***", StringComparison.Ordinal))
+                return "FLOP";
+            if (line.StartsWith("*** TURN ***", StringComparison.Ordinal))
+                return "TURN";
+            if (line.StartsWith("*** RIVER ***", StringComparison.Ordinal))
+                return "RIVER";
+
+            return null;
+        }
+
+        private static List<string> ExtractBoardStateFromLine(string line)
+        {
+            var matches = BoardCardsRx.Matches(line).Cast<Match>().ToList();
+            if (matches.Count == 0)
+                return new List<string>();
+
+            var cards = matches[0].Groups["cards"].Value
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
+
+            if (matches.Count > 1)
+            {
+                cards.AddRange(matches[^1].Groups["cards"].Value
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            return cards;
         }
 
         private static VillainAction? DetectAction(IReadOnlyList<string> hand, string playerName, string street)
@@ -1044,46 +1084,6 @@ namespace Hud.App.Views
             return suit.Length == 0 ? card : $"{rank}{suit}";
         }
 
-        private static IReadOnlyList<TextSegmentViewModel> BuildTextSegments(string text, Brush baseForeground)
-        {
-            var segments = new List<TextSegmentViewModel>();
-            var buffer = "";
-
-            void Flush()
-            {
-                if (buffer.Length == 0)
-                    return;
-
-                segments.Add(new TextSegmentViewModel(buffer, baseForeground, FontWeights.SemiBold));
-                buffer = "";
-            }
-
-            foreach (var ch in text)
-            {
-                var suitBrush = SuitBrush(ch);
-                if (suitBrush is null)
-                {
-                    buffer += ch;
-                    continue;
-                }
-
-                Flush();
-                segments.Add(new TextSegmentViewModel(ch.ToString(), suitBrush, FontWeights.Bold));
-            }
-
-            Flush();
-            return segments;
-        }
-
-        private static Brush? SuitBrush(char ch) => ch switch
-        {
-            '\u2665' => BrushFrom(226, 78, 91),
-            '\u2666' => BrushFrom(26, 161, 209),
-            '\u2663' => BrushFrom(33, 192, 122),
-            '\u2660' => BrushFrom(170, 178, 188),
-            _ => null
-        };
-
         private static Brush BrushFrom(byte r, byte g, byte b) =>
             new SolidColorBrush(Color.FromRgb(r, g, b));
 
@@ -1167,6 +1167,7 @@ namespace Hud.App.Views
             VillainAction Action,
             double NetBb,
             string BoardCards,
+            string SpotCards,
             DateTime LastSeen);
 
         private sealed record ComparisonRow(
@@ -1361,10 +1362,10 @@ namespace Hud.App.Views
             public Brush NetTrendBrush => NetBb >= 0
                 ? BrushFrom(33, 192, 122)
                 : BrushFrom(226, 78, 91);
-            public IReadOnlyList<TextSegmentViewModel> ExactCardSegments =>
-                BuildTextSegments(FormatCardsForDisplay(ExactCards), BrushFrom(143, 211, 244));
-            public IReadOnlyList<TextSegmentViewModel> SpotSegments =>
-                BuildTextSegments(FormatSpotForDisplay(Spot), BrushFrom(143, 211, 244));
+            public IReadOnlyList<CardChipViewModel> ExactCardChips =>
+                CardChipViewModel.FromCards(FormatCardsForDisplay(ExactCards));
+            public IReadOnlyList<CardChipViewModel> SpotCardChips =>
+                CardChipViewModel.FromCards(FormatSpotForDisplay(Spot));
 
             public static ExactVillainHandRow FromHand(KnownVillainHand hand) =>
                 new(
@@ -1378,8 +1379,6 @@ namespace Hud.App.Views
                     hand.Action,
                     hand.NetBb);
         }
-
-        private sealed record TextSegmentViewModel(string Text, Brush Foreground, FontWeight FontWeight);
 
         private sealed record HandSummaryRow(
             string HandCode,

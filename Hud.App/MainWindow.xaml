@@ -74,16 +74,25 @@
           </Grid.RowDefinitions>
 
           <Grid Margin="0,0,0,10">
-            <Button Style="{StaticResource Btn.Primary}"
-                    Click="BtnPickFolder_Click"
-                    Width="44"
-                    Height="44"
-                    Padding="0"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    ToolTip="Seleccionar carpeta de manos">
-              <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <Button Style="{StaticResource Btn.Primary}"
+                      Click="BtnHeroProfile_Click"
+                      Width="44"
+                      Height="44"
+                      Padding="0"
+                      Margin="0,0,8,0"
+                      ToolTip="Abrir perfil del heroe">
+                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+              <Button Style="{StaticResource Btn.Primary}"
+                      Click="BtnPickFolder_Click"
+                      Width="44"
+                      Height="44"
+                      Padding="0"
+                      ToolTip="Seleccionar carpeta de manos">
+                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+            </StackPanel>
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="56,0,56,0">
               <TextBlock Text="GLOBAL STATS" FontSize="20" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"/>
               <TextBlock x:Name="DashboardInfoText" Text="Selecciona una carpeta con historiales para calcular stats promedio." Foreground="{StaticResource Brush.TextDim}" Margin="0,2,0,0"/>
@@ -618,11 +627,11 @@
       <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,0">
         <TextBlock Text="Análisis de historial" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
 
-        <UniformGrid Columns="3" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
+        <UniformGrid Columns="4" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnAll_Click">
             <StackPanel>
-              <TextBlock Text="&#xE80F; Análisis global" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Ganancias y KPIs de todas las partidas" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="&#xE80F; Análisis por mesas" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Ganancias y KPIs separados por mesa" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
@@ -637,6 +646,13 @@
             <StackPanel>
               <TextBlock Text="&#xE716; Data Villans" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
               <TextBlock Text="Rivales recientes y bb contra ellos" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Button>
+
+          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnLeakFinder_Click">
+            <StackPanel>
+              <TextBlock Text="&#xE9D9; Detector de leaks" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Encuentra patrones donde pierdes bb" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
         </UniformGrid>

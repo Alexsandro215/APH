@@ -79,13 +79,12 @@ namespace Hud.App
 
             var window = new GlobalAnalysisWindow(RecentTables, DashboardInfoText.Text)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
             window.Show();
-            InfoText.Text = "Analisis global abierto.";
+            InfoText.Text = "Analisis por mesas abierto.";
         }
 
         private void BtnOne_Click(object sender, RoutedEventArgs e)
@@ -99,8 +98,7 @@ namespace Hud.App
 
             var window = new MisTablasWindow(RecentTables, DashboardInfoText.Text)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
@@ -119,13 +117,51 @@ namespace Hud.App
 
             var window = new DataVillainsWindow(RecentTables, DashboardInfoText.Text)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
             window.Show();
             InfoText.Text = "Data Villans abierto.";
+        }
+
+        private void BtnLeakFinder_Click(object sender, RoutedEventArgs e)
+        {
+            if (RecentTables.Count == 0)
+            {
+                InfoText.Text = "Selecciona una carpeta primero para cargar Detector de leaks.";
+                BtnPickFolder_Click(sender, e);
+                return;
+            }
+
+            var window = new LeakFinderWindow(RecentTables, DashboardInfoText.Text)
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = "Detector de leaks abierto.";
+        }
+
+        private void BtnHeroProfile_Click(object sender, RoutedEventArgs e)
+        {
+            var hero = DashboardPlayers.FirstOrDefault();
+            if (hero is null || RecentTables.Count == 0)
+            {
+                InfoText.Text = "Selecciona una carpeta primero para cargar el perfil del heroe.";
+                BtnPickFolder_Click(sender, e);
+                return;
+            }
+
+            var window = new HeroProfileWindow(hero, RecentTables, DashboardStake, DashboardInfoText.Text)
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = $"Perfil de {hero.Name} abierto.";
         }
 
         private void BtnRT_Click(object sender, RoutedEventArgs e)

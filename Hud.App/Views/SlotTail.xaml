@@ -26,6 +26,9 @@
     <!-- CONVERTERS -->
     <views:LastHandsToStringConverter x:Key="Last9Conv"/>
     <views:EqualsToBoolConverter x:Key="Eq"/>
+    <views:PlayerStatsToolTipConverter x:Key="PlayerToolTip"/>
+    <views:PlayerHistoryRowBrushConverter x:Key="PlayerHistoryRowBrush"/>
+    <views:PlayerHistoryTextBrushConverter x:Key="PlayerHistoryTextBrush"/>
 
     <!-- PALETA -->
     <SolidColorBrush x:Key="BgDark"
@@ -238,12 +241,17 @@
                 AutoGenerateColumns="False"
                 SelectionUnit="FullRow"
                 EnableRowVirtualization="True"
-                HeadersVisibility="All">
+                HeadersVisibility="All"
+                PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp">
 
         <!-- RowStyle: sombreado integral + barra lateral -->
         <DataGrid.RowStyle>
           <Style TargetType="DataGridRow"
                  BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="Background"
+                    Value="{Binding Name, Converter={StaticResource PlayerHistoryRowBrush}}"/>
+            <Setter Property="Foreground"
+                    Value="{Binding Name, Converter={StaticResource PlayerHistoryTextBrush}}"/>
             <Setter Property="Template">
               <Setter.Value>
                 <ControlTemplate TargetType="DataGridRow">
@@ -304,6 +312,8 @@
                 </ControlTemplate>
               </Setter.Value>
             </Setter>
+            <Setter Property="ToolTip"
+                    Value="{Binding Converter={StaticResource PlayerToolTip}}"/>
           </Style>
         </DataGrid.RowStyle>
 
@@ -311,6 +321,14 @@
         <DataGrid.CellStyle>
           <Style TargetType="DataGridCell"
                  BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="Background"
+                    Value="{Binding Name, Converter={StaticResource PlayerHistoryRowBrush}}"/>
+            <Setter Property="Foreground"
+                    Value="{Binding Name, Converter={StaticResource PlayerHistoryTextBrush}}"/>
+            <Setter Property="ToolTip"
+                    Value="{Binding Converter={StaticResource PlayerToolTip}}"/>
             <Style.Triggers>
               <DataTrigger Value="True">
                 <DataTrigger.Binding>

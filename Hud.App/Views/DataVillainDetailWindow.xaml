@@ -144,28 +144,18 @@
           </Grid.RowDefinitions>
 
           <Button Grid.Row="0"
-                  Content="i"
+                  Content="?"
                   Width="34"
                   Height="34"
-                  HorizontalAlignment="Left"
+                  HorizontalAlignment="Right"
                   VerticalAlignment="Top"
                   FontWeight="Bold"
                   Foreground="{StaticResource Brush.Text}"
                   Background="#111A24"
                   BorderBrush="{StaticResource Brush.Border}"
-                  Cursor="Help">
-            <Button.ToolTip>
-              <StackPanel MaxWidth="420">
-                <TextBlock Text="Indicadores de etiquetas" Foreground="Black" FontWeight="Bold" Margin="0,0,0,6"/>
-                <TextBlock Foreground="Black" TextWrapping="Wrap"
-                           Text="Verde: punto explotable o favorable para el heroe. Rojo: alerta o amenaza del villano. Gris: perfil, muestra o lectura neutral."/>
-                <TextBlock Foreground="Black" Margin="0,6,0,0" TextWrapping="Wrap"
-                           Text="Perfiles: Sin muestra, Fish, Maniac, Loose pasivo, LAG, TAG, Nit, Tight, Pasivo, Regular."/>
-                <TextBlock Foreground="Black" Margin="0,6,0,0" TextWrapping="Wrap"
-                           Text="Tags: Rival frecuente, Gana/Pierde vs Hero, Juega muchas manos, Agresor, 3Bet alto, CBet, showdown, calling station, roca, amante premium, suited connectors, trampero, all-in equity y lovers por forma de ganar."/>
-              </StackPanel>
-            </Button.ToolTip>
-          </Button>
+                  Cursor="Help"
+                  ToolTip="Abrir diccionario del perfil"
+                  Click="BtnDictionary_Click"/>
 
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Text="{Binding VillainName}" FontSize="24" FontWeight="Bold" Margin="0,0,12,0"/>
@@ -610,37 +600,19 @@
               <DataGridTemplateColumn Header="Mano exacta" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <ItemsControl ItemsSource="{Binding ExactCardSegments}" HorizontalAlignment="Center">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <TextBlock Text="{Binding Text}" Foreground="{Binding Foreground}" FontWeight="{Binding FontWeight}"/>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ContentControl Content="{Binding ExactCardChips}"
+                                    ContentTemplate="{StaticResource CardChipListTemplate}"
+                                    HorizontalAlignment="Center"/>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
               <DataGridTextColumn Header="Posicion" Binding="{Binding Position}" Width="0.7*" ElementStyle="{StaticResource CenterCellText}"/>
-              <DataGridTemplateColumn Header="Spot" Width="1.35*">
+              <DataGridTemplateColumn Header="Board final" Width="1.35*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <ItemsControl ItemsSource="{Binding SpotSegments}" HorizontalAlignment="Center">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <TextBlock Text="{Binding Text}" Foreground="{Binding Foreground}" FontWeight="{Binding FontWeight}"/>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ContentControl Content="{Binding SpotCardChips}"
+                                    ContentTemplate="{StaticResource CardChipListTemplate}"
+                                    HorizontalAlignment="Center"/>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>

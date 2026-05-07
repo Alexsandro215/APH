@@ -25,16 +25,16 @@ public sealed class PokerStarsParser
     private static readonly Regex SeatRx = new(@"^Seat\s+(\d+):\s+([^(\r\n]+)", RegexOptions.Compiled);
 
     // Dealt / Showdown (EN y ES)
-    private static readonly Regex DealtToRx = new(@"^Dealt to ([^\s]+) \[(.+?)\]", RegexOptions.Compiled);
+    private static readonly Regex DealtToRx = new(@"^Dealt to\s+(.+?)\s+\[(.+?)\]", RegexOptions.Compiled);
     private static readonly Regex ShowsEnRx = new(@": shows \[(.+?)\]", RegexOptions.Compiled);
     private static readonly Regex ShowsEsRx = new(@": muestra \[(.+?)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Winner (EN y ES)
-    private static readonly Regex CollectedEnRx = new(@"^([A-Za-z0-9_]+) collected", RegexOptions.Compiled);
-    private static readonly Regex CollectedEsRx = new(@"^([A-Za-z0-9_]+)\s+(recogió|recoge|se lleva el bote)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex CollectedEnRx = new(@"^([^:]+?)\s+collected", RegexOptions.Compiled);
+    private static readonly Regex CollectedEsRx = new(@"^([^:]+?)\s+(recogió|recoge|se lleva el bote)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Player actions (EN y tolerante a ES parcial)
-    private static readonly Regex PlayerActionRx = new(@"^([A-Za-z0-9_]+):\s+(checks|bets|calls|raises|folds|mucks|posts(?: small blind| big blind| the ante)?|is all-in|all-in|va all-in)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex PlayerActionRx = new(@"^([^:]+):\s+(checks|bets|calls|raises|folds|mucks|posts(?: small blind| big blind| the ante)?|is all-in|all-in|va all-in)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public PokerStarsParser(StatsAggregator agg) => _agg = agg;
 

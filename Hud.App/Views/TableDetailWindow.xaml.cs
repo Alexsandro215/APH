@@ -527,10 +527,10 @@ namespace Hud.App.Views
                         positions.TryGetValue(table.HeroName, out var heroPosition) ? $"Posicion {heroPosition}" : "Posicion ?",
                         netBb,
                         cumulative,
-                        ExtractStreetActions(hand, "PREFLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
-                        ExtractStreetActions(hand, "FLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
-                        ExtractStreetActions(hand, "TURN", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null),
-                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null)));
+                        ExtractStreetActions(hand, "PREFLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
+                        ExtractStreetActions(hand, "FLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
+                        ExtractStreetActions(hand, "TURN", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
+                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind)));
                 }
 
                 return result;
@@ -665,11 +665,12 @@ namespace Hud.App.Views
                 string street,
                 string heroName,
                 IReadOnlyDictionary<string, string> positions,
-                string? trackedVillainName)
+                string? trackedVillainName,
+                double bigBlind)
             {
                 var lines = GetStreetLines(hand, street)
                     .Where(IsActionOrBoardLine)
-                    .Select(line => CreateAction(line, heroName, positions, trackedVillainName))
+                    .Select(line => CreateAction(line, heroName, positions, trackedVillainName, bigBlind))
                     .ToList();
 
                 return lines.Count == 0
@@ -742,14 +743,15 @@ namespace Hud.App.Views
                 string line,
                 string heroName,
                 IReadOnlyDictionary<string, string> positions,
-                string? trackedVillainName)
+                string? trackedVillainName,
+                double bigBlind)
             {
                 var actor = ExtractActor(line);
                 var isHero = string.Equals(actor, heroName, StringComparison.Ordinal);
                 var isTrackedVillain = !string.IsNullOrWhiteSpace(trackedVillainName) &&
                     string.Equals(actor, trackedVillainName, StringComparison.Ordinal);
                 var isSystem = actor.Length == 0;
-                var clean = TranslateActionLine(line, actor, heroName, positions);
+                var clean = TranslateActionLine(line, actor, heroName, positions, bigBlind);
                 var isBoardHeader = line.StartsWith("*** FLOP ***", StringComparison.Ordinal) ||
                                     line.StartsWith("*** TURN ***", StringComparison.Ordinal) ||
                                     line.StartsWith("*** RIVER ***", StringComparison.Ordinal);
@@ -782,7 +784,8 @@ namespace Hud.App.Views
                 string line,
                 string actor,
                 string heroName,
-                IReadOnlyDictionary<string, string> positions)
+                IReadOnlyDictionary<string, string> positions,
+                double bigBlind)
             {
                 if (line.StartsWith("***", StringComparison.Ordinal))
                     return FormatStreetHeader(line);
@@ -800,14 +803,14 @@ namespace Hud.App.Views
 
                 var collected = Regex.Match(line, @"^(?<name>\S+)\s+collected\s+(?<amount>\$?[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
                 if (collected.Success)
-                    return $"{ActorLabel(collected.Groups["name"].Value, heroName, positions)} cobra {collected.Groups["amount"].Value}{TranslatePotText(collected.Groups["rest"].Value)}";
+                    return $"{ActorLabel(collected.Groups["name"].Value, heroName, positions)} cobra {FormatAmountAsBb(collected.Groups["amount"].Value, bigBlind)}{TranslatePotText(collected.Groups["rest"].Value)}";
 
                 var returned = Regex.Match(line, @"^Uncalled bet \(\$?(?<amount>[\d,.]+)\) returned to (?<name>.+)$", RegexOptions.IgnoreCase);
                 if (returned.Success)
-                    return $"{ActorLabel(returned.Groups["name"].Value.Trim(), heroName, positions)} recupera apuesta no pagada {returned.Groups["amount"].Value}";
+                    return $"{ActorLabel(returned.Groups["name"].Value.Trim(), heroName, positions)} recupera apuesta no pagada {FormatAmountAsBb(returned.Groups["amount"].Value, bigBlind)}";
 
                 if (!string.IsNullOrWhiteSpace(actor))
-                    return $"{ActorLabel(actor, heroName, positions)} {TranslatePlayerAction(line[(actor.Length + 1)..].Trim())}";
+                    return $"{ActorLabel(actor, heroName, positions)} {TranslatePlayerAction(line[(actor.Length + 1)..].Trim(), bigBlind)}";
 
                 return line.Trim();
             }
@@ -837,12 +840,32 @@ namespace Hud.App.Views
                 return $"{street} [{cards}]";
             }
 
-            private static string TranslatePlayerAction(string action)
+            private static string TranslatePlayerAction(string action, double bigBlind)
             {
                 var normalized = action.Trim();
                 var raise = Regex.Match(normalized, @"raises\s+(?<from>\$?[\d,.]+)\s+to\s+(?<to>\$?[\d,.]+)", RegexOptions.IgnoreCase);
                 if (raise.Success)
-                    return $"sube {raise.Groups["from"].Value} hasta {raise.Groups["to"].Value}";
+                    return $"sube {FormatAmountAsBb(raise.Groups["from"].Value, bigBlind)} hasta {FormatAmountAsBb(raise.Groups["to"].Value, bigBlind)}";
+
+                var smallBlind = Regex.Match(normalized, @"^posts small blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                if (smallBlind.Success)
+                    return $"pone ciega chica {FormatAmountAsBb(smallBlind.Groups["amount"].Value, bigBlind)}";
+
+                var bigBlindPost = Regex.Match(normalized, @"^posts big blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                if (bigBlindPost.Success)
+                    return $"pone ciega grande {FormatAmountAsBb(bigBlindPost.Groups["amount"].Value, bigBlind)}";
+
+                var ante = Regex.Match(normalized, @"^posts the ante\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                if (ante.Success)
+                    return $"pone ante {FormatAmountAsBb(ante.Groups["amount"].Value, bigBlind)}";
+
+                var call = Regex.Match(normalized, @"^calls\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+                if (call.Success)
+                    return $"paga {FormatAmountAsBb(call.Groups["amount"].Value, bigBlind)}{TranslateAllInText(call.Groups["rest"].Value)}";
+
+                var bet = Regex.Match(normalized, @"^bets\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+                if (bet.Success)
+                    return $"apuesta {FormatAmountAsBb(bet.Groups["amount"].Value, bigBlind)}{TranslateAllInText(bet.Groups["rest"].Value)}";
 
                 return Regex.Replace(normalized, @"^posts small blind", "pone ciega chica", RegexOptions.IgnoreCase)
                     .Replace("posts big blind", "pone ciega grande", StringComparison.OrdinalIgnoreCase)
@@ -854,6 +877,22 @@ namespace Hud.App.Views
                     .Replace("and is all-in", "y va all-in", StringComparison.OrdinalIgnoreCase)
                     .Replace("is all-in", "va all-in", StringComparison.OrdinalIgnoreCase)
                     .Replace("mucks", "descarta", StringComparison.OrdinalIgnoreCase);
+            }
+
+            private static string TranslateAllInText(string text) =>
+                text.Replace("and is all-in", " y va all-in", StringComparison.OrdinalIgnoreCase)
+                    .Replace("is all-in", " va all-in", StringComparison.OrdinalIgnoreCase);
+
+            private static string FormatAmountAsBb(string raw, double bigBlind)
+            {
+                if (bigBlind <= 0 || !TryParseAmount(raw, out var amount))
+                    return raw.Trim();
+
+                var bb = amount / bigBlind;
+                var formatted = Math.Abs(bb - Math.Round(bb)) < 0.05
+                    ? Math.Round(bb).ToString("0", CultureInfo.InvariantCulture)
+                    : bb.ToString("0.#", CultureInfo.InvariantCulture);
+                return $"{formatted} bb";
             }
 
             private static string TranslateShowdownText(string text) =>
@@ -950,7 +989,7 @@ namespace Hud.App.Views
         {
             public string HandNumberLabel => $"Mano {Index}";
             public string CardsLabel => Cards;
-            public IReadOnlyList<TextSegmentViewModel> CardSegments => BuildTextSegments(Cards, new SolidColorBrush(Color.FromRgb(143, 211, 244)), false);
+            public IReadOnlyList<CardChipViewModel> CardChips => CardChipViewModel.FromCards(Cards);
             public string NetBbLabel => $"{(NetBb >= 0 ? "+" : "")}{NetBb:F0} bb";
             public string CumulativeBbLabel => $"{(CumulativeBb >= 0 ? "+" : "")}{CumulativeBb:F0} bb total";
             public string ChartTooltip => $"{HandNumberLabel}\n{CardsLabel}\n{NetBbLabel}\n{CumulativeBbLabel}";
@@ -1008,7 +1047,7 @@ namespace Hud.App.Views
                         ? new SolidColorBrush(Color.FromRgb(16, 28, 41))
                         : new SolidColorBrush(Color.FromRgb(17, 24, 32));
 
-                Segments = BuildTextSegments(text, baseForeground, isBoardHeader);
+                VisualParts = BuildActionVisualParts(text, baseForeground, isBoardHeader);
             }
 
             public string Text { get; }
@@ -1017,54 +1056,58 @@ namespace Hud.App.Views
             public bool IsBoardHeader { get; }
             public bool IsTrackedVillain { get; }
             public Brush Background { get; }
-            public IReadOnlyList<TextSegmentViewModel> Segments { get; }
+            public IReadOnlyList<ActionVisualPartViewModel> VisualParts { get; }
         }
 
-        private sealed record TextSegmentViewModel(string Text, Brush Foreground, FontWeight FontWeight);
-
-        private static IReadOnlyList<TextSegmentViewModel> BuildTextSegments(string text, Brush baseForeground, bool boardHeader)
+        private sealed record ActionVisualPartViewModel(
+            string Text,
+            Brush Foreground,
+            FontWeight FontWeight,
+            IReadOnlyList<CardChipViewModel> CardChips)
         {
-            var segments = new List<TextSegmentViewModel>();
+            public bool IsCards => CardChips.Count > 0;
+            public bool IsText => !IsCards;
+        }
+
+        private static IReadOnlyList<ActionVisualPartViewModel> BuildActionVisualParts(string text, Brush baseForeground, bool boardHeader)
+        {
+            var segments = new List<ActionVisualPartViewModel>();
             var buffer = "";
+            var textBrush = boardHeader ? new SolidColorBrush(Color.FromRgb(143, 211, 244)) : baseForeground;
 
             void Flush()
             {
                 if (buffer.Length == 0)
                     return;
 
-                segments.Add(new TextSegmentViewModel(
+                segments.Add(new ActionVisualPartViewModel(
                     buffer,
-                    boardHeader ? new SolidColorBrush(Color.FromRgb(143, 211, 244)) : baseForeground,
-                    FontWeights.SemiBold));
+                    textBrush,
+                    FontWeights.SemiBold,
+                    Array.Empty<CardChipViewModel>()));
                 buffer = "";
             }
 
-            foreach (var ch in text)
+            foreach (Match token in Regex.Matches(text, @"\S+|\s+"))
             {
-                var suitBrush = SuitBrush(ch);
-                if (suitBrush is null)
+                var value = token.Value;
+                if (!CardChipViewModel.LooksLikeCardToken(value))
                 {
-                    buffer += ch;
+                    buffer += value;
                     continue;
                 }
 
                 Flush();
-                segments.Add(new TextSegmentViewModel(ch.ToString(), suitBrush, FontWeights.Bold));
+                segments.Add(new ActionVisualPartViewModel(
+                    "",
+                    textBrush,
+                    FontWeights.Bold,
+                    CardChipViewModel.FromCards(value)));
             }
 
             Flush();
             return segments;
         }
-
-        private static Brush? SuitBrush(char ch) =>
-            ch switch
-            {
-                '\u2665' => new SolidColorBrush(Color.FromRgb(226, 78, 91)),
-                '\u2666' => new SolidColorBrush(Color.FromRgb(26, 161, 209)),
-                '\u2663' => new SolidColorBrush(Color.FromRgb(33, 192, 122)),
-                '\u2660' => new SolidColorBrush(Color.FromRgb(170, 178, 188)),
-                _ => null
-            };
 
         private sealed record ChartHitPoint(TableHandViewModel Hand, double X, double Y);
     }

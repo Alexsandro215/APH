@@ -9,10 +9,8 @@ namespace Hud.App.Views
         {
             InitializeComponent();
 
-            // aplica escala inicial según el checkbox (compacto por defecto)
-             ApplyScale(ChkCompact?.IsChecked == true);
-            ChkCompact.Checked += (_, __) => ApplyScale(true);
-            ChkCompact.Unchecked += (_, __) => ApplyScale(false);
+            // aplica escala inicial segun el checkbox (compacto por defecto)
+            ApplyScale(ChkCompact?.IsChecked == true);
             if (ChkCompact != null)
             {
                 ChkCompact.Checked += (_, __) => ApplyScale(true);
@@ -25,6 +23,17 @@ namespace Hud.App.Views
             // 0.80 en compacto, 1.00 en normal
             if (ScaleProxy != null)
                 ScaleProxy.Tag = compact ? 0.80 : 1.00;
+        }
+
+        private void BtnDictionary_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new RealTimeDictionaryWindow
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
         }
     }
 }

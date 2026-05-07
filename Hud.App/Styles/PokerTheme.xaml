@@ -80,6 +80,35 @@
   <FontFamily x:Key="Font.UI">Segoe UI</FontFamily>
   <FontFamily x:Key="Font.Symbol">Segoe UI Symbol</FontFamily>
 
+  <DataTemplate x:Key="CardChipListTemplate">
+    <ItemsControl ItemsSource="{Binding}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal"/>
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border Width="20"
+                  Height="24"
+                  Margin="1,0"
+                  CornerRadius="3"
+                  Background="{Binding Background}"
+                  BorderBrush="#506176"
+                  BorderThickness="1">
+            <TextBlock Text="{Binding Rank}"
+                       Foreground="{Binding Foreground}"
+                       FontSize="15"
+                       FontWeight="Black"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </DataTemplate>
+
   <!-- Base -->
   <Style TargetType="Window">
     <Setter Property="Background"

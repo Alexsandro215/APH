@@ -451,8 +451,7 @@ namespace Hud.App.Views
 
             var window = new TableDetailWindow(table, item.HandNumber)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
@@ -993,10 +992,8 @@ namespace Hud.App.Views
             public string CumulativeBbLabel => $"{CumulativeBb:+0.#;-0.#;0} bb";
             public string NetTrendIcon => NetBb >= 0 ? "\u25B2" : "\u25BC";
             public string CumulativeTrendIcon => CumulativeBb >= 0 ? "\u25B2" : "\u25BC";
-            public IReadOnlyList<TextSegmentViewModel> ExactCardSegments =>
-                BuildTextSegments(ExactCards, new SolidColorBrush(Color.FromRgb(143, 211, 244)));
-            public IReadOnlyList<TextSegmentViewModel> SpotSegments =>
-                BuildTextSegments(Spot, new SolidColorBrush(Color.FromRgb(143, 211, 244)));
+            public IReadOnlyList<CardChipViewModel> ExactCardChips => CardChipViewModel.FromCards(ExactCards);
+            public IReadOnlyList<CardChipViewModel> SpotCardChips => CardChipViewModel.FromCards(Spot);
             public Brush NetTrendBrush => NetBb >= 0
                 ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
                 : new SolidColorBrush(Color.FromRgb(226, 78, 91));
@@ -1004,48 +1001,5 @@ namespace Hud.App.Views
                 ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
                 : new SolidColorBrush(Color.FromRgb(226, 78, 91));
         }
-
-        private sealed record TextSegmentViewModel(string Text, Brush Foreground, FontWeight FontWeight);
-
-        private static IReadOnlyList<TextSegmentViewModel> BuildTextSegments(string text, Brush baseForeground)
-        {
-            var segments = new List<TextSegmentViewModel>();
-            var buffer = "";
-
-            void Flush()
-            {
-                if (buffer.Length == 0)
-                    return;
-
-                segments.Add(new TextSegmentViewModel(buffer, baseForeground, FontWeights.SemiBold));
-                buffer = "";
-            }
-
-            foreach (var ch in text)
-            {
-                var suitBrush = SuitBrush(ch);
-                if (suitBrush is null)
-                {
-                    buffer += ch;
-                    continue;
-                }
-
-                Flush();
-                segments.Add(new TextSegmentViewModel(ch.ToString(), suitBrush, FontWeights.Bold));
-            }
-
-            Flush();
-            return segments;
-        }
-
-        private static Brush? SuitBrush(char ch) =>
-            ch switch
-            {
-                '\u2665' => new SolidColorBrush(Color.FromRgb(226, 78, 91)),
-                '\u2666' => new SolidColorBrush(Color.FromRgb(26, 161, 209)),
-                '\u2663' => new SolidColorBrush(Color.FromRgb(33, 192, 122)),
-                '\u2660' => new SolidColorBrush(Color.FromRgb(170, 178, 188)),
-                _ => null
-            };
     }
 }

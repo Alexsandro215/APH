@@ -146,6 +146,7 @@ namespace Hud.App.Views
                 .ToList();
 
             _allVillains.AddRange(rows);
+            VillainHistoryStore.Replace(_allVillains, sourceTables);
         }
 
         private void ConfigureFilters()
@@ -205,8 +206,7 @@ namespace Hud.App.Views
 
             var window = new DataVillainDetailWindow(row, _tables)
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
