@@ -1,9 +1,9 @@
-<Window x:Class="Hud.App.Views.RealTimeWindow"
+﻿<Window x:Class="Hud.App.Views.RealTimeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Hud.App.Views"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        Title="APH &#x2014; Tiempo real (8)"
+        Title="{DynamicResource RT.Title}"
         Height="800" Width="680" WindowStartupLocation="CenterOwner"
         Background="{StaticResource Brush.Bg}">
 
@@ -29,29 +29,29 @@
                   Content="?"
                   FontSize="18"
                   FontWeight="Bold"
-                  Foreground="Black"
+                  Foreground="{DynamicResource Brush.SurfaceText}"
                   Click="BtnDictionary_Click"
-                  ToolTip="Abrir ayuda de Tiempo real"
+                  ToolTip="{DynamicResource RT.HelpTip}"
                   Margin="0,0,0,6"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <CheckBox x:Name="ChkCompact" Content="Modo compacto" IsChecked="True" VerticalAlignment="Center"/>
+            <CheckBox x:Name="ChkCompact" Content="{DynamicResource RT.Compact}" IsChecked="True" VerticalAlignment="Center"/>
             <TextBlock Text="   " Width="8"/>
-            <TextBlock Text="(reduce tamaños y escala para mostrar todo sin desplazamiento)"
+            <TextBlock Text="{DynamicResource RT.CompactDesc}"
                        Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center"/>
           </StackPanel>
 
           <DockPanel Margin="0,0,0,8">
-            <TextBlock Text="Tiempo real &#x2014; 8 mesas"
+            <TextBlock Text="{DynamicResource RT.Header}"
                        FontSize="22"
                        FontWeight="Bold"
                        VerticalAlignment="Center"/>
             <Button DockPanel.Dock="Right"
-                    Content="Detectar mesas"
+                    Content="{DynamicResource RT.Detect}"
                     Padding="12,6"
                     Click="BtnDetectTables_Click"/>
           </DockPanel>
           <TextBlock x:Name="DetectionStatusText"
-                     Text="Pulsa Detectar mesas para enlazar ventanas PokerStars con sus historiales. Tambien puedes usar + manualmente."
+                     Text="{DynamicResource RT.DetectHint}"
                      Foreground="{StaticResource Brush.TextDim}" Margin="0,0,0,16"/>
 
           <StackPanel>
@@ -71,3 +71,6 @@
     <Label x:Name="ScaleProxy" Visibility="Collapsed" Tag="{StaticResource GlobalScale}"/>
   </Grid>
 </Window>
+
+
+

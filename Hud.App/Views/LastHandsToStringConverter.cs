@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -18,7 +18,7 @@ namespace Hud.App.Views
             var nine = list.TakeLast(9)
                            .Select(t => (t ?? "--").PadRight(3).Substring(0, 3))
                            .ToList();
-            nine.Reverse(); // antigua← … →nueva
+            nine.Reverse(); // antiguaâ† â€¦ â†’nueva
 
             return string.Join(" ", nine);
         }
@@ -27,3 +27,4 @@ namespace Hud.App.Views
             => throw new NotSupportedException();
     }
 }
+

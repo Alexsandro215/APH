@@ -1,11 +1,11 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Hud.App.Services
 {
     public static class PokerAmountParser
     {
-        public const string BlindAmountPattern = @"(?:US)?[$€]?\s*\d+(?:[.,]\d{1,3})*(?:US)?[$€]?";
+        public const string BlindAmountPattern = @"(?:US|EUR)?[$€]?\s*\d+(?:[.,]\d{1,3})*(?:US|EUR)?[$€]?";
 
         public static bool TryParse(string raw, out double value)
         {
@@ -32,14 +32,14 @@ namespace Hud.App.Services
 
         public static bool HasCurrency(string raw) =>
             raw.Contains('$') ||
-            raw.Contains('€') ||
-            raw.Contains("â‚¬", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("€", StringComparison.Ordinal) ||
+            raw.Contains("EUR", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains("US", StringComparison.OrdinalIgnoreCase);
 
         private static string Clean(string raw) =>
             raw.Replace("$", "", StringComparison.Ordinal)
                 .Replace("€", "", StringComparison.Ordinal)
-                .Replace("â‚¬", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("US", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("\u00A0", "", StringComparison.Ordinal)
                 .Replace(" ", "", StringComparison.Ordinal)
@@ -84,3 +84,4 @@ namespace Hud.App.Services
         }
     }
 }
+

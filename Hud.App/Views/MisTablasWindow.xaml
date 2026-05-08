@@ -1,4 +1,4 @@
-<Window x:Class="Hud.App.Views.MisTablasWindow"
+﻿<Window x:Class="Hud.App.Views.MisTablasWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="APH - Mis Tablas"
@@ -458,7 +458,7 @@
             Padding="14"
             Margin="0,0,0,10">
       <StackPanel HorizontalAlignment="Center">
-        <TextBlock Text="MIS TABLAS"
+        <TextBlock Text="{DynamicResource Common.MyTablesHeader}"
                    FontSize="24"
                    FontWeight="Bold"
                    HorizontalAlignment="Center"/>
@@ -487,9 +487,9 @@
         <StackPanel DockPanel.Dock="Left"
                     VerticalAlignment="Center"
                     Margin="0,0,18,0">
-          <TextBlock Text="Color" Style="{StaticResource FilterLabel}"/>
+          <TextBlock Text="{DynamicResource Common.Color}" Style="{StaticResource FilterLabel}"/>
           <CheckBox x:Name="ProfitColorToggle"
-                    Content="Ganancia bb"
+                    Content="{DynamicResource Common.ProfitBb}"
                     Foreground="{StaticResource Brush.Text}"
                     VerticalAlignment="Center"
                     Checked="ProfitColorToggle_Changed"
@@ -498,27 +498,27 @@
 
         <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center">
           <StackPanel Margin="0,0,8,0">
-            <TextBlock Text="Posici&#x00F3;n" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Common.Position}" Style="{StaticResource FilterLabel}"/>
             <ComboBox x:Name="PositionFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"/>
           </StackPanel>
 
           <StackPanel Margin="0,0,8,0">
-            <TextBlock Text="Mesa" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Grid.Table}" Style="{StaticResource FilterLabel}"/>
             <ComboBox x:Name="FormatFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"/>
           </StackPanel>
 
           <StackPanel Margin="0,0,8,0">
-            <TextBlock Text="Tipo" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Common.Type}" Style="{StaticResource FilterLabel}"/>
             <ComboBox x:Name="MoneyTypeFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"/>
           </StackPanel>
 
           <StackPanel Margin="0,0,8,0">
-            <TextBlock Text="Desde" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Common.From}" Style="{StaticResource FilterLabel}"/>
             <DatePicker x:Name="FromDateFilter" Style="{StaticResource FilterDate}" SelectedDateChanged="Filter_Changed"/>
           </StackPanel>
 
           <StackPanel>
-            <TextBlock Text="Hasta" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Common.To}" Style="{StaticResource FilterLabel}"/>
             <DatePicker x:Name="ToDateFilter" Style="{StaticResource FilterDate}" SelectedDateChanged="Filter_Changed"/>
           </StackPanel>
         </WrapPanel>
@@ -554,7 +554,7 @@
         </Grid.ColumnDefinitions>
 
         <StackPanel>
-          <TextBlock x:Name="SelectedHandText" Text="Selecciona una celda" FontSize="18" FontWeight="Bold"/>
+          <TextBlock x:Name="SelectedHandText" Text="{DynamicResource Common.SelectCell}" FontSize="18" FontWeight="Bold"/>
           <TextBlock x:Name="SelectedStreetText" Text="PRE-FLOP" Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -601,15 +601,15 @@
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="ExactHandsTitle"
-                   Text="Manos exactas"
+                   Text="{DynamicResource Common.ExactHands}"
                    FontSize="16"
                    FontWeight="Bold"
                    Margin="0,0,0,8"/>
 
         <DockPanel Grid.Row="1" Margin="0,0,0,8">
           <WrapPanel DockPanel.Dock="Left">
-            <TextBlock Text="Acci&#x00F3;n:" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="0,0,8,6"/>
-            <Button x:Name="ActionAllChip" Content="Todas" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
+            <TextBlock Text="{DynamicResource Common.Action}" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="0,0,8,6"/>
+            <Button x:Name="ActionAllChip" Content="{DynamicResource Common.All}" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
             <Button x:Name="ActionFoldChip" Content="Fold" Tag="Fold" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
             <Button x:Name="ActionCheckChip" Content="Check" Tag="Check" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
             <Button x:Name="ActionCallChip" Content="Call" Tag="Call" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
@@ -621,10 +621,10 @@
           </WrapPanel>
 
           <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
-            <TextBlock Text="Resultado:" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="12,0,8,6"/>
-            <Button x:Name="ResultAllChip" Content="Todos" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
-            <Button x:Name="ResultWinChip" Content="Ganadas" Tag="WIN" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
-            <Button x:Name="ResultLossChip" Content="Perdidas" Tag="LOSS" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
+            <TextBlock Text="{DynamicResource Common.Result}" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="12,0,8,6"/>
+            <Button x:Name="ResultAllChip" Content="{DynamicResource Common.AllMale}" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
+            <Button x:Name="ResultWinChip" Content="{DynamicResource Common.Won}" Tag="WIN" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
+            <Button x:Name="ResultLossChip" Content="{DynamicResource Common.Lost}" Tag="LOSS" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
           </WrapPanel>
         </DockPanel>
 
@@ -655,10 +655,10 @@
             </Style>
           </DataGrid.Resources>
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Mesa" Binding="{Binding TableName}" Width="2.2*"/>
-            <DataGridTextColumn Header="Fecha/Hora" Binding="{Binding HandDateTimeLabel}" Width="1.2*"/>
-            <DataGridTextColumn Header="Mano mesa" Binding="{Binding HandNumber}" Width="0.8*"/>
-            <DataGridTemplateColumn Header="Mano exacta" Width="0.9*">
+            <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="2.2*"/>
+            <DataGridTextColumn Header="{DynamicResource Common.DateTime}" Binding="{Binding HandDateTimeLabel}" Width="1.2*"/>
+            <DataGridTextColumn Header="{DynamicResource Common.TableHand}" Binding="{Binding HandNumber}" Width="0.8*"/>
+            <DataGridTemplateColumn Header="{DynamicResource Common.ExactHand}" Width="0.9*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
                   <ContentControl Content="{Binding ExactCardChips}"
@@ -667,7 +667,7 @@
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
-            <DataGridTextColumn Header="Posici&#x00F3;n" Binding="{Binding Position}" Width="0.7*"/>
+            <DataGridTextColumn Header="{DynamicResource Common.Position}" Binding="{Binding Position}" Width="0.7*"/>
             <DataGridTemplateColumn Header="Spot" Width="1.35*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
@@ -677,8 +677,8 @@
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
-            <DataGridTextColumn Header="Acci&#x00F3;n" Binding="{Binding ActionLabel}" Width="1*"/>
-            <DataGridTemplateColumn Header="Resultado" Width="0.9*">
+            <DataGridTextColumn Header="{DynamicResource Common.Action}" Binding="{Binding ActionLabel}" Width="1*"/>
+            <DataGridTemplateColumn Header="{DynamicResource Common.Result}" Width="0.9*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
                   <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -695,3 +695,7 @@
   </Grid>
   </ScrollViewer>
 </Window>
+
+
+
+

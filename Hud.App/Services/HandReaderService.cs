@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,10 +23,10 @@ namespace Hud.App.Services
 
     /// <summary>
     /// Servicio que:
-    ///  - Lee histórico completo al inicio (si existe).
+    ///  - Lee histÃ³rico completo al inicio (si existe).
     ///  - Hace tail en tiempo real por lotes (OnLines -> FeedLines).
-    ///  - Publica jugadores solo de la última mano (CurrentTableOrder).
-    ///  - Detecta automáticamente el HÉROE a partir de "Dealt to ...".
+    ///  - Publica jugadores solo de la Ãºltima mano (CurrentTableOrder).
+    ///  - Detecta automÃ¡ticamente el HÃ‰ROE a partir de "Dealt to ...".
     /// </summary>
     public sealed class HandReaderService : IDisposable, INotifyPropertyChanged
     {
@@ -47,11 +47,11 @@ namespace Hud.App.Services
         private ParserAdapter _adapter;
         private FileTailReader? _tail;
 
-        /// <summary>Colección observable para la grilla del HUD.</summary>
+        /// <summary>ColecciÃ³n observable para la grilla del HUD.</summary>
         public ObservableCollection<PlayerStats> Players { get; }
 
         private string? _heroName;
-        /// <summary>Nombre del Héroe para resaltar en la UI.</summary>
+        /// <summary>Nombre del HÃ©roe para resaltar en la UI.</summary>
         public string? HeroName
         {
             get => _heroName;
@@ -87,16 +87,16 @@ namespace Hud.App.Services
 
                     var bbTxt = m.Groups["bb"].Value
                         .Replace("$", "")
-                        .Replace("€", "")
+                        .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
                         .Replace("US", "", StringComparison.OrdinalIgnoreCase)
                         .Replace("\u00A0", "")
                         .Replace(" ", "")
                         .Replace(",", ".");
                     if (double.TryParse(bbTxt, NumberStyles.Number, CultureInfo.InvariantCulture, out var bb))
                     {
-                        if (bb <= 0.10) return StakeProfile.Low;   // NL2–NL25 aprox
+                        if (bb <= 0.10) return StakeProfile.Low;   // NL2â€“NL25 aprox
                         if (bb >= 2.00) return StakeProfile.High; // NL500+
-                        return StakeProfile.Mid;                   // NL50–NL200
+                        return StakeProfile.Mid;                   // NL50â€“NL200
                     }
                 }
             }
@@ -125,14 +125,14 @@ namespace Hud.App.Services
     }
 
 
-                // 1) Histórico inicial (si existe) + autodetección del HÉROE
+                // 1) HistÃ³rico inicial (si existe) + autodetecciÃ³n del HÃ‰ROE
                 if (File.Exists(path))
                 {
                     try
                     {
                         IEnumerable<string> all = File.ReadLines(path);
 
-                        // Detecta héroe si aún no está
+                        // Detecta hÃ©roe si aÃºn no estÃ¡
                         if (string.IsNullOrWhiteSpace(HeroName))
                             DetectHeroFromLines(all);
 
@@ -174,11 +174,11 @@ namespace Hud.App.Services
 
         public void Dispose() => Stop();
 
-        // --------------- Alimentación manual (tests) ---------------
+        // --------------- AlimentaciÃ³n manual (tests) ---------------
 
         public void FeedLine(string line)
         {
-            // Detecta héroe si aún no está
+            // Detecta hÃ©roe si aÃºn no estÃ¡
             if (string.IsNullOrWhiteSpace(HeroName))
                 DetectHeroFromLines(new[] { line });
 
@@ -187,21 +187,21 @@ namespace Hud.App.Services
 
         private void OnTailLines(string[] lines)
         {
-            // Detecta héroe si aún no está
+            // Detecta hÃ©roe si aÃºn no estÃ¡
             if (string.IsNullOrWhiteSpace(HeroName))
                 DetectHeroFromLines(lines);
 
             _adapter.FeedLines(lines, PublishSnapshot);
         }
 
-        // --------------- Publicación a la UI ---------------
+        // --------------- PublicaciÃ³n a la UI ---------------
 
         private void PublishSnapshot()
         {
             var snapshot = _adapter.GetPlayersSnapshot();
             if (snapshot == null) return;
 
-            // Solo los de la última mano, en orden por asiento
+            // Solo los de la Ãºltima mano, en orden por asiento
             var byName = snapshot.ToDictionary(p => p.Name, StringComparer.Ordinal);
             var tableOrder = new List<PlayerStats>(6);
             foreach (var name in _agg.CurrentTableOrder)
@@ -218,7 +218,7 @@ namespace Hud.App.Services
             });
         }
 
-        // --------------- Detección de HÉROE ---------------
+        // --------------- DetecciÃ³n de HÃ‰ROE ---------------
 
         private void DetectHeroFromLines(IEnumerable<string> lines)
         {
@@ -390,3 +390,4 @@ namespace Hud.App.Services
     }
 
 }
+

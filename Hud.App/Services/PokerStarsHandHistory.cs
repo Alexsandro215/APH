@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Hud.App.Services
@@ -15,10 +15,10 @@ namespace Hud.App.Services
             new(@"^(?:Dealt to|Repartido a)\s+(?<hero>.+?)\s+\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex SeatRx =
-            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:º|°|o|ro|&ordm;))?)\s+(?<seat>\d+):\s+(?<name>[^(\r\n]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+(?<seat>\d+):\s+(?<name>[^(\r\n]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ButtonRx =
-            new(@"(?:Seat\s+#(?<seat>\d+)\s+is the button|El asiento\s+n\.?\s*(?:º|°|o|ro|&ordm;)?\s+(?<seat>\d+)\s+es el bot[oó]n)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:Seat\s+#(?<seat>\d+)\s+is the button|El asiento\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;)?\s+(?<seat>\d+)\s+es el bot[o\u00F3]n)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ActorRx =
             new(@"^(?<actor>.+?):+\s+(?<action>.+)$", RegexOptions.Compiled);
@@ -27,10 +27,10 @@ namespace Hud.App.Services
             new(@"^(?<name>.+?):+\s+(?:shows|muestra)\s+\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex SummaryShownRx =
-            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:º|°|o|ro|&ordm;))?)\s+\d+:\s+(?<name>[^\s:]+).*\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+\d+:\s+(?<name>[^\s:]+).*\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex CollectedRx =
-            new(@"^(?<name>.+?):?\s+(?:(?:collected|recoge|cobra|cobró|cobro|recaudó|recaudo|se llev[oó]|se lleva el bote)\s+\$?(?<amount>[\d,.]+)|recaud[oó]\s+\(\$?(?<amount2>[\d,.]+)\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?<name>.+?):?\s+(?:(?:collected|recoge|cobra|cobr[o\u00F3]|recaud[o\u00F3]|se llev[o\u00F3]|se lleva el bote)\s+\$?(?<amount>[\d,.]+)|recaud[o\u00F3]\s+\(\$?(?<amount2>[\d,.]+)\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ReturnedRx =
             new(@"^(?:(?:Uncalled bet|Apuesta no pagada|La apuesta no igualada)\s+\(\$?(?<amount>[\d,.]+)\)\s+(?:returned to|devuelta a|se ha devuelto a)\s+(?<name>.+)|(?<amount2>[\d,.]+)\s+devuelt[ao]\s+a\s+(?<name2>.+))$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -39,7 +39,7 @@ namespace Hud.App.Services
             new(@"(?:raises|sube)\s+\$?[\d,.]+\s+(?:to|a|hasta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ActionAmountRx =
-            new(@":+\s+(?:posts (?:small blind|big blind|the ante)|pone ciega peque(?:ñ|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@":+\s+(?:posts (?:small blind|big blind|the ante)|pone ciega peque(?:\u00F1|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static IEnumerable<IReadOnlyList<string>> SplitHands(IEnumerable<string> lines)
         {
@@ -296,3 +296,4 @@ namespace Hud.App.Services
             };
     }
 }
+

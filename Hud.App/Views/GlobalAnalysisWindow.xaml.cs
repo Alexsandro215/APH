@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -34,32 +34,59 @@ namespace Hud.App.Views
 
         private void ConfigureFilters()
         {
-            DateFilter.ItemsSource = new[] { "Todas", "Ultimos 7 dias", "Ultimos 30 dias", "Mes actual" };
-            ResultFilter.ItemsSource = new[] { "Todas", "Ganadoras", "Perdedoras", "+100bb o mas", "-100bb o peor" };
-            HandsFilter.ItemsSource = new[] { "Todas", "10+", "25+", "50+", "100+" };
-            MoneyTypeFilter.ItemsSource = new[] { "Todas", "Cash", "Fichas" };
-            SortFilter.ItemsSource = new[]
+            ConfigureOptionCombo(DateFilter, new[]
             {
-                "Mas recientes",
-                "Mayor ganancia bb",
-                "Mayor perdida bb",
-                "Mayor ganancia fichas/dinero",
-                "Mayor perdida fichas/dinero"
-            };
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Key("LAST_7", "Filter.Last7"),
+                LocalizedOption.Key("LAST_30", "Filter.Last30"),
+                LocalizedOption.Key("CURRENT_MONTH", "Filter.CurrentMonth")
+            });
+            ConfigureOptionCombo(ResultFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Key("WINNING", "Filter.Winning"),
+                LocalizedOption.Key("LOSING", "Filter.Losing"),
+                LocalizedOption.Key("WIN_100", "Filter.Win100"),
+                LocalizedOption.Key("LOSS_100", "Filter.Loss100")
+            });
+            ConfigureOptionCombo(HandsFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Raw("10+"),
+                LocalizedOption.Raw("25+"),
+                LocalizedOption.Raw("50+"),
+                LocalizedOption.Raw("100+")
+            });
+            ConfigureOptionCombo(MoneyTypeFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Raw("Cash"),
+                LocalizedOption.Key("CHIPS", "Common.Chips")
+            });
+            ConfigureOptionCombo(SortFilter, new[]
+            {
+                LocalizedOption.Key("RECENT", "Filter.MostRecent"),
+                LocalizedOption.Key("BB_WIN", "Filter.BbWin"),
+                LocalizedOption.Key("BB_LOSS", "Filter.BbLoss"),
+                LocalizedOption.Key("AMOUNT_WIN", "Filter.AmountWin"),
+                LocalizedOption.Key("AMOUNT_LOSS", "Filter.AmountLoss")
+            });
 
-            BlindFilter.ItemsSource = new[] { "Todas" }
+            ConfigureOptionCombo(BlindFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
                 .Concat(_allTables.Select(ExtractBlindLabel)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
 
-            FormatFilter.ItemsSource = new[] { "Todas" }
+            ConfigureOptionCombo(FormatFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
                 .Concat(_allTables.Select(table => table.GameFormat)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
 
             DateFilter.SelectedIndex = 0;
             BlindFilter.SelectedIndex = 0;
@@ -115,7 +142,7 @@ namespace Hud.App.Views
             foreach (var table in query)
                 Tables.Add(table);
 
-            SummaryText.Text = $"{_summary} | Mesas: {Tables.Count}/{_allTables.Count}";
+            SummaryText.Text = $"{_summary} | {Hud.App.Services.LocalizationManager.Text("Grid.Table")}: {Tables.Count}/{_allTables.Count}";
         }
 
         private static IEnumerable<MainWindow.TableSessionStats> ApplyDateFilter(
@@ -126,9 +153,9 @@ namespace Hud.App.Views
 
             return filter switch
             {
-                "Ultimos 7 dias" => query.Where(table => table.LastPlayedAt >= today.AddDays(-7)),
-                "Ultimos 30 dias" => query.Where(table => table.LastPlayedAt >= today.AddDays(-30)),
-                "Mes actual" => query.Where(table =>
+                "LAST_7" => query.Where(table => table.LastPlayedAt >= today.AddDays(-7)),
+                "LAST_30" => query.Where(table => table.LastPlayedAt >= today.AddDays(-30)),
+                "CURRENT_MONTH" => query.Where(table =>
                     table.LastPlayedAt.Year == today.Year && table.LastPlayedAt.Month == today.Month),
                 _ => query
             };
@@ -138,7 +165,7 @@ namespace Hud.App.Views
             IEnumerable<MainWindow.TableSessionStats> query,
             string filter)
         {
-            return filter == "Todas"
+            return filter == "ALL"
                 ? query
                 : query.Where(table => string.Equals(ExtractBlindLabel(table), filter, StringComparison.OrdinalIgnoreCase));
         }
@@ -147,7 +174,7 @@ namespace Hud.App.Views
             IEnumerable<MainWindow.TableSessionStats> query,
             string filter)
         {
-            return filter == "Todas"
+            return filter == "ALL"
                 ? query
                 : query.Where(table => string.Equals(table.GameFormat, filter, StringComparison.OrdinalIgnoreCase));
         }
@@ -158,10 +185,10 @@ namespace Hud.App.Views
         {
             return filter switch
             {
-                "Ganadoras" => query.Where(table => table.NetBb > 0),
-                "Perdedoras" => query.Where(table => table.NetBb < 0),
-                "+100bb o mas" => query.Where(table => table.NetBb >= 100),
-                "-100bb o peor" => query.Where(table => table.NetBb <= -100),
+                "WINNING" => query.Where(table => table.NetBb > 0),
+                "LOSING" => query.Where(table => table.NetBb < 0),
+                "WIN_100" => query.Where(table => table.NetBb >= 100),
+                "LOSS_100" => query.Where(table => table.NetBb <= -100),
                 _ => query
             };
         }
@@ -170,7 +197,7 @@ namespace Hud.App.Views
             IEnumerable<MainWindow.TableSessionStats> query,
             string filter)
         {
-            if (filter == "Todas")
+            if (filter == "ALL")
                 return query;
 
             return int.TryParse(filter.TrimEnd('+'), out var minimum)
@@ -185,7 +212,7 @@ namespace Hud.App.Views
             return filter switch
             {
                 "Cash" => query.Where(table => table.IsCash),
-                "Fichas" => query.Where(table => !table.IsCash),
+                "CHIPS" => query.Where(table => !table.IsCash),
                 _ => query
             };
         }
@@ -196,21 +223,28 @@ namespace Hud.App.Views
         {
             return filter switch
             {
-                "Mayor ganancia bb" => query.OrderByDescending(table => table.NetBb)
+                "BB_WIN" => query.OrderByDescending(table => table.NetBb)
                     .ThenByDescending(table => table.LastPlayedAt),
-                "Mayor perdida bb" => query.OrderBy(table => table.NetBb)
+                "BB_LOSS" => query.OrderBy(table => table.NetBb)
                     .ThenByDescending(table => table.LastPlayedAt),
-                "Mayor ganancia fichas/dinero" => query.OrderByDescending(table => table.NetAmount)
+                "AMOUNT_WIN" => query.OrderByDescending(table => table.NetAmount)
                     .ThenByDescending(table => table.LastPlayedAt),
-                "Mayor perdida fichas/dinero" => query.OrderBy(table => table.NetAmount)
+                "AMOUNT_LOSS" => query.OrderBy(table => table.NetAmount)
                     .ThenByDescending(table => table.LastPlayedAt),
                 _ => query.OrderByDescending(table => table.LastPlayedAt)
                     .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
             };
         }
 
+        private static void ConfigureOptionCombo(ComboBox comboBox, IEnumerable<LocalizedOption> options)
+        {
+            comboBox.DisplayMemberPath = nameof(LocalizedOption.Label);
+            comboBox.SelectedValuePath = nameof(LocalizedOption.Value);
+            comboBox.ItemsSource = options.ToList();
+        }
+
         private static string SelectedText(ComboBox comboBox) =>
-            comboBox.SelectedItem?.ToString() ?? "Todas";
+            comboBox.SelectedValue?.ToString() ?? "ALL";
 
         private static string ExtractBlindLabel(MainWindow.TableSessionStats table)
         {
@@ -223,3 +257,4 @@ namespace Hud.App.Views
         }
     }
 }
+

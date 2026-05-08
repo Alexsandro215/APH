@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -9,7 +9,7 @@ using Hud.App.Services; // StakeProfile
 namespace Hud.App.Views
 {
     /// <summary>
-    /// IMultiValueConverter para colorear métricas del HUD según:
+    /// IMultiValueConverter para colorear mÃ©tricas del HUD segÃºn:
     ///  [0] valor (double)
     ///  [1] hands (int)
     ///  [2] stake (StakeProfile)
@@ -25,7 +25,7 @@ namespace Hud.App.Views
     {
         private const int MinHands = 30;
 
-        // Claves que se consideran "invertidas" (un valor más alto NO es mejor)
+        // Claves que se consideran "invertidas" (un valor mÃ¡s alto NO es mejor)
         private static readonly string[] InvertedKeys = { "FVCBF", "WSD" };
 
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -103,7 +103,7 @@ namespace Hud.App.Views
         /// <summary>
         /// thresholds: array ASCENDENTE de 7 cortes (crea 8 bandas).
         /// Ej: [t1, t2, t3, t4, t5, t6, t7]
-        /// band = número de cortes que "statValue" supera.
+        /// band = nÃºmero de cortes que "statValue" supera.
         /// </summary>
         private static int ComputeBand(double statValue, double[] thresholds)
         {
@@ -139,7 +139,7 @@ namespace Hud.App.Views
         }
 
         /// <summary>
-        /// Devuelve 7 cortes (double[7]) por métrica y stake.
+        /// Devuelve 7 cortes (double[7]) por mÃ©trica y stake.
         /// NOTA: porcentajes expresados en 0-100 (no 0-1). AF es ratio.
         /// </summary>
         private static double[] GetThresholds(string key, StakeProfile stake)
@@ -236,3 +236,4 @@ namespace Hud.App.Views
         }
     }
 }
+

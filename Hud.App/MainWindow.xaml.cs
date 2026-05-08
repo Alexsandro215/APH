@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -29,7 +29,7 @@ namespace Hud.App
         private static readonly Regex MaxTableRx =
             new(@"(?<max>\d+)-max", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex SeatRx =
-            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:º|°|o|ro|&ordm;))?)\s+(?<seat>\d+):", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+(?<seat>\d+):", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex HandStartRx =
             new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex DealtToRx =
@@ -65,14 +65,26 @@ namespace Hud.App
         {
             InitializeComponent();
             DataContext = this;
-            Title = "APH - Analyzer Poker Hands";
+            Title = LocalizationManager.Text("App.Title");
+            Loaded += MainWindow_Loaded;
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= MainWindow_Loaded;
+            var settings = AppSettingsService.Load();
+            if (!string.IsNullOrWhiteSpace(settings.PokerStarsHandHistoryFolder) &&
+                Directory.Exists(settings.PokerStarsHandHistoryFolder))
+            {
+                await AnalyzeAndLoadFolderAsync(settings.PokerStarsHandHistoryFolder, "Carpeta predefinida cargada desde configuracion.");
+            }
         }
 
         private void BtnAll_Click(object sender, RoutedEventArgs e)
         {
             if (RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar el analisis global.";
+                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderGlobal");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -84,14 +96,14 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Analisis por mesas abierto.";
+            InfoText.Text = LocalizationManager.Text("Common.StatusGlobalOpen");
         }
 
         private void BtnOne_Click(object sender, RoutedEventArgs e)
         {
             if (RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar Mis Tablas.";
+                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderTables");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -103,14 +115,14 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Mis Tablas abierto.";
+            InfoText.Text = LocalizationManager.Text("Common.StatusTablesOpen");
         }
 
         private void BtnBestWorst_Click(object sender, RoutedEventArgs e)
         {
             if (RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar Data Villans.";
+                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderVillains");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -122,14 +134,14 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Data Villans abierto.";
+            InfoText.Text = LocalizationManager.Text("Common.StatusVillainsOpen");
         }
 
         private void BtnLeakFinder_Click(object sender, RoutedEventArgs e)
         {
             if (RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar Detector de leaks.";
+                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderLeaks");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -141,7 +153,7 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Detector de leaks abierto.";
+            InfoText.Text = LocalizationManager.Text("Common.StatusLeaksOpen");
         }
 
         private void BtnHeroProfile_Click(object sender, RoutedEventArgs e)
@@ -149,7 +161,7 @@ namespace Hud.App
             var hero = DashboardPlayers.FirstOrDefault();
             if (hero is null || RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar el perfil del heroe.";
+                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderHero");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -161,7 +173,7 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = $"Perfil de {hero.Name} abierto.";
+            InfoText.Text = string.Format(LocalizationManager.Text("Common.StatusHeroOpen"), hero.Name);
         }
 
         private void BtnRT_Click(object sender, RoutedEventArgs e)
@@ -176,7 +188,7 @@ namespace Hud.App
                 };
 
                 rtWindow.Show();
-                InfoText.Text = "Analizador RT abierto (8 mesas).";
+                InfoText.Text = LocalizationManager.Text("Common.StatusRtOpen");
             }
             else
             {
@@ -191,14 +203,48 @@ namespace Hud.App
         {
             var dlg = new OpenFolderDialog
             {
-                Title = "Selecciona la carpeta con historiales de manos"
+                Title = LocalizationManager.Text("Common.SelectHandFolderTitle")
             };
+
+            var settings = AppSettingsService.Load();
+            if (!string.IsNullOrWhiteSpace(settings.PokerStarsHandHistoryFolder) &&
+                Directory.Exists(settings.PokerStarsHandHistoryFolder))
+            {
+                dlg.InitialDirectory = settings.PokerStarsHandHistoryFolder;
+            }
 
             if (dlg.ShowDialog(this) != true)
                 return;
 
             var folder = dlg.FolderName;
-            DashboardInfoText.Text = $"Analizando carpeta: {folder}";
+            settings.PokerStarsHandHistoryFolder = folder;
+            AppSettingsService.Save(settings);
+
+            await AnalyzeAndLoadFolderAsync(folder, "Dashboard global actualizado.");
+        }
+
+        private async void BtnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new SettingsWindow
+            {
+                Owner = this,
+                ShowInTaskbar = false
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                Title = LocalizationManager.Text("App.Title");
+                var folder = window.SavedSettings.PokerStarsHandHistoryFolder;
+                if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
+                    await AnalyzeAndLoadFolderAsync(folder, "Configuracion guardada y carpeta cargada.");
+                else
+                    InfoText.Text = LocalizationManager.Text("Common.SettingsSaved");
+            }
+        }
+
+        private async Task AnalyzeAndLoadFolderAsync(string folder, string successMessage)
+        {
+            DashboardInfoText.Text = string.Format(LocalizationManager.Text("Common.AnalyzingFolder"), folder);
             DashboardPlayers.Clear();
             RecentTables.Clear();
 
@@ -216,14 +262,14 @@ namespace Hud.App
 
                 DashboardInfoText.Text =
                     result.Hero is null
-                        ? $"Carpeta: {folder} | Archivos: {result.FileCount} | Sin manos detectadas"
-                        : $"Carpeta: {folder} | Archivos: {result.FileCount} | Heroe: {result.Hero.Name} | Manos: {result.Hero.HandsReceived} | Stake: {result.Stake}";
-                InfoText.Text = "Dashboard global actualizado.";
+                        ? $"{LocalizationManager.Text("Common.Folder")}: {folder} | {LocalizationManager.Text("Common.Files")}: {result.FileCount} | {LocalizationManager.Text("Common.NoHandsDetected")}"
+                        : $"{LocalizationManager.Text("Common.Folder")}: {folder} | {LocalizationManager.Text("Common.Files")}: {result.FileCount} | {LocalizationManager.Text("Common.Hero")}: {result.Hero.Name} | {LocalizationManager.Text("Common.Hands")}: {result.Hero.HandsReceived} | Stake: {result.Stake}";
+                InfoText.Text = successMessage;
             }
             catch (Exception ex)
             {
-                DashboardInfoText.Text = "No se pudo analizar la carpeta.";
-                MessageBox.Show(ex.Message, "Error al analizar", MessageBoxButton.OK, MessageBoxImage.Error);
+                DashboardInfoText.Text = LocalizationManager.Text("Common.FolderAnalysisFailed");
+                MessageBox.Show(ex.Message, LocalizationManager.Text("Common.AnalyzeErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -435,7 +481,7 @@ namespace Hud.App
             if (raw.Contains("Hold'em", StringComparison.OrdinalIgnoreCase))
             {
                 if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin límite", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase) ||
                     raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return "NLH";
                 if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return "PLH";
                 if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return "LH";
@@ -451,7 +497,7 @@ namespace Hud.App
 
                 if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return $"PLO{suffix}";
                 if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin límite", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase) ||
                     raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return $"NLO{suffix}";
                 if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return $"LO{suffix}";
                 return $"O{suffix}";
@@ -502,7 +548,7 @@ namespace Hud.App
                 return true;
 
             raw = raw.Replace("$", "")
-                .Replace("€", "")
+                .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("US", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("\u00A0", "")
                 .Replace(" ", "")
@@ -515,7 +561,7 @@ namespace Hud.App
 
         private static bool IsCashBlind(string raw) =>
             raw.Contains('$') ||
-            raw.Contains('€') ||
+            raw.Contains("€", StringComparison.Ordinal) ||
             raw.Contains("US", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains('.') ||
             raw.Contains(',');
@@ -564,7 +610,9 @@ namespace Hud.App
         {
             public bool IsWin => NetBb >= 100;
             public bool IsProfitable => NetBb >= 0;
-            public string TrendIcon => IsWin ? "▲" : "▼";
+            public string TrendIcon => IsWin ? "\u25B2" : "\u25BC";
         }
     }
 }
+
+

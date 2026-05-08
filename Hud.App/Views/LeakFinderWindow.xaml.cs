@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -113,7 +113,7 @@ namespace Hud.App.Views
                 WorstReviewActionLabel = BuildWorstLabel(ReviewHands, hand => hand.Action);
                 WorstReviewPotLabel = BuildWorstLabel(ReviewHands, hand => hand.PotType);
                 ReviewCountLabel = $"{ReviewHands.Count} de {hands.Count} manos";
-                ReviewSummary = $"Resumen de las {ReviewHands.Count} peores manos detectadas. Pulsa Ver todo para abrir el listado tipo tracker.";
+                ReviewSummary = string.Format(Hud.App.Services.LocalizationManager.Text("Common.ReviewSummary"), ReviewHands.Count);
             }
 
             public string Summary { get; }
@@ -302,7 +302,7 @@ namespace Hud.App.Views
                 {
                     var button = Regex.Match(
                         line,
-                        @"(?:Seat|Asiento)\s+#?(?<seat>\d+)\s+(?:is the button|es el bot[oó]n)",
+                        @"(?:Seat|Asiento)\s+#?(?<seat>\d+)\s+(?:is the button|es el bot[o\u00F3]n)",
                         RegexOptions.IgnoreCase);
                     if (button.Success)
                         int.TryParse(button.Groups["seat"].Value, out buttonSeat);
@@ -865,3 +865,4 @@ namespace Hud.App.Views
             };
     }
 }
+

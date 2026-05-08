@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -138,24 +138,31 @@ namespace Hud.App.Views
 
         private void PopulateFilterOptions()
         {
-            PositionFilter.ItemsSource = new[] { "Todas" }
+            ConfigureOptionCombo(PositionFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
                 .Concat(_allExamples.Select(example => example.Position)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(PositionSort)
-                    .ThenBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .ThenBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
             PositionFilter.SelectedIndex = 0;
 
-            FormatFilter.ItemsSource = new[] { "Todos" }
+            ConfigureOptionCombo(FormatFilter, new[] { LocalizedOption.Key("ALL", "Common.AllMale") }
                 .Concat(_allExamples.Select(example => example.GameFormat)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
             FormatFilter.SelectedIndex = 0;
 
-            MoneyTypeFilter.ItemsSource = new[] { "Todos", "Cash", "Fichas" };
+            ConfigureOptionCombo(MoneyTypeFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.AllMale"),
+                LocalizedOption.Raw("Cash"),
+                LocalizedOption.Key("CHIPS", "Common.Chips")
+            });
             MoneyTypeFilter.SelectedIndex = 0;
         }
 
@@ -188,17 +195,24 @@ namespace Hud.App.Views
                 (format is null || string.Equals(example.GameFormat, format, StringComparison.OrdinalIgnoreCase)) &&
                 (moneyType is null ||
                     (moneyType == "Cash" && example.IsCash) ||
-                    (moneyType == "Fichas" && !example.IsCash)) &&
+                    (moneyType == "CHIPS" && !example.IsCash)) &&
                 (from is null || example.PlayedAt >= from.Value) &&
                 (to is null || example.PlayedAt <= to.Value));
         }
 
         private static string? SelectedFilter(ComboBox comboBox)
         {
-            var value = comboBox.SelectedItem as string;
-            return string.IsNullOrWhiteSpace(value) || value is "Todas" or "Todos"
+            var value = comboBox.SelectedValue as string;
+            return string.IsNullOrWhiteSpace(value) || value == "ALL"
                 ? null
                 : value;
+        }
+
+        private static void ConfigureOptionCombo(ComboBox comboBox, IEnumerable<LocalizedOption> options)
+        {
+            comboBox.DisplayMemberPath = nameof(LocalizedOption.Label);
+            comboBox.SelectedValuePath = nameof(LocalizedOption.Value);
+            comboBox.ItemsSource = options.ToList();
         }
 
         private static int PositionSort(string position) =>
@@ -220,7 +234,7 @@ namespace Hud.App.Views
         {
             SelectedStreetText.Text = StreetLabel(_street);
             ActionSummaryList.ItemsSource = null;
-            SelectedHandText.Text = "Selecciona una celda";
+            SelectedHandText.Text = Hud.App.Services.LocalizationManager.Text("Common.SelectCell");
             ExactHandsPanel.Visibility = Visibility.Collapsed;
             ExactHandsGrid.ItemsSource = null;
             _selectedCell = null;
@@ -365,7 +379,7 @@ namespace Hud.App.Views
                 return;
             }
 
-            ExactHandsTitle.Text = $"{stats.HandCode} | {StreetLabel(stats.Street)} | Manos exactas";
+            ExactHandsTitle.Text = $"{stats.HandCode} | {StreetLabel(stats.Street)} | {Hud.App.Services.LocalizationManager.Text("Common.ExactHands")}";
             ApplyExactHandsFilter();
             ExactHandsPanel.Visibility = Visibility.Visible;
         }
@@ -662,7 +676,7 @@ namespace Hud.App.Views
 
             var clean = raw.Replace("$", "", StringComparison.Ordinal)
                 .Replace("US", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("€", "", StringComparison.Ordinal)
+                .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
                 .Trim();
 
             if (clean.Contains(',') && clean.Contains('.'))
@@ -894,3 +908,4 @@ namespace Hud.App.Views
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -158,35 +158,74 @@ namespace Hud.App.Views
 
         private void ConfigureFilters()
         {
-            DateFilter.ItemsSource = new[] { "Todas", "Ultimos 7 dias", "Ultimos 30 dias", "Mes actual" };
-            MoneyTypeFilter.ItemsSource = new[] { "Todas", "Cash", "Fichas" };
-            HandsFilter.ItemsSource = new[] { "Todas", "10+", "30+", "50+", "100+", "200+", "500+", "1000+", "5000+", "10000+" };
-            ResultFilter.ItemsSource = new[] { "Todos", "Les gano", "Me ganan", "Parejos" };
-            SessionBbFilter.ItemsSource = new[] { "Todas", "+50bb o mas", "+10 a +50", "-10 a -50", "-50bb o peor" };
-            TotalBbFilter.ItemsSource = new[] { "Todas", "+50bb o mas", "+10 a +50", "-10 a -50", "-50bb o peor" };
-            SortFilter.ItemsSource = new[]
+            ConfigureOptionCombo(DateFilter, new[]
             {
-                "Mas recientes",
-                "Mas manos vs heroe",
-                "Mayor ganancia vs mi",
-                "Mayor perdida vs mi",
-                "VPIP alto",
-                "3Bet alto"
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Key("LAST_7", "Filter.Last7"),
+                LocalizedOption.Key("LAST_30", "Filter.Last30"),
+                LocalizedOption.Key("CURRENT_MONTH", "Filter.CurrentMonth")
+            });
+            ConfigureOptionCombo(MoneyTypeFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Raw("Cash"),
+                LocalizedOption.Key("CHIPS", "Common.Chips")
+            });
+            ConfigureOptionCombo(HandsFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Raw("10+"),
+                LocalizedOption.Raw("30+"),
+                LocalizedOption.Raw("50+"),
+                LocalizedOption.Raw("100+"),
+                LocalizedOption.Raw("200+"),
+                LocalizedOption.Raw("500+"),
+                LocalizedOption.Raw("1000+"),
+                LocalizedOption.Raw("5000+"),
+                LocalizedOption.Raw("10000+")
+            });
+            ConfigureOptionCombo(ResultFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.AllMale"),
+                LocalizedOption.Key("I_WIN", "Filter.IWin"),
+                LocalizedOption.Key("THEY_WIN", "Filter.TheyWin"),
+                LocalizedOption.Key("EVEN", "Filter.Even")
+            });
+            var bbOptions = new[]
+            {
+                LocalizedOption.Key("ALL", "Common.All"),
+                LocalizedOption.Key("PLUS_50", "Filter.Plus50"),
+                LocalizedOption.Key("PLUS_10_50", "Filter.Plus10To50"),
+                LocalizedOption.Key("MINUS_10_50", "Filter.Minus10To50"),
+                LocalizedOption.Key("MINUS_50", "Filter.Minus50")
             };
+            ConfigureOptionCombo(SessionBbFilter, bbOptions);
+            ConfigureOptionCombo(TotalBbFilter, bbOptions);
+            ConfigureOptionCombo(SortFilter, new[]
+            {
+                LocalizedOption.Key("RECENT", "Filter.MostRecent"),
+                LocalizedOption.Key("MOST_VS_HERO", "Filter.MostVsHero"),
+                LocalizedOption.Key("BEST_VS_ME", "Filter.BestVsMe"),
+                LocalizedOption.Key("WORST_VS_ME", "Filter.WorstVsMe"),
+                LocalizedOption.Key("VPIP_HIGH", "Filter.HighVpip"),
+                LocalizedOption.Key("THREEBET_HIGH", "Filter.High3Bet")
+            });
 
-            FormatFilter.ItemsSource = new[] { "Todas" }
+            ConfigureOptionCombo(FormatFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
                 .Concat(_allVillains.Select(row => row.GameFormat)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
 
-            ProfileFilter.ItemsSource = new[] { "Todos" }
+            ConfigureOptionCombo(ProfileFilter, new[] { LocalizedOption.Key("ALL", "Common.AllMale") }
                 .Concat(_allVillains.Select(row => row.Profile)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .Select(LocalizedOption.Raw))
+                .ToList());
 
             DateFilter.SelectedIndex = 0;
             FormatFilter.SelectedIndex = 0;
@@ -247,13 +286,13 @@ namespace Hud.App.Views
             foreach (var row in query)
                 Villains.Add(row);
 
-            SummaryText.Text = $"{SummaryBaseText()} | Villanos: {Villains.Count}/{_allVillains.Count}";
+            SummaryText.Text = $"{SummaryBaseText()} | {Hud.App.Services.LocalizationManager.Text("Common.TotalVillains")}: {Villains.Count}/{_allVillains.Count}";
         }
 
         private string SummaryBaseText()
         {
             var text = SummaryText.Text ?? "";
-            var marker = " | Villanos:";
+            var marker = $" | {Hud.App.Services.LocalizationManager.Text("Common.TotalVillains")}:";
             var index = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
             return index >= 0 ? text[..index] : text;
         }
@@ -264,15 +303,15 @@ namespace Hud.App.Views
 
             return filter switch
             {
-                "Ultimos 7 dias" => query.Where(row => row.LastSeen >= today.AddDays(-7)),
-                "Ultimos 30 dias" => query.Where(row => row.LastSeen >= today.AddDays(-30)),
-                "Mes actual" => query.Where(row => row.LastSeen.Year == today.Year && row.LastSeen.Month == today.Month),
+                "LAST_7" => query.Where(row => row.LastSeen >= today.AddDays(-7)),
+                "LAST_30" => query.Where(row => row.LastSeen >= today.AddDays(-30)),
+                "CURRENT_MONTH" => query.Where(row => row.LastSeen.Year == today.Year && row.LastSeen.Month == today.Month),
                 _ => query
             };
         }
 
         private static IEnumerable<DataVillainRow> ApplyFormatFilter(IEnumerable<DataVillainRow> query, string filter) =>
-            filter == "Todas"
+            filter == "ALL"
                 ? query
                 : query.Where(row => string.Equals(row.GameFormat, filter, StringComparison.OrdinalIgnoreCase));
 
@@ -281,14 +320,14 @@ namespace Hud.App.Views
             return filter switch
             {
                 "Cash" => query.Where(row => row.IsCash),
-                "Fichas" => query.Where(row => !row.IsCash),
+                "CHIPS" => query.Where(row => !row.IsCash),
                 _ => query
             };
         }
 
         private static IEnumerable<DataVillainRow> ApplyHandsFilter(IEnumerable<DataVillainRow> query, string filter)
         {
-            if (filter == "Todas")
+            if (filter == "ALL")
                 return query;
 
             return int.TryParse(filter.TrimEnd('+'), out var minimum)
@@ -300,9 +339,9 @@ namespace Hud.App.Views
         {
             return filter switch
             {
-                "Les gano" => query.Where(row => row.SessionNetBb > 0),
-                "Me ganan" => query.Where(row => row.SessionNetBb < 0),
-                "Parejos" => query.Where(row => Math.Abs(row.SessionNetBb) < 5),
+                "I_WIN" => query.Where(row => row.SessionNetBb > 0),
+                "THEY_WIN" => query.Where(row => row.SessionNetBb < 0),
+                "EVEN" => query.Where(row => Math.Abs(row.SessionNetBb) < 5),
                 _ => query
             };
         }
@@ -314,16 +353,16 @@ namespace Hud.App.Views
         {
             return filter switch
             {
-                "+50bb o mas" => query.Where(row => valueSelector(row) >= 50),
-                "+10 a +50" => query.Where(row => valueSelector(row) >= 10 && valueSelector(row) < 50),
-                "-10 a -50" => query.Where(row => valueSelector(row) <= -10 && valueSelector(row) > -50),
-                "-50bb o peor" => query.Where(row => valueSelector(row) <= -50),
+                "PLUS_50" => query.Where(row => valueSelector(row) >= 50),
+                "PLUS_10_50" => query.Where(row => valueSelector(row) >= 10 && valueSelector(row) < 50),
+                "MINUS_10_50" => query.Where(row => valueSelector(row) <= -10 && valueSelector(row) > -50),
+                "MINUS_50" => query.Where(row => valueSelector(row) <= -50),
                 _ => query
             };
         }
 
         private static IEnumerable<DataVillainRow> ApplyProfileFilter(IEnumerable<DataVillainRow> query, string filter) =>
-            filter == "Todos"
+            filter == "ALL"
                 ? query
                 : query.Where(row => string.Equals(row.Profile, filter, StringComparison.OrdinalIgnoreCase));
 
@@ -331,15 +370,15 @@ namespace Hud.App.Views
         {
             return filter switch
             {
-                "Mas manos vs heroe" => query.OrderByDescending(row => row.TotalHandsVsHero)
+                "MOST_VS_HERO" => query.OrderByDescending(row => row.TotalHandsVsHero)
                     .ThenByDescending(row => row.LastSeen),
-                "Mayor ganancia vs mi" => query.OrderByDescending(row => row.TotalNetBb)
+                "BEST_VS_ME" => query.OrderByDescending(row => row.TotalNetBb)
                     .ThenByDescending(row => row.LastSeen),
-                "Mayor perdida vs mi" => query.OrderBy(row => row.TotalNetBb)
+                "WORST_VS_ME" => query.OrderBy(row => row.TotalNetBb)
                     .ThenByDescending(row => row.LastSeen),
-                "VPIP alto" => query.OrderByDescending(row => row.VPIPPct)
+                "VPIP_HIGH" => query.OrderByDescending(row => row.VPIPPct)
                     .ThenByDescending(row => row.TotalHands),
-                "3Bet alto" => query.OrderByDescending(row => row.ThreeBetPct)
+                "THREEBET_HIGH" => query.OrderByDescending(row => row.ThreeBetPct)
                     .ThenByDescending(row => row.TotalHands),
                 _ => query.OrderByDescending(row => row.LastSeen)
                     .ThenByDescending(row => row.SessionHandsVsHero)
@@ -347,8 +386,15 @@ namespace Hud.App.Views
             };
         }
 
+        private static void ConfigureOptionCombo(ComboBox comboBox, IEnumerable<LocalizedOption> options)
+        {
+            comboBox.DisplayMemberPath = nameof(LocalizedOption.Label);
+            comboBox.SelectedValuePath = nameof(LocalizedOption.Value);
+            comboBox.ItemsSource = options.ToList();
+        }
+
         private static string SelectedText(ComboBox comboBox) =>
-            comboBox.SelectedItem?.ToString() ?? "Todas";
+            comboBox.SelectedValue?.ToString() ?? "ALL";
 
         private static DataVillainRow? BuildRow(
             VillainAccumulator acc,
@@ -543,8 +589,8 @@ namespace Hud.App.Views
                 ? "-"
                 : LastSeen.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
             public string Profile => ClassifyProfile(TotalHands, VPIPPct, PFRPct, ThreeBetPct, AF);
-            public string SessionTrendIcon => SessionNetBb >= 0 ? "▲" : "▼";
-            public string TotalTrendIcon => TotalNetBb >= 0 ? "▲" : "▼";
+            public string SessionTrendIcon => SessionNetBb >= 0 ? "\u25B2" : "\u25BC";
+            public string TotalTrendIcon => TotalNetBb >= 0 ? "\u25B2" : "\u25BC";
             public Brush SessionTrendBrush => SessionNetBb >= 0
                 ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
                 : new SolidColorBrush(Color.FromRgb(226, 78, 91));
@@ -568,3 +614,4 @@ namespace Hud.App.Views
         }
     }
 }
+

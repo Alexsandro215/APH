@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -43,7 +43,7 @@ namespace Hud.App.Views
                 yield return Neutral("Pasivo", "Perfil base: agresion postflop baja.");
                 yield return Neutral("Regular", "Perfil base sin extremos claros.");
 
-                yield return Neutral("Rival frecuente", "Tiene muchas manos contra el heroe; la lectura pesa mas que una muestra pequeña.");
+                yield return Neutral("Rival frecuente", "Tiene muchas manos contra el heroe; la lectura pesa mas que una muestra pequena.");
                 yield return Positive("Pierde vs Hero", "El resultado compartido favorece al heroe.");
                 yield return Negative("Gana vs Hero", "El resultado compartido favorece al villano.");
                 yield return Negative("Juega muchas manos", "VPIP alto: entra voluntariamente en demasiadas manos.");
@@ -140,3 +140,4 @@ namespace Hud.App.Views
         private sealed record MetricMeaningRow(string Name, string Description);
     }
 }
+

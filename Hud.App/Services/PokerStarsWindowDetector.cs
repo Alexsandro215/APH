@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -194,3 +194,4 @@ namespace Hud.App.Services
         private static extern int GetWindowTextLength(IntPtr hWnd);
     }
 }
+

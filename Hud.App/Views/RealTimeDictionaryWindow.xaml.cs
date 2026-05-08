@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -33,8 +33,8 @@ namespace Hud.App.Views
             private static IEnumerable<HelpRow> BuildControls()
             {
                 yield return new HelpRow("+", "Selecciona el archivo .txt de la mesa para empezar a leerla.");
-                yield return new HelpRow("▶", "Inicia o reanuda el seguimiento del archivo seleccionado.");
-                yield return new HelpRow("■", "Detiene el seguimiento de esa mesa sin cerrar la ventana.");
+                yield return new HelpRow("Play", "Inicia o reanuda el seguimiento del archivo seleccionado.");
+                yield return new HelpRow("Stop", "Detiene el seguimiento de esa mesa sin cerrar la ventana.");
                 yield return new HelpRow("Heroe", "Nombre usado para comparar tu fila contra los rivales de la mesa.");
                 yield return new HelpRow("Lineas", "Cantidad de lineas leidas del historial de la mesa.");
                 yield return new HelpRow("Modo compacto", "Reduce la escala para ver las 8 mesas sin desplazamiento.");
@@ -86,3 +86,4 @@ namespace Hud.App.Views
         private sealed record ColorLegendRow(Brush Brush, string Label, string Description);
     }
 }
+

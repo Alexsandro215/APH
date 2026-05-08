@@ -1,7 +1,7 @@
-<Window x:Class="Hud.App.Views.HeroProfileDictionaryWindow"
+﻿<Window x:Class="Hud.App.Views.HeroProfileDictionaryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH - Diccionario del perfil"
+        Title="{DynamicResource Common.ProfileDictionaryTitle}"
         Height="760"
         Width="1180"
         MinHeight="640"
@@ -32,8 +32,8 @@
 
     <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,12">
       <StackPanel>
-        <TextBlock Text="DICCIONARIO DEL PERFIL" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
-        <TextBlock Text="Tags, lectura rapida y colores usados en las metricas globales." Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0" TextAlignment="Center"/>
+        <TextBlock Text="{DynamicResource Common.ProfileDictionaryHeader}" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
+        <TextBlock Text="{DynamicResource Common.DictionarySubtitleProfile}" Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0" TextAlignment="Center"/>
       </StackPanel>
     </Border>
 
@@ -80,7 +80,7 @@
 
         <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,12">
           <StackPanel>
-            <TextBlock Text="COLORES DE METRICAS" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+            <TextBlock Text="{DynamicResource Common.MetricColors}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
             <ItemsControl ItemsSource="{Binding ColorRows}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -103,7 +103,7 @@
 
         <Border Grid.Row="1" Style="{StaticResource PanelBorder}">
           <DockPanel>
-            <TextBlock Text="QUE MIDE CADA STAT" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,10"/>
+            <TextBlock Text="{DynamicResource Common.StatMeaning}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,10"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding MetricRows}">
                 <ItemsControl.ItemTemplate>
@@ -124,3 +124,7 @@
     </Grid>
   </Grid>
 </Window>
+
+
+
+

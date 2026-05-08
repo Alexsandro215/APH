@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -35,7 +35,7 @@ namespace Hud.App.Views
             var windows = PokerStarsWindowDetector.DetectOpenTables();
             if (windows.Count == 0)
             {
-                DetectionStatusText.Text = "No encontre ventanas activas de PokerStars con mesas Hold'em.";
+                DetectionStatusText.Text = LocalizationManager.Text("Common.RtNoWindows");
                 return;
             }
 
@@ -44,7 +44,7 @@ namespace Hud.App.Views
             {
                 var root = PokerStarsWindowDetector.GetDefaultHandHistoryRoot() ?? "(sin carpeta)";
                 var names = string.Join(", ", windows.Select(window => window.TableName).Take(4));
-                DetectionStatusText.Text = $"Detecte mesa(s): {names}. No encontre HH recientes coincidentes en {root}.";
+                DetectionStatusText.Text = string.Format(LocalizationManager.Text("Common.RtNoMatches"), names, root);
                 return;
             }
 
@@ -64,8 +64,8 @@ namespace Hud.App.Views
 
             var missing = windows.Count - matches.Count;
             DetectionStatusText.Text = missing > 0
-                ? $"RT iniciado en {matches.Count} mesa(s). {missing} ventana(s) no tuvieron HH reciente coincidente."
-                : $"RT iniciado en {matches.Count} mesa(s) detectada(s).";
+                ? string.Format(LocalizationManager.Text("Common.RtStartedPartial"), matches.Count, missing)
+                : string.Format(LocalizationManager.Text("Common.RtStartedComplete"), matches.Count);
         }
 
         private SlotTail[] GetSlots() =>
@@ -99,3 +99,6 @@ namespace Hud.App.Views
         }
     }
 }
+
+
+

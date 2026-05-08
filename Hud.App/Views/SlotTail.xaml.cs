@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -153,7 +153,7 @@ namespace Hud.App.Views
             _firstHandTime = null;
             _lastHandTime = null;
             UpdateTimeLabels();
-            Last.Text = "—";
+            Last.Text = "-";
             LastLines.ItemsSource = Array.Empty<string>();
 
             // Muestra solo el nombre de mesa (o filename si no se detecta)
@@ -161,7 +161,7 @@ namespace Hud.App.Views
 
             _service.Start(path);
 
-            // bucle pequeño solo para contador/últimas líneas en UI
+            // bucle pequeÃ±o solo para contador/Ãºltimas lÃ­neas en UI
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
 
@@ -229,7 +229,7 @@ namespace Hud.App.Views
         private void PushLast3(string line)
         {
             line = (line ?? "").Trim();
-            if (line.Length > 96) line = line[..95] + "…";
+            if (line.Length > 96) line = line[..95] + "...";
             if (_buffer.Count == 3) _buffer.Dequeue();
             _buffer.Enqueue(line);
         }
@@ -402,16 +402,16 @@ namespace Hud.App.Views
         }
 
         /// <summary>
-        /// Busca en el archivo la línea con "Table '...'" y devuelve el nombre entre comillas.
+        /// Busca en el archivo la lÃ­nea con "Table '...'" y devuelve el nombre entre comillas.
         /// </summary>
         /// 
-        public StakeProfile Stake { get; set; } = StakeProfile.Low; // setéalo al detectar BB de la mesa
+        public StakeProfile Stake { get; set; } = StakeProfile.Low; // setÃ©alo al detectar BB de la mesa
 
         private static string? ExtractTableNameFromFile(string path)
         {
             try
             {
-                // lee las primeras ~200 líneas buscando la mesa
+                // lee las primeras ~200 lÃ­neas buscando la mesa
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var rd = new StreamReader(fs);
                 for (int i = 0; i < 200 && !rd.EndOfStream; i++)
@@ -427,4 +427,5 @@ namespace Hud.App.Views
         }
     }
 }
+
 

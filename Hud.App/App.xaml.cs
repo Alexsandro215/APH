@@ -11,13 +11,12 @@ namespace Hud.App
         {
             base.OnStartup(e);
 
+            var settings = AppSettingsService.Load();
+            ThemePaletteManager.Apply(settings.Palette);
+            LocalizationManager.Apply(settings.Language);
+
             // Servicio compartido
             var hand = new HandReaderService();
-
-            // (opcional) arrancar último archivo
-            var lastPath = UserSettings.Load()?.LastPath;
-            if (!string.IsNullOrWhiteSpace(lastPath) && File.Exists(lastPath))
-                hand.Start(lastPath);
 
             // Dejarlo accesible globalmente
             this.Resources["HandReaderService"] = hand;
@@ -36,40 +35,6 @@ namespace Hud.App
             base.OnExit(e);
         }
 
- public sealed class UserSettings
-    {
-        public string? LastPath { get; set; }
-
-        private static string FilePath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                         "HudPoker", "user.settings");
-
-        public static UserSettings? Load()
-        {
-            try
-            {
-                var fp = FilePath;
-                if (!File.Exists(fp)) return new UserSettings();
-                var txt = File.ReadAllText(fp).Trim();
-                return new UserSettings { LastPath = string.IsNullOrWhiteSpace(txt) ? null : txt };
-            }
-            catch { return new UserSettings(); }
-        }
-
-        public void Save()
-        {
-            try
-            {
-                var dir = Path.GetDirectoryName(FilePath)!;
-                Directory.CreateDirectory(dir);
-                File.WriteAllText(FilePath, LastPath ?? "");
-            }
-            catch { /* ignore */ }
-        }
-    }
-
-
-
-
     }
 }
+

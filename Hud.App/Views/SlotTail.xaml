@@ -175,7 +175,7 @@
                   Grid.ColumnSpan="2"
                   VerticalAlignment="Center">
         <TextBlock x:Name="PathText"
-                   Text="(mesa)"
+                   Text="{DynamicResource Common.TablePlaceholder}"
                    Foreground="{StaticResource FgAccent}"
                    Margin="0,0,8,0"/>
         <Button x:Name="BtnPick"
@@ -359,7 +359,7 @@
           <DataGridTextColumn Header="Jugador"
                               Binding="{Binding Name}"
                               Width="150"/>
-          <DataGridTextColumn Header="#Manos"
+          <DataGridTextColumn Header="{DynamicResource Grid.Hands}"
                               Binding="{Binding HandsReceived}"
                               Width="64"/>
 
@@ -609,3 +609,6 @@
     </Grid>
   </Border>
 </UserControl>
+
+
+

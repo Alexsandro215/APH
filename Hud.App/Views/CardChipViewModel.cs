@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -74,3 +74,4 @@ namespace Hud.App.Views
             new SolidColorBrush(Color.FromRgb(r, g, b));
     }
 }
+

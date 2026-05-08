@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -454,7 +454,7 @@ namespace Hud.App.Views
             public string TableName => Table.TableName;
             public string GameFormat => Table.GameFormat;
             public string PlayedDate => Table.PlayedDate;
-            public string MoneyTypeLabel => Table.IsCash ? "Cash" : "Fichas";
+            public string MoneyTypeLabel => Table.IsCash ? "Cash" : Hud.App.Services.LocalizationManager.Text("Common.Chips");
             public int HandsReceived => Table.HandsReceived;
             public double NetBb => Table.NetBb;
             public string NetAmountLabel => Table.NetAmountLabel;
@@ -565,10 +565,10 @@ namespace Hud.App.Views
                 var rank = card[..^1];
                 return card[^1] switch
                 {
-                    'h' or 'H' => $"{rank}♥",
-                    'd' or 'D' => $"{rank}♦",
-                    'c' or 'C' => $"{rank}♣",
-                    's' or 'S' => $"{rank}♠",
+                    'h' or 'H' => $"{rank}h",
+                    'd' or 'D' => $"{rank}d",
+                    'c' or 'C' => $"{rank}c",
+                    's' or 'S' => $"{rank}s",
                     _ => card
                 };
             }
@@ -1015,3 +1015,4 @@ namespace Hud.App.Views
         private sealed record ChartHitPoint(TableHandViewModel Hand, double X, double Y);
     }
 }
+

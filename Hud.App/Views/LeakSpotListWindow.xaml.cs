@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -28,14 +28,27 @@ namespace Hud.App.Views
 
         private void InitializeFilters()
         {
-            PositionFilter.ItemsSource = new[] { "Todas" }
-                .Concat(_viewModel.AllHands.Select(hand => hand.Position).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct().OrderBy(value => value))
-                .ToList();
-            PotFilter.ItemsSource = new[] { "Todos" }
-                .Concat(_viewModel.AllHands.Select(hand => hand.PotType).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct().OrderBy(value => value))
-                .ToList();
-            ResultFilter.ItemsSource = new[] { "Todos", "Perdidas", "Ganancias" };
-            SortFilter.ItemsSource = new[] { "Peor primero", "Mejor primero", "Fecha reciente", "Fecha antigua", "Combo", "Bote" };
+            ConfigureOptionCombo(PositionFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
+                .Concat(_viewModel.AllHands.Select(hand => hand.Position).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct().OrderBy(value => value).Select(LocalizedOption.Raw))
+                .ToList());
+            ConfigureOptionCombo(PotFilter, new[] { LocalizedOption.Key("ALL", "Common.AllMale") }
+                .Concat(_viewModel.AllHands.Select(hand => hand.PotType).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct().OrderBy(value => value).Select(LocalizedOption.Raw))
+                .ToList());
+            ConfigureOptionCombo(ResultFilter, new[]
+            {
+                LocalizedOption.Key("ALL", "Common.AllMale"),
+                LocalizedOption.Key("LOSSES", "Common.Lost"),
+                LocalizedOption.Key("WINS", "Filter.Profits")
+            });
+            ConfigureOptionCombo(SortFilter, new[]
+            {
+                LocalizedOption.Key("WORST_FIRST", "Filter.WorstFirst"),
+                LocalizedOption.Key("BEST_FIRST", "Filter.BestFirst"),
+                LocalizedOption.Key("RECENT_DATE", "Filter.RecentDate"),
+                LocalizedOption.Key("OLD_DATE", "Filter.OldDate"),
+                LocalizedOption.Raw("Combo"),
+                LocalizedOption.Key("POT", "Common.Pot")
+            });
 
             PositionFilter.SelectedIndex = 0;
             PotFilter.SelectedIndex = 0;
@@ -71,7 +84,14 @@ namespace Hud.App.Views
         }
 
         private static string SelectedText(ComboBox comboBox) =>
-            comboBox.SelectedItem?.ToString() ?? "";
+            comboBox.SelectedValue?.ToString() ?? "";
+
+        private static void ConfigureOptionCombo(ComboBox comboBox, IEnumerable<LocalizedOption> options)
+        {
+            comboBox.DisplayMemberPath = nameof(LocalizedOption.Label);
+            comboBox.SelectedValuePath = nameof(LocalizedOption.Value);
+            comboBox.ItemsSource = options.ToList();
+        }
 
         private sealed class LeakSpotListViewModel : INotifyPropertyChanged
         {
@@ -83,7 +103,7 @@ namespace Hud.App.Views
                 Summary = summary;
                 _allHands = hands.ToList();
                 Hands = new ObservableCollection<LeakSpotRow>();
-                ApplyFilters("Todas", "Todos", "Todos", "Peor primero");
+                ApplyFilters("ALL", "ALL", "ALL", "WORST_FIRST");
             }
 
             public string Title { get; }
@@ -103,26 +123,26 @@ namespace Hud.App.Views
             {
                 IEnumerable<LeakSpotRow> query = _allHands;
 
-                if (!string.IsNullOrWhiteSpace(position) && position != "Todas")
+                if (!string.IsNullOrWhiteSpace(position) && position != "ALL")
                     query = query.Where(hand => string.Equals(hand.Position, position, StringComparison.OrdinalIgnoreCase));
 
-                if (!string.IsNullOrWhiteSpace(potType) && potType != "Todos")
+                if (!string.IsNullOrWhiteSpace(potType) && potType != "ALL")
                     query = query.Where(hand => string.Equals(hand.PotType, potType, StringComparison.OrdinalIgnoreCase));
 
                 query = result switch
                 {
-                    "Perdidas" => query.Where(hand => hand.NetBb < 0),
-                    "Ganancias" => query.Where(hand => hand.NetBb > 0),
+                    "LOSSES" => query.Where(hand => hand.NetBb < 0),
+                    "WINS" => query.Where(hand => hand.NetBb > 0),
                     _ => query
                 };
 
                 query = sort switch
                 {
-                    "Mejor primero" => query.OrderByDescending(hand => hand.NetBb).ThenByDescending(hand => hand.DateTime),
-                    "Fecha reciente" => query.OrderByDescending(hand => hand.DateTime).ThenBy(hand => hand.NetBb),
-                    "Fecha antigua" => query.OrderBy(hand => hand.DateTime).ThenBy(hand => hand.NetBb),
+                    "BEST_FIRST" => query.OrderByDescending(hand => hand.NetBb).ThenByDescending(hand => hand.DateTime),
+                    "RECENT_DATE" => query.OrderByDescending(hand => hand.DateTime).ThenBy(hand => hand.NetBb),
+                    "OLD_DATE" => query.OrderBy(hand => hand.DateTime).ThenBy(hand => hand.NetBb),
                     "Combo" => query.OrderBy(hand => hand.Combo, StringComparer.OrdinalIgnoreCase).ThenBy(hand => hand.NetBb),
-                    "Bote" => query.OrderBy(hand => hand.PotType, StringComparer.OrdinalIgnoreCase).ThenBy(hand => hand.NetBb),
+                    "POT" => query.OrderBy(hand => hand.PotType, StringComparer.OrdinalIgnoreCase).ThenBy(hand => hand.NetBb),
                     _ => query.OrderBy(hand => hand.NetBb).ThenBy(hand => hand.DateTime).ThenBy(hand => hand.TableName, StringComparer.OrdinalIgnoreCase)
                 };
 
@@ -190,3 +210,4 @@ namespace Hud.App.Views
         public IReadOnlyList<CardChipViewModel> RiverCardChips => CardChipViewModel.FromCards(RiverCard);
     }
 }
+

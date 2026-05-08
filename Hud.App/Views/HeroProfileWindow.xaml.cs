@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -779,3 +779,4 @@ namespace Hud.App.Views
             new SolidColorBrush(Color.FromRgb(r, g, b));
     }
 }
+

@@ -1,13 +1,13 @@
-// Hud.App/Services/ColorPresets.cs
+﻿// Hud.App/Services/ColorPresets.cs
 using System;
 using System.Collections.Generic;
 
 namespace Hud.App.Services
 {
-    // Nota: StakeProfile está declarado en Hud.App/Services/StakeProfile.cs
+    // Nota: StakeProfile estÃ¡ declarado en Hud.App/Services/StakeProfile.cs
 
     /// <summary>
-    /// Rango semántico para colorear una métrica.
+    /// Rango semÃ¡ntico para colorear una mÃ©trica.
     /// </summary>
     public sealed record StatRange(
         double Min, double Low, double OptLow, double OptHigh, double High, double Max,
@@ -22,7 +22,7 @@ namespace Hud.App.Services
         public static readonly Dictionary<StakeProfile, Dictionary<string, StatRange>> Sets =
             new()
             {
-                // ----------------------------- LOW (NL2–NL25) -----------------------------
+                // ----------------------------- LOW (NL2â€“NL25) -----------------------------
                 [StakeProfile.Low] = new(StringComparer.OrdinalIgnoreCase)
                 {
                     // Preflop
@@ -30,7 +30,7 @@ namespace Hud.App.Services
                     ["PFR"]      = new(0, 10, 16, 23, 30, 70),
                     ["THREEBET"] = new(0,  3,  6,  9, 14, 40),
 
-                    // Agresión
+                    // AgresiÃ³n
                     ["AF"]       = new(0, 0.9, 1.5, 3.0, 5.0, 15),
                     ["AFQ"]      = new(0,   35, 45, 60, 75, 100),
 
@@ -46,7 +46,7 @@ namespace Hud.App.Services
                     ["WWSF"]     = new(0,   40, 46, 52, 58, 100)
                 },
 
-                // ----------------------------- MID (NL50–NL200) -----------------------------
+                // ----------------------------- MID (NL50â€“NL200) -----------------------------
                 [StakeProfile.Mid] = new(StringComparer.OrdinalIgnoreCase)
                 {
                     // Preflop
@@ -54,7 +54,7 @@ namespace Hud.App.Services
                     ["PFR"]      = new(0, 11, 17, 24, 28, 70),
                     ["THREEBET"] = new(0,  3,  6, 10, 15, 40),
 
-                    // Agresión
+                    // AgresiÃ³n
                     ["AF"]       = new(0, 1.0, 1.6, 3.2, 5.5, 15),
                     ["AFQ"]      = new(0,   38, 47, 62, 78, 100),
 
@@ -78,7 +78,7 @@ namespace Hud.App.Services
                     ["PFR"]      = new(0, 12, 18, 23, 26, 60),
                     ["THREEBET"] = new(0,  4,  6, 11, 14, 35),
 
-                    // Agresión
+                    // AgresiÃ³n
                     ["AF"]       = new(0, 1.1, 1.8, 3.3, 5.0, 12),
                     ["AFQ"]      = new(0,   40, 48, 64, 75, 100),
 
@@ -103,3 +103,4 @@ namespace Hud.App.Services
         }
     }
 }
+

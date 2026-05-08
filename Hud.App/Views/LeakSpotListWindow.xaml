@@ -1,4 +1,4 @@
-<Window x:Class="Hud.App.Views.LeakSpotListWindow"
+﻿<Window x:Class="Hud.App.Views.LeakSpotListWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="APH - Spots de leak"
@@ -116,7 +116,7 @@
               <ComboBox x:Name="ResultFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-              <TextBlock Text="Orden" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
+              <TextBlock Text="{DynamicResource Common.Sort}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
               <ComboBox x:Name="SortFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
             </StackPanel>
           </UniformGrid>
@@ -126,11 +126,11 @@
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Hands}" MouseDoubleClick="HandsGrid_MouseDoubleClick">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Date" Binding="{Binding DateStack}" Width="82"/>
+        <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding DateStack}" Width="82"/>
         <DataGridTextColumn Header="Eff.Stack" Binding="{Binding EffectiveStackLabel}" Width="78"/>
         <DataGridTextColumn Header="Spot" Binding="{Binding Spot}" Width="115"/>
         <DataGridTextColumn Header="Pos" Binding="{Binding Position}" Width="58"/>
-        <DataGridTemplateColumn Header="Hero" Width="74">
+        <DataGridTemplateColumn Header="{DynamicResource Common.Hero}" Width="74">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <ContentControl Content="{Binding HeroCards}" ContentTemplate="{StaticResource CardChipListTemplate}" HorizontalAlignment="Center"/>
@@ -164,10 +164,13 @@
         <DataGridTextColumn Header="R.Line" Binding="{Binding RiverLine}" Width="70"/>
         <DataGridTextColumn Header="Combo" Binding="{Binding MadeHand}" Width="100"/>
         <DataGridTextColumn Header="Draw" Binding="{Binding DrawLabel}" Width="90"/>
-        <DataGridTextColumn Header="Real" Binding="{Binding RealLabel}" Width="76"/>
-        <DataGridTemplateColumn Header="Δbb" CellTemplate="{StaticResource NetBbCellTemplate}" Width="72"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Result}" Binding="{Binding RealLabel}" Width="76"/>
+        <DataGridTemplateColumn Header="Î”bb" CellTemplate="{StaticResource NetBbCellTemplate}" Width="72"/>
         <DataGridTextColumn Header="Motivo" Binding="{Binding Reason}" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>
   </Grid>
 </Window>
+
+
+

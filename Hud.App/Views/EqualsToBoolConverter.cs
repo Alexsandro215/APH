@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Data;
 using System.Globalization;
 
@@ -35,3 +35,4 @@ namespace Hud.App.Views
             => throw new NotSupportedException();
     }
 }
+

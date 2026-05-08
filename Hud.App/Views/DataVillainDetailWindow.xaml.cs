@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -110,8 +110,8 @@ namespace Hud.App.Views
             SelectedRangeStreetText.Text = StreetLabel(cell.Street);
             SelectedRangeActionSummaryList.ItemsSource = cell.SummaryItems;
             ExactHandsTitle.Text = cell.Count == 0
-                ? $"{cell.HandCode} | {StreetLabel(cell.Street)} | Sin manos exactas"
-                : $"{cell.HandCode} | {StreetLabel(cell.Street)} | Manos exactas";
+                ? $"{cell.HandCode} | {StreetLabel(cell.Street)} | {Hud.App.Services.LocalizationManager.Text("Common.NoExactHands")}"
+                : $"{cell.HandCode} | {StreetLabel(cell.Street)} | {Hud.App.Services.LocalizationManager.Text("Common.ExactHands")}";
             ExactHandsGrid.ItemsSource = cell.ExactHands;
         }
 
@@ -180,7 +180,7 @@ namespace Hud.App.Views
                 RecentTable = string.IsNullOrWhiteSpace(villain.RecentTable) ? "-" : villain.RecentTable;
                 Profile = villain.Profile;
                 GameFormat = string.IsNullOrWhiteSpace(villain.GameFormat) ? "-" : villain.GameFormat;
-                MoneyType = villain.IsCash ? "Cash" : "Fichas";
+                MoneyType = villain.IsCash ? "Cash" : Hud.App.Services.LocalizationManager.Text("Common.Chips");
                 TotalHandsVsHero = villain.TotalHandsVsHero;
                 KnownHandsCount = knownHands.Select(hand => hand.HandIdentity).Distinct(StringComparer.Ordinal).Count();
                 TotalNetBbLabel = $"{villain.TotalNetBb:+0.#;-0.#;0} bb";
@@ -208,11 +208,11 @@ namespace Hud.App.Views
             public string TotalNetBbLabel { get; }
             public Brush TotalNetBrush { get; }
             public string SummaryTitle => ShowAllDataSummary ? "ALL DATA" : "RESUMEN DE MUESTRA";
-            public string SummaryHandsLabel => ShowAllDataSummary ? "Manos totales villano" : "Manos vs Heroe";
+            public string SummaryHandsLabel => ShowAllDataSummary ? Hud.App.Services.LocalizationManager.Text("Common.TotalVillainHands") : Hud.App.Services.LocalizationManager.Text("Common.HandsVsHero");
             public string SummaryHandsValue => ShowAllDataSummary
                 ? _villain.TotalHands.ToString(CultureInfo.InvariantCulture)
                 : TotalHandsVsHero.ToString(CultureInfo.InvariantCulture);
-            public string SummaryKnownLabel => ShowAllDataSummary ? "Manos vs Heroe" : "Cartas conocidas";
+            public string SummaryKnownLabel => ShowAllDataSummary ? Hud.App.Services.LocalizationManager.Text("Common.HandsVsHero") : Hud.App.Services.LocalizationManager.Text("Common.KnownCards");
             public string SummaryKnownValue => ShowAllDataSummary
                 ? TotalHandsVsHero.ToString(CultureInfo.InvariantCulture)
                 : KnownHandsCount.ToString(CultureInfo.InvariantCulture);
@@ -1306,3 +1306,4 @@ namespace Hud.App.Views
         }
     }
 }
+
