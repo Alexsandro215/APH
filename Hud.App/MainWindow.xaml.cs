@@ -20,28 +20,28 @@ namespace Hud.App
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private static readonly Regex BlindsRx =
-            new(@"\((?<sb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)\s*/\s*(?<bb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)(?:\s+[A-Z]{3})?\)",
+            new(@"\((?<sb>" + PokerAmountParser.BlindAmountPattern + @")\s*/\s*(?<bb>" + PokerAmountParser.BlindAmountPattern + @")(?:\s+[A-Z]{3})?\)",
                 RegexOptions.Compiled);
         private static readonly Regex TableRx =
-            new(@"Table\s+'(?<table>[^']+)'", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:Table\s+'(?<table>[^']+)'|Mesa\s+(?<table>.+?)\s+\d+-max)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex HeaderGameRx =
-            new(@"PokerStars Hand #\d+:\s+(?<game>.+?)\s+\(", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:PokerStars Hand #\d+|Mano #\d+ de PokerStars):\s+(?<game>.+?)\s+\(", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex MaxTableRx =
             new(@"(?<max>\d+)-max", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex SeatRx =
-            new(@"^Seat\s+(?<seat>\d+):", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:º|°|o|ro|&ordm;))?)\s+(?<seat>\d+):", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex HandStartRx =
-            new(@"^PokerStars Hand #", RegexOptions.Compiled);
+            new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex DealtToRx =
-            new(@"^Dealt to\s+(?<hero>.+?)\s+\[", RegexOptions.Compiled);
+            new(@"^(?:Dealt to|Repartido a)\s+(?<hero>.+?)\s+\[", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex CollectedRx =
-            new(@"^(?<name>[^:]+?)\s+collected\s+(?<amount>\$?[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.CollectedRx;
         private static readonly Regex ReturnedRx =
-            new(@"^Uncalled bet \(\$?(?<amount>[\d,.]+)\) returned to (?<name>.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ReturnedRx;
         private static readonly Regex RaiseToRx =
-            new(@"raises\s+\$?[\d,.]+\s+to\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.RaiseToRx;
         private static readonly Regex ActionAmountRx =
-            new(@":\s+(?:posts (?:small blind|big blind|the ante)|calls|bets)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ActionAmountRx;
         private static readonly Regex HeaderTimestampRx =
             new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
 
@@ -211,6 +211,8 @@ namespace Hud.App
                     DashboardPlayers.Add(result.Hero);
                 foreach (var table in result.Tables)
                     RecentTables.Add(table);
+
+                await Task.Run(() => VillainHistoryStore.RebuildFromTables(result.Tables));
 
                 DashboardInfoText.Text =
                     result.Hero is null
@@ -432,7 +434,9 @@ namespace Hud.App
 
             if (raw.Contains("Hold'em", StringComparison.OrdinalIgnoreCase))
             {
-                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase)) return "NLH";
+                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin límite", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return "NLH";
                 if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return "PLH";
                 if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return "LH";
                 return "H";
@@ -446,7 +450,9 @@ namespace Hud.App
                         : "";
 
                 if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return $"PLO{suffix}";
-                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase)) return $"NLO{suffix}";
+                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin límite", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return $"NLO{suffix}";
                 if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return $"LO{suffix}";
                 return $"O{suffix}";
             }
@@ -481,69 +487,20 @@ namespace Hud.App
             if (!hand.Any(line =>
             {
                 var dealt = DealtToRx.Match(line);
-                return dealt.Success && string.Equals(dealt.Groups["hero"].Value.Trim(), heroName, StringComparison.Ordinal);
+                return dealt.Success && PokerStarsHandHistory.SamePlayer(dealt.Groups["hero"].Value, heroName);
             }))
             {
                 return 0;
             }
 
-            var net = 0.0;
-            var committedThisStreet = 0.0;
-            var heroPrefix = heroName + ":";
-
-            foreach (var line in hand)
-            {
-                if (line.StartsWith("*** FLOP", StringComparison.Ordinal) ||
-                    line.StartsWith("*** TURN", StringComparison.Ordinal) ||
-                    line.StartsWith("*** RIVER", StringComparison.Ordinal) ||
-                    line.StartsWith("*** SHOW DOWN", StringComparison.Ordinal))
-                {
-                    committedThisStreet = 0;
-                }
-
-                var returned = ReturnedRx.Match(line);
-                if (returned.Success &&
-                    string.Equals(returned.Groups["name"].Value.Trim(), heroName, StringComparison.Ordinal) &&
-                    TryParseAmount(returned.Groups["amount"].Value, out var returnedAmount))
-                {
-                    net += returnedAmount;
-                    continue;
-                }
-
-                var collected = CollectedRx.Match(line);
-                if (collected.Success &&
-                    string.Equals(collected.Groups["name"].Value.Trim(), heroName, StringComparison.Ordinal) &&
-                    TryParseAmount(collected.Groups["amount"].Value, out var collectedAmount))
-                {
-                    net += collectedAmount;
-                    continue;
-                }
-
-                if (!line.StartsWith(heroPrefix, StringComparison.Ordinal))
-                    continue;
-
-                var raise = RaiseToRx.Match(line);
-                if (raise.Success && TryParseAmount(raise.Groups["amount"].Value, out var raiseTo))
-                {
-                    var delta = Math.Max(0, raiseTo - committedThisStreet);
-                    committedThisStreet += delta;
-                    net -= delta;
-                    continue;
-                }
-
-                var action = ActionAmountRx.Match(line);
-                if (action.Success && TryParseAmount(action.Groups["amount"].Value, out var amount))
-                {
-                    committedThisStreet += amount;
-                    net -= amount;
-                }
-            }
-
-            return net;
+            return PokerStarsHandHistory.EstimateNetForPlayer(hand, heroName);
         }
 
         private static bool TryParseAmount(string raw, out double value)
         {
+            if (PokerAmountParser.TryParse(raw, out value))
+                return true;
+
             raw = raw.Replace("$", "")
                 .Replace("€", "")
                 .Replace("US", "", StringComparison.OrdinalIgnoreCase)
@@ -554,9 +511,7 @@ namespace Hud.App
         }
 
         private static string FormatBlind(string raw) =>
-            TryParseAmount(raw, out var value)
-                ? $"{(IsCashBlind(raw) ? "$" : "")}{value.ToString("0.##", CultureInfo.InvariantCulture)}"
-                : raw.Trim();
+            PokerAmountParser.FormatBlind(raw);
 
         private static bool IsCashBlind(string raw) =>
             raw.Contains('$') ||

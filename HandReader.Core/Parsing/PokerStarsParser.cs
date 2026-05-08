@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,27 +14,27 @@ public sealed class PokerStarsParser
     private bool _insideHand = false;
 
     // Hand boundaries / streets
-    private static readonly Regex HandStartRx = new(@"^PokerStars Hand #", RegexOptions.Compiled);
+    private static readonly Regex HandStartRx = new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex FlopRx  = new(@"^\*\*\* FLOP \*\*\*", RegexOptions.Compiled);
     private static readonly Regex TurnRx  = new(@"^\*\*\* TURN \*\*\*", RegexOptions.Compiled);
     private static readonly Regex RiverRx = new(@"^\*\*\* RIVER \*\*\*", RegexOptions.Compiled);
-    private static readonly Regex SummaryRx = new(@"^\*\*\* SUMMARY \*\*\*", RegexOptions.Compiled);
-    private static readonly Regex HoleCardsHeaderRx = new(@"\*\*\* HOLE CARDS \*\*\*", RegexOptions.Compiled);
+    private static readonly Regex SummaryRx = new(@"^\*\*\* (?:SUMMARY|RESUMEN) \*\*\*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex HoleCardsHeaderRx = new(@"\*\*\* (?:HOLE CARDS|CARTAS PROPIAS) \*\*\*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Seats
-    private static readonly Regex SeatRx = new(@"^Seat\s+(\d+):\s+([^(\r\n]+)", RegexOptions.Compiled);
+    private static readonly Regex SeatRx = new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:º|°|o|ro|&ordm;))?)\s+(\d+):\s+([^(\r\n]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Dealt / Showdown (EN y ES)
-    private static readonly Regex DealtToRx = new(@"^Dealt to\s+(.+?)\s+\[(.+?)\]", RegexOptions.Compiled);
-    private static readonly Regex ShowsEnRx = new(@": shows \[(.+?)\]", RegexOptions.Compiled);
-    private static readonly Regex ShowsEsRx = new(@": muestra \[(.+?)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex DealtToRx = new(@"^(?:Dealt to|Repartido a)\s+(.+?)\s+\[(.+?)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex ShowsEnRx = new(@":+\s+shows \[(.+?)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex ShowsEsRx = new(@":+\s+muestra \[(.+?)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Winner (EN y ES)
     private static readonly Regex CollectedEnRx = new(@"^([^:]+?)\s+collected", RegexOptions.Compiled);
-    private static readonly Regex CollectedEsRx = new(@"^([^:]+?)\s+(recogió|recoge|se lleva el bote)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex CollectedEsRx = new(@"^(.+?):?\s+(?:recogió|recoge|cobra|cobró|cobro|recaudó|recaudo|se llevó|se llevo|se lleva el bote)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Player actions (EN y tolerante a ES parcial)
-    private static readonly Regex PlayerActionRx = new(@"^([^:]+):\s+(checks|bets|calls|raises|folds|mucks|posts(?: small blind| big blind| the ante)?|is all-in|all-in|va all-in)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex PlayerActionRx = new(@"^(.+?):+\s+(checks|bets|calls|raises|folds|mucks|posts(?: small blind| big blind| the ante)?|is all-in|all-in|va all-in|pasa|apuesta|iguala|paga|sube|no va|tira|pone ciega pequeña y grande|pone ciega pequeña|pone ciega grande|pone ante)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public PokerStarsParser(StatsAggregator agg) => _agg = agg;
 
@@ -74,7 +74,7 @@ public sealed class PokerStarsParser
         {
             var m = SeatRx.Match(l);
             if (m.Success)
-                seats.Add((int.Parse(m.Groups[1].Value), m.Groups[2].Value.Trim()));
+                seats.Add((int.Parse(m.Groups[1].Value), NormalizeName(m.Groups[2].Value)));
         }
         seats.Sort((a, b) => a.seat.CompareTo(b.seat));
         var orderedBySeat = seats.Select(s => s.name).ToList();
@@ -88,7 +88,7 @@ public sealed class PokerStarsParser
                 var ma = PlayerActionRx.Match(l);
                 if (ma.Success)
                 {
-                    var n = ma.Groups[1].Value;
+                    var n = NormalizeName(ma.Groups[1].Value);
                     if (!acted.Contains(n)) acted.Add(n);
                 }
             }
@@ -108,7 +108,7 @@ public sealed class PokerStarsParser
             var md = DealtToRx.Match(l);
             if (md.Success)
             {
-                hero = md.Groups[1].Value;
+                hero = NormalizeName(md.Groups[1].Value);
                 heroCards = md.Groups[2].Value;
                 known[hero] = NormalizeCards(heroCards);
                 break;
@@ -120,7 +120,7 @@ public sealed class PokerStarsParser
             var idx2 = l.IndexOf(": muestra [", StringComparison.OrdinalIgnoreCase);
             if (idx1 > 0 || idx2 > 0)
             {
-                var name = l[..(idx1 > 0 ? idx1 : idx2)].Trim();
+                var name = NormalizeName(l[..(idx1 > 0 ? idx1 : idx2)]);
                 var ms = idx1 > 0 ? ShowsEnRx.Match(l) : ShowsEsRx.Match(l);
                 if (ms.Success) known[name] = NormalizeCards(ms.Groups[1].Value);
             }
@@ -133,8 +133,8 @@ public sealed class PokerStarsParser
             var ma = PlayerActionRx.Match(l);
             if (!ma.Success) continue;
 
-            var name = ma.Groups[1].Value;
-            var action = ma.Groups[2].Value.ToLowerInvariant();
+            var name = NormalizeName(ma.Groups[1].Value);
+            var action = NormalizeAction(ma.Groups[2].Value);
             var token = action switch
             {
                 "checks" => "X",
@@ -157,9 +157,9 @@ public sealed class PokerStarsParser
         foreach (var kv in seqPerPlayer)
             _agg.SetActionSeq(kv.Key, string.Join("-", kv.Value));
 
-        // ---- ESTADÍSTICAS PRE-FLOP + set VPIP por mano ----
+        // ---- ESTADÃSTICAS PRE-FLOP + set VPIP por mano ----
         AnalyzePreflop(out var vpipThisHand, out var pfrPlayer, out var raisesOrder);
-        // Incrementos métricas globales
+        // Incrementos mÃ©tricas globales
         foreach (var n in vpipThisHand) _agg.IncVPIP(n);
         if (raisesOrder.Count >= 1) _agg.IncPFR(raisesOrder[0]);
         if (raisesOrder.Count >= 2) for (int i = 1; i < raisesOrder.Count; i++) _agg.IncThreeBet(raisesOrder[i]);
@@ -172,9 +172,9 @@ public sealed class PokerStarsParser
         if (_buffer.Any(ln => FlopRx.IsMatch(ln)))
             foreach (var w in winners) _agg.IncWWSF(w);
 
-        // ---- Últimas 9 celdas según TU REGLA ----
-        // • Si VPIP en esta mano: token de cartas (si conocidas) o "xx"
-        // • Si NO VPIP: "--"
+        // ---- Ãšltimas 9 celdas segÃºn TU REGLA ----
+        // â€¢ Si VPIP en esta mano: token de cartas (si conocidas) o "xx"
+        // â€¢ Si NO VPIP: "--"
         var six = orderedBySeat.Take(6).ToList();
         foreach (var p in six)
         {
@@ -212,8 +212,8 @@ public sealed class PokerStarsParser
             var ma = PlayerActionRx.Match(l);
             if (!ma.Success) continue;
 
-            var name = ma.Groups[1].Value;
-            var action = ma.Groups[2].Value.ToLowerInvariant();
+            var name = NormalizeName(ma.Groups[1].Value);
+            var action = NormalizeAction(ma.Groups[2].Value);
 
             if (action.StartsWith("posts")) continue; // no cuenta para VPIP
 
@@ -245,8 +245,8 @@ public sealed class PokerStarsParser
             for (int i = holeIdx + 1; i < flopIdx; i++)
             {
                 var ma = PlayerActionRx.Match(_buffer[i]);
-                if (ma.Success && ma.Groups[2].Value.Equals("folds", StringComparison.OrdinalIgnoreCase))
-                    foldedPre.Add(ma.Groups[1].Value);
+                if (ma.Success && NormalizeAction(ma.Groups[2].Value) == "folds")
+                    foldedPre.Add(NormalizeName(ma.Groups[1].Value));
             }
             foreach (var p in playersInHand)
                 if (!foldedPre.Contains(p)) _agg.IncSawFlop(p);
@@ -267,13 +267,13 @@ public sealed class PokerStarsParser
             var idxEs = l.IndexOf(": muestra [", StringComparison.OrdinalIgnoreCase);
             if (idxEn > 0 || idxEs > 0)
             {
-                var name = l[..(idxEn > 0 ? idxEn : idxEs)].Trim();
+                var name = NormalizeName(l[..(idxEn > 0 ? idxEn : idxEs)]);
                 showers.Add(name);
             }
         }
         foreach (var s in showers) _agg.IncWTSD(s);
 
-        // Ganador que además mostró -> WSD
+        // Ganador que ademÃ¡s mostrÃ³ -> WSD
         var winners = DetectWinners();
         foreach (var w in winners)
             if (showers.Contains(w)) _agg.IncWSD(w);
@@ -294,14 +294,14 @@ public sealed class PokerStarsParser
             var ma = PlayerActionRx.Match(l);
             if (!ma.Success) continue;
 
-            var name = ma.Groups[1].Value;
-            var action = ma.Groups[2].Value.ToLowerInvariant();
+            var name = NormalizeName(ma.Groups[1].Value);
+            var action = NormalizeAction(ma.Groups[2].Value);
 
             // Aggression counters
             if (action is "bets" or "raises") _agg.IncBR(name);
             if (action is "calls") _agg.IncCall(name);
 
-            // CBet lógica solo en FLOP
+            // CBet lÃ³gica solo en FLOP
             if (street == "FLOP")
             {
                 if (!sawFirstBet && action == "bets")
@@ -333,10 +333,10 @@ public sealed class PokerStarsParser
         foreach (var l in _buffer)
         {
             var en = CollectedEnRx.Match(l);
-            if (en.Success) { winners.Add(en.Groups[1].Value); continue; }
+            if (en.Success) { winners.Add(NormalizeName(en.Groups[1].Value)); continue; }
 
             var es = CollectedEsRx.Match(l);
-            if (es.Success) { winners.Add(es.Groups[1].Value); continue; }
+            if (es.Success) { winners.Add(NormalizeName(es.Groups[1].Value)); continue; }
         }
         return winners;
     }
@@ -344,7 +344,33 @@ public sealed class PokerStarsParser
     private static string NormalizeCards(string raw) =>
         raw.Replace(" ", string.Empty).Replace(",", string.Empty);
 
-    // "AsKh" -> "AKo"; "AhKh" -> "AK♥"; "TsTd" -> "TT" (ordena por rango: AK, no KA)
+    private static string NormalizeName(string raw) =>
+        raw.Trim().TrimEnd(':').Trim();
+
+    private static string NormalizeAction(string raw)
+    {
+        var action = raw.Trim().ToLowerInvariant();
+        if (action.StartsWith("posts", StringComparison.Ordinal) ||
+            action.StartsWith("pone ciega", StringComparison.Ordinal) ||
+            action.StartsWith("pone ante", StringComparison.Ordinal))
+        {
+            return "posts";
+        }
+
+        return action switch
+        {
+            "pasa" => "checks",
+            "apuesta" => "bets",
+            "iguala" or "paga" => "calls",
+            "sube" => "raises",
+            "no va" => "folds",
+            "tira" => "mucks",
+            "está all-in" or "esta all-in" => "all-in",
+            _ => action
+        };
+    }
+
+    // "AsKh" -> "AKo"; "AhKh" -> "AKâ™¥"; "TsTd" -> "TT" (ordena por rango: AK, no KA)
     private static string ToToken(string twoCards)
     {
         if (twoCards.Length < 4) return "xx";
@@ -364,7 +390,7 @@ public sealed class PokerStarsParser
         bool suited = s1 == s2;
         if (suited)
         {
-            var sym = s1 switch { 'h' => '♥', 'd' => '♦', 'c' => '♣', 's' => '♠', _ => 's' };
+            var sym = "s";
             return $"{r1}{r2}{sym}";
         }
         else
@@ -393,3 +419,4 @@ public sealed class PokerStarsParser
         'h' => 'h', 'd' => 'd', 'c' => 'c', 's' => 's', _ => '?'
     };
 }
+

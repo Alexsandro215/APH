@@ -35,12 +35,12 @@ namespace Hud.App.Services
 
 
         private static readonly Regex BlindsRx =
-            new(@"\((?<sb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)\s*/\s*(?<bb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)(?:\s+[A-Z]{3})?\)",
+            new(@"\((?<sb>" + PokerAmountParser.BlindAmountPattern + @")\s*/\s*(?<bb>" + PokerAmountParser.BlindAmountPattern + @")(?:\s+[A-Z]{3})?\)",
                 RegexOptions.Compiled);
 
 
         private static readonly Regex DealtToRx =
-            new Regex(@"^Dealt to\s+(.+?)\s+\[", RegexOptions.Compiled | RegexOptions.Multiline);
+            new Regex(@"^(?:Dealt to|Repartido a)\s+(.+?)\s+\[", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
 
         private StatsAggregator _agg = new();
@@ -77,6 +77,13 @@ namespace Hud.App.Services
                     var l = rd.ReadLine() ?? "";
                     var m = BlindsRx.Match(l);
                     if (!m.Success) continue;
+
+                    if (PokerAmountParser.TryParse(m.Groups["bb"].Value, out var parsedBb))
+                    {
+                        if (parsedBb <= 0.10) return StakeProfile.Low;   // NL2-NL25 aprox
+                        if (parsedBb >= 2.00) return StakeProfile.High; // NL500+
+                        return StakeProfile.Mid;                   // NL50-NL200
+                    }
 
                     var bbTxt = m.Groups["bb"].Value
                         .Replace("$", "")

@@ -40,19 +40,29 @@
                        Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center"/>
           </StackPanel>
 
-          <TextBlock Text="Tiempo real &#x2014; 8 mesas" FontSize="22" FontWeight="Bold" Margin="0,0,0,12"/>
-          <TextBlock Text="Pulsa + para seleccionar el .txt de la mesa. Usa &#x25A0; para detener."
+          <DockPanel Margin="0,0,0,8">
+            <TextBlock Text="Tiempo real &#x2014; 8 mesas"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"/>
+            <Button DockPanel.Dock="Right"
+                    Content="Detectar mesas"
+                    Padding="12,6"
+                    Click="BtnDetectTables_Click"/>
+          </DockPanel>
+          <TextBlock x:Name="DetectionStatusText"
+                     Text="Pulsa Detectar mesas para enlazar ventanas PokerStars con sus historiales. Tambien puedes usar + manualmente."
                      Foreground="{StaticResource Brush.TextDim}" Margin="0,0,0,16"/>
 
           <StackPanel>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,6"/>
-            <local:SlotTail Margin="0,0,0,0"/>
+            <local:SlotTail x:Name="Slot1" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot2" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot3" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot4" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot5" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot6" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot7" Margin="0,0,0,6"/>
+            <local:SlotTail x:Name="Slot8" Margin="0,0,0,0"/>
           </StackPanel>
         </StackPanel>
       </Border>

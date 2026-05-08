@@ -250,8 +250,8 @@
           <DataGridTextColumn Header="Mesa reciente" Binding="{Binding RecentTable}" Width="190" ElementStyle="{StaticResource CellText}"/>
           <DataGridTextColumn Header="Fecha/Hora" Binding="{Binding LastSeenLabel}" Width="136" ElementStyle="{StaticResource CenterCellText}"/>
           <DataGridTextColumn Header="Vs sesion" Binding="{Binding SessionHandsVsHero}" Width="78" ElementStyle="{StaticResource CenterCellText}"/>
-          <DataGridTextColumn Header="Vs total" Binding="{Binding TotalHandsVsHero}" Width="72" ElementStyle="{StaticResource CenterCellText}"/>
-          <DataGridTextColumn Header="#Total" Binding="{Binding TotalHands}" Width="66" ElementStyle="{StaticResource CenterCellText}"/>
+          <DataGridTextColumn Header="Total-Vs" Binding="{Binding TotalHandsVsHero}" Width="78" ElementStyle="{StaticResource CenterCellText}"/>
+          <DataGridTextColumn Header="Total manos" Binding="{Binding TotalHands}" Width="92" ElementStyle="{StaticResource CenterCellText}"/>
           <DataGridTextColumn Header="Perfil" Binding="{Binding Profile}" Width="96" ElementStyle="{StaticResource CenterCellText}"/>
 
           <DataGridTemplateColumn Header="VPIP%" Width="72">

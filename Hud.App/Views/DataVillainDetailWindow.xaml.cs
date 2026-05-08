@@ -19,29 +19,29 @@ namespace Hud.App.Views
     public partial class DataVillainDetailWindow : Window
     {
         private static readonly string[] Ranks = { "A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2" };
-        private static readonly Regex HandStartRx = new(@"^PokerStars Hand #", RegexOptions.Compiled);
+        private static readonly Regex HandStartRx = PokerStarsHandHistory.HandStartRx;
         private static readonly Regex HeaderTimestampRx =
             new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
         private static readonly Regex SeatRx =
-            new(@"^(?:Seat|Asiento)\s+(?<seat>\d+):\s+(?<name>[^(\r\n]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.SeatRx;
         private static readonly Regex ButtonRx =
-            new(@"(?:Seat|Asiento)\s+#?(?<seat>\d+)\s+(?:is the button|es el bot[oó]n)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ButtonRx;
         private static readonly Regex ActorRx =
-            new(@"^(?<actor>[^:]+):\s+(?<action>.+)$", RegexOptions.Compiled);
+            PokerStarsHandHistory.ActorRx;
         private static readonly Regex ShowCardsRx =
-            new(@"^(?<name>[^:]+):\s+(?:shows|muestra)\s+\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ShowCardsRx;
         private static readonly Regex SummaryShownRx =
-            new(@"^Seat\s+\d+:\s+(?<name>\S+).*\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.SummaryShownRx;
         private static readonly Regex BoardCardsRx =
             new(@"\[(?<cards>[^\]]+)\]", RegexOptions.Compiled);
         private static readonly Regex CollectedRx =
-            new(@"^(?<name>[^:]+?)\s+(?:collected|recoge|cobra|cobro|se lleva el bote)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.CollectedRx;
         private static readonly Regex ReturnedRx =
-            new(@"^(?:Uncalled bet|Apuesta no pagada)\s+\(\$?(?<amount>[\d,.]+)\)\s+(?:returned to|devuelta a)\s+(?<name>.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ReturnedRx;
         private static readonly Regex RaiseToRx =
-            new(@"(?:raises|sube)\s+\$?[\d,.]+\s+(?:to|hasta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.RaiseToRx;
         private static readonly Regex ActionAmountRx =
-            new(@":\s+(?:posts (?:small blind|big blind|the ante)|pone ciega chica|pone ciega grande|calls|bets|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            PokerStarsHandHistory.ActionAmountRx;
 
         private readonly DataVillainViewModel _viewModel;
         private readonly IReadOnlyList<MainWindow.TableSessionStats> _tables;
@@ -503,21 +503,7 @@ namespace Hud.App.Views
 
         private static IEnumerable<IReadOnlyList<string>> SplitHands(IEnumerable<string> lines)
         {
-            var current = new List<string>();
-            foreach (var line in lines)
-            {
-                if (HandStartRx.IsMatch(line) && current.Count > 0)
-                {
-                    yield return current.ToList();
-                    current.Clear();
-                }
-
-                if (HandStartRx.IsMatch(line) || current.Count > 0)
-                    current.Add(line);
-            }
-
-            if (current.Count > 0)
-                yield return current;
+            return PokerStarsHandHistory.SplitHands(lines);
         }
 
         private static bool TryGetKnownCards(IReadOnlyList<string> hand, string villainName, out string cards)
@@ -525,14 +511,14 @@ namespace Hud.App.Views
             foreach (var line in hand)
             {
                 var show = ShowCardsRx.Match(line);
-                if (show.Success && string.Equals(show.Groups["name"].Value.Trim(), villainName, StringComparison.Ordinal))
+                if (show.Success && PokerStarsHandHistory.SamePlayer(show.Groups["name"].Value, villainName))
                 {
                     cards = show.Groups["cards"].Value.Trim();
                     return true;
                 }
 
                 var summary = SummaryShownRx.Match(line);
-                if (summary.Success && string.Equals(summary.Groups["name"].Value.Trim(), villainName, StringComparison.Ordinal))
+                if (summary.Success && PokerStarsHandHistory.SamePlayer(summary.Groups["name"].Value, villainName))
                 {
                     cards = summary.Groups["cards"].Value.Trim();
                     return true;
@@ -604,22 +590,22 @@ namespace Hud.App.Views
                 if (!match.Success)
                     continue;
 
-                var actor = match.Groups["actor"].Value.Trim();
+                var actor = PokerStarsHandHistory.NormalizeName(match.Groups["actor"].Value);
                 var action = match.Groups["action"].Value.Trim();
-                var isRaise = action.StartsWith("raises ", StringComparison.OrdinalIgnoreCase) ||
-                    action.StartsWith("sube ", StringComparison.OrdinalIgnoreCase);
+                var normalizedAction = PokerStarsHandHistory.NormalizeAction(action);
+                var isRaise = normalizedAction == "raises";
 
-                if (string.Equals(actor, playerName, StringComparison.Ordinal))
+                if (PokerStarsHandHistory.SamePlayer(actor, playerName))
                 {
                     if (action.Contains("all-in", StringComparison.OrdinalIgnoreCase))
                         return VillainAction.AllIn;
-                    if (action.StartsWith("folds", StringComparison.OrdinalIgnoreCase) || action.StartsWith("se retira", StringComparison.OrdinalIgnoreCase))
+                    if (normalizedAction == "folds")
                         return VillainAction.Fold;
-                    if (action.StartsWith("checks", StringComparison.OrdinalIgnoreCase) || action.StartsWith("pasa", StringComparison.OrdinalIgnoreCase))
+                    if (normalizedAction == "checks")
                         return VillainAction.Check;
-                    if (action.StartsWith("calls", StringComparison.OrdinalIgnoreCase) || action.StartsWith("paga", StringComparison.OrdinalIgnoreCase))
+                    if (normalizedAction == "calls")
                         return VillainAction.Call;
-                    if (action.StartsWith("bets", StringComparison.OrdinalIgnoreCase) || action.StartsWith("apuesta", StringComparison.OrdinalIgnoreCase))
+                    if (normalizedAction == "bets")
                         return VillainAction.Bet;
                     if (isRaise)
                     {
@@ -670,58 +656,20 @@ namespace Hud.App.Views
 
         private static int FindStreetIndex(IReadOnlyList<string> hand, string street, int startAt = 0)
         {
-            for (var i = startAt; i < hand.Count; i++)
-            {
-                var line = hand[i];
-                if (street == "SUMMARY" && line.StartsWith("*** SUMMARY ***", StringComparison.Ordinal))
-                    return i;
-                if (line.StartsWith($"*** {street} ***", StringComparison.Ordinal))
-                    return i;
-            }
-
-            return -1;
+            return PokerStarsHandHistory.FindStreetIndex(hand, street, startAt);
         }
 
         private static Dictionary<string, string> BuildPositionMap(IReadOnlyList<string> hand)
         {
-            var seats = new SortedDictionary<int, string>();
-            var buttonSeat = 0;
-
-            foreach (var line in hand)
-            {
-                var button = ButtonRx.Match(line);
-                if (button.Success)
-                    int.TryParse(button.Groups["seat"].Value, out buttonSeat);
-
-                var seat = SeatRx.Match(line);
-                if (seat.Success && int.TryParse(seat.Groups["seat"].Value, out var seatNo))
-                    seats[seatNo] = seat.Groups["name"].Value.Trim();
-            }
-
-            if (buttonSeat == 0 || seats.Count == 0)
-                return new Dictionary<string, string>(StringComparer.Ordinal);
-
-            var orderedSeats = seats.Keys.OrderBy(seat => seat).ToList();
-            var buttonIndex = orderedSeats.IndexOf(buttonSeat);
-            if (buttonIndex < 0)
-                return new Dictionary<string, string>(StringComparer.Ordinal);
-
-            var result = new Dictionary<string, string>(StringComparer.Ordinal);
-            for (var i = 0; i < orderedSeats.Count; i++)
-            {
-                var offset = (i - buttonIndex + orderedSeats.Count) % orderedSeats.Count;
-                result[seats[orderedSeats[i]]] = PositionFromOffset(offset, orderedSeats.Count);
-            }
-
-            return result;
+            return PokerStarsHandHistory.BuildPositionMap(hand);
         }
 
         private static string InferPositionFromActions(IReadOnlyList<string> hand, string playerName)
         {
-            var prefix = playerName + ":";
             foreach (var line in hand)
             {
-                if (!line.StartsWith(prefix, StringComparison.Ordinal))
+                var match = ActorRx.Match(line);
+                if (!match.Success || !PokerStarsHandHistory.SamePlayer(match.Groups["actor"].Value, playerName))
                     continue;
 
                 if (line.Contains("small blind", StringComparison.OrdinalIgnoreCase) ||
@@ -738,7 +686,7 @@ namespace Hud.App.Views
                 .Where(match => match.Success)
                 .Select(match => new
                 {
-                    Name = match.Groups["actor"].Value.Trim(),
+                    Name = PokerStarsHandHistory.NormalizeName(match.Groups["actor"].Value),
                     Action = match.Groups["action"].Value.Trim()
                 })
                 .Where(row =>
@@ -750,7 +698,7 @@ namespace Hud.App.Views
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            var index = preflopActors.FindIndex(name => string.Equals(name, playerName, StringComparison.Ordinal));
+            var index = preflopActors.FindIndex(name => PokerStarsHandHistory.SamePlayer(name, playerName));
             if (index < 0)
                 return "?";
 
@@ -771,7 +719,7 @@ namespace Hud.App.Views
             {
                 var seat = SeatRx.Match(line);
                 if (seat.Success)
-                    result.Add(seat.Groups["name"].Value.Trim());
+                    result.Add(PokerStarsHandHistory.NormalizeName(seat.Groups["name"].Value));
             }
 
             return result;
@@ -789,85 +737,19 @@ namespace Hud.App.Views
 
         private static DateTime? ExtractTimestamp(IReadOnlyList<string> hand)
         {
-            foreach (var line in hand)
-            {
-                var match = HeaderTimestampRx.Match(line);
-                if (!match.Success)
-                    continue;
-
-                if (DateTime.TryParseExact(
-                    match.Groups["stamp"].Value,
-                    "yyyy/MM/dd HH:mm:ss",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var timestamp))
-                {
-                    return timestamp;
-                }
-            }
-
-            return null;
+            return PokerStarsHandHistory.ExtractTimestamp(hand);
         }
 
         private static double EstimateNetForPlayer(IReadOnlyList<string> hand, string playerName)
         {
-            var net = 0.0;
-            var committedThisStreet = 0.0;
-            var prefix = playerName + ":";
-
-            foreach (var line in hand)
-            {
-                if (line.StartsWith("*** FLOP", StringComparison.Ordinal) ||
-                    line.StartsWith("*** TURN", StringComparison.Ordinal) ||
-                    line.StartsWith("*** RIVER", StringComparison.Ordinal) ||
-                    line.StartsWith("*** SHOW DOWN", StringComparison.Ordinal))
-                {
-                    committedThisStreet = 0;
-                }
-
-                var returned = ReturnedRx.Match(line);
-                if (returned.Success &&
-                    string.Equals(returned.Groups["name"].Value.Trim(), playerName, StringComparison.Ordinal) &&
-                    TryParseAmount(returned.Groups["amount"].Value, out var returnedAmount))
-                {
-                    net += returnedAmount;
-                    continue;
-                }
-
-                var collected = CollectedRx.Match(line);
-                if (collected.Success &&
-                    string.Equals(collected.Groups["name"].Value.Trim(), playerName, StringComparison.Ordinal) &&
-                    TryParseAmount(collected.Groups["amount"].Value, out var collectedAmount))
-                {
-                    net += collectedAmount;
-                    continue;
-                }
-
-                if (!line.StartsWith(prefix, StringComparison.Ordinal))
-                    continue;
-
-                var raise = RaiseToRx.Match(line);
-                if (raise.Success && TryParseAmount(raise.Groups["amount"].Value, out var raiseTo))
-                {
-                    var delta = Math.Max(0, raiseTo - committedThisStreet);
-                    committedThisStreet += delta;
-                    net -= delta;
-                    continue;
-                }
-
-                var action = ActionAmountRx.Match(line);
-                if (action.Success && TryParseAmount(action.Groups["amount"].Value, out var amount))
-                {
-                    committedThisStreet += amount;
-                    net -= amount;
-                }
-            }
-
-            return net;
+            return PokerStarsHandHistory.EstimateNetForPlayer(hand, playerName);
         }
 
         private static bool TryParseAmount(string raw, out double value)
         {
+            if (Hud.App.Services.PokerAmountParser.TryParse(raw, out value))
+                return true;
+
             var clean = raw.Replace("$", "", StringComparison.Ordinal)
                 .Replace("US", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("\u00A0", "", StringComparison.Ordinal)

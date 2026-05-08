@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
@@ -17,11 +18,13 @@ namespace Hud.App.Views
     public partial class SlotTail : UserControl
     {
         private static readonly Regex BlindsInHeaderRx =
-            new(@"\((?<sb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)\s*/\s*(?<bb>(?:US)?[$€]?\s*\d+(?:[\.,]\d{1,2})?\s*(?:US)?[$€]?)(?:\s+[A-Z]{3})?\)",
+            new(@"\((?<sb>" + PokerAmountParser.BlindAmountPattern + @")\s*/\s*(?<bb>" + PokerAmountParser.BlindAmountPattern + @")(?:\s+[A-Z]{3})?\)",
                 RegexOptions.Compiled);
         private static readonly Regex HeaderTimestampRx =
-            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)",
+            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)",
                 RegexOptions.Compiled);
+        private static readonly Regex TableNameRx =
+            new(@"(?:Table\s+'(?<table>[^']+)'|Mesa\s+(?<table>.+?)\s+\d+-max)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly HandReaderService _service = new();
         private CancellationTokenSource? _cts;
@@ -61,6 +64,33 @@ namespace Hud.App.Views
                 if (string.IsNullOrWhiteSpace(_path)) return;
             }
             Start(_path!);
+        }
+
+        public void StartAuto(string path, string tableName, string? heroName)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return;
+
+            _path = path;
+            PathText.Text = tableName;
+            if (!string.IsNullOrWhiteSpace(heroName))
+                _service.HeroName = heroName.Trim().TrimEnd(':').Trim();
+
+            Start(path);
+        }
+
+        public bool IsRunning => _cts is not null;
+
+        public string? HeroName => _service.HeroName;
+
+        public IReadOnlyList<PlayerStats> GetPlayersSnapshot() =>
+            _service.Players.ToList();
+
+        public void ClearSlot()
+        {
+            Stop();
+            _path = null;
+            PathText.Text = "(mesa)";
         }
 
         private void Stop_Click(object sender, RoutedEventArgs e) => Stop();
@@ -274,15 +304,9 @@ namespace Hud.App.Views
                 {
                     var line = rd.ReadLine() ?? "";
 
-                    var key = "Table '";
-                    var idx = line.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-                    if (idx >= 0)
-                    {
-                        var start = idx + key.Length;
-                        var end = line.IndexOf('\'', start);
-                        if (end > start)
-                            tableName = line.Substring(start, end - start);
-                    }
+                    var tableMatch = TableNameRx.Match(line);
+                    if (tableMatch.Success)
+                        tableName = tableMatch.Groups["table"].Value.Trim();
 
                     if (blinds is null)
                     {
@@ -300,25 +324,8 @@ namespace Hud.App.Views
             return blinds is null ? tableName : $"{tableName} ({blinds})";
         }
 
-        private static string FormatBlind(string raw)
-        {
-            var isCash = raw.Contains('$') ||
-                raw.Contains('€') ||
-                raw.Contains("US", StringComparison.OrdinalIgnoreCase) ||
-                raw.Contains('.') ||
-                raw.Contains(',');
-
-            raw = raw.Replace("$", "")
-                .Replace("€", "")
-                .Replace("US", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("\u00A0", "")
-                .Replace(" ", "")
-                .Replace(",", ".");
-
-            return double.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)
-                ? $"{(isCash ? "$" : "")}{value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}"
-                : raw.Trim();
-        }
+        private static string FormatBlind(string raw) =>
+            PokerAmountParser.FormatBlind(raw);
 
         private PlayerStats? FindHeroStats()
         {
@@ -388,8 +395,8 @@ namespace Hud.App.Views
 
         private static double ExtractBigBlindFromLabel(string label)
         {
-            var match = Regex.Match(label, @"\((?:\$)?(?<sb>\d+(?:\.\d+)?)\/(?:\$)?(?<bb>\d+(?:\.\d+)?)\)");
-            return match.Success && double.TryParse(match.Groups["bb"].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var bb)
+            var match = Regex.Match(label, @"\((?:\$)?(?<sb>[\d,.]+)\/(?:\$)?(?<bb>[\d,.]+)\)");
+            return match.Success && PokerAmountParser.TryParse(match.Groups["bb"].Value, out var bb)
                 ? bb
                 : 1;
         }
@@ -410,14 +417,9 @@ namespace Hud.App.Views
                 for (int i = 0; i < 200 && !rd.EndOfStream; i++)
                 {
                     var l = rd.ReadLine() ?? "";
-                    var key = "Table '";
-                    var idx = l.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-                    if (idx >= 0)
-                    {
-                        var start = idx + key.Length;
-                        var end = l.IndexOf('\'', start);
-                        if (end > start) return l.Substring(start, end - start);
-                    }
+                    var match = TableNameRx.Match(l);
+                    if (match.Success)
+                        return match.Groups["table"].Value.Trim();
                 }
             }
             catch { }
@@ -425,3 +427,4 @@ namespace Hud.App.Views
         }
     }
 }
+
