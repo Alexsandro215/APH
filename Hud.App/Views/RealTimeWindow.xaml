@@ -4,15 +4,23 @@
         xmlns:local="clr-namespace:Hud.App.Views"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         Title="{DynamicResource RT.Title}"
-        Height="800" Width="680" WindowStartupLocation="CenterOwner"
+        Height="800" Width="680" MinHeight="520" WindowStartupLocation="CenterOwner"
         Background="{StaticResource Brush.Bg}">
 
   <Window.Resources>
     <system:Double x:Key="GlobalScale">0.80</system:Double>
+
+    <Style TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+    </Style>
+
+    <Style TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+    </Style>
   </Window.Resources>
 
   <Grid>
-    <ScrollViewer VerticalScrollBarVisibility="Disabled"
+    <ScrollViewer VerticalScrollBarVisibility="Visible"
                   HorizontalScrollBarVisibility="Disabled">
       <Border>
         <Border.LayoutTransform>
@@ -34,7 +42,10 @@
                   ToolTip="{DynamicResource RT.HelpTip}"
                   Margin="0,0,0,6"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <CheckBox x:Name="ChkCompact" Content="{DynamicResource RT.Compact}" IsChecked="True" VerticalAlignment="Center"/>
+            <CheckBox x:Name="ChkCompact" IsChecked="True" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource RT.Compact}"
+                         Foreground="{DynamicResource Brush.SurfaceText}"/>
+            </CheckBox>
             <TextBlock Text="   " Width="8"/>
             <TextBlock Text="{DynamicResource RT.CompactDesc}"
                        Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center"/>
@@ -44,11 +55,17 @@
             <TextBlock Text="{DynamicResource RT.Header}"
                        FontSize="22"
                        FontWeight="Bold"
+                       Foreground="{DynamicResource Brush.SurfaceText}"
                        VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right"
-                    Content="{DynamicResource RT.Detect}"
-                    Padding="12,6"
-                    Click="BtnDetectTables_Click"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button Content="{DynamicResource RT.FinishSession}"
+                      Padding="12,6"
+                      Margin="0,0,8,0"
+                      Click="BtnFinishSession_Click"/>
+              <Button Content="{DynamicResource RT.Detect}"
+                      Padding="12,6"
+                      Click="BtnDetectTables_Click"/>
+            </StackPanel>
           </DockPanel>
           <TextBlock x:Name="DetectionStatusText"
                      Text="{DynamicResource RT.DetectHint}"

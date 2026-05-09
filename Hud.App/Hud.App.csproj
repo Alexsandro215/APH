@@ -10,4 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\HandReader.Core\HandReader.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFsharp" Version="6.2.2" />
+  </ItemGroup>
 </Project>

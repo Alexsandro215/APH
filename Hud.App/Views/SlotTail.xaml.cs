@@ -47,7 +47,7 @@ namespace Hud.App.Views
             var dlg = new OpenFileDialog
             {
                 Filter = "Hand Histories|*.txt;*.log;*.*",
-                Title = "Selecciona el archivo .txt con la mesa"
+                Title = LocalizationManager.Text("RT.SelectTableFileTitle")
             };
             if (dlg.ShowDialog() == true)
             {
@@ -83,8 +83,33 @@ namespace Hud.App.Views
 
         public string? HeroName => _service.HeroName;
 
+        public string TableLabel => PathText.Text;
+
+        public string? SourcePath => _path;
+
+        public long LinesRead => _lines;
+
+        public DateTime? FirstHandTime => _firstHandTime;
+
+        public DateTime? LastHandTime => _lastHandTime;
+
         public IReadOnlyList<PlayerStats> GetPlayersSnapshot() =>
             _service.Players.ToList();
+
+        public RealTimeTableReportRow GetReportSnapshot() =>
+            new(
+                TableLabel,
+                SourcePath,
+                HeroName,
+                IsRunning,
+                LinesRead,
+                FirstHandTime,
+                LastHandTime,
+                GetPlayersSnapshot()
+                    .Select(RealTimeSessionReportService.FromStats)
+                    .ToList());
+
+        public void StopSession() => Stop();
 
         public void ClearSlot()
         {

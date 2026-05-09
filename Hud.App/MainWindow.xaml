@@ -161,7 +161,7 @@
                     BorderBrush="{StaticResource BorderDark}"
                     Foreground="{StaticResource FgLight}">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Jugador" Binding="{Binding Name}" Width="2.4*" IsReadOnly="True"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Player}" Binding="{Binding Name}" Width="2.4*" IsReadOnly="True"/>
               <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="1*" IsReadOnly="True">
                 <DataGridTextColumn.ElementStyle>
                   <Style TargetType="TextBlock">
@@ -414,8 +414,8 @@
                     Foreground="{StaticResource FgLight}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="1.9*"/>
-              <DataGridTextColumn Header="Formato" Binding="{Binding GameFormat}" Width="0.85*"/>
-              <DataGridTextColumn Header="Fecha" Binding="{Binding PlayedDate}" Width="0.9*"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Format}" Binding="{Binding GameFormat}" Width="0.85*"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding PlayedDate}" Width="0.9*"/>
               <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="0.65*">
                 <DataGridTextColumn.ElementStyle>
                   <Style TargetType="TextBlock">
@@ -595,7 +595,7 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="Final bb" Width="0.85*">
+              <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="0.85*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -636,7 +636,7 @@
       <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,0">
         <TextBlock Text="{DynamicResource Main.HistoryAnalysis}" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
 
-        <UniformGrid Columns="4" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
+        <UniformGrid Columns="5" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnAll_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.TablesAnalysis}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
@@ -662,6 +662,13 @@
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.LeakFinder}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
               <TextBlock Text="{DynamicResource Main.LeakFinderDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Button>
+
+          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnSessions_Click">
+            <StackPanel>
+              <TextBlock Text="{DynamicResource Main.Sessions}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{DynamicResource Main.SessionsDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
         </UniformGrid>

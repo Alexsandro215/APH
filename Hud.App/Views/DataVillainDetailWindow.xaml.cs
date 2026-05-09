@@ -185,7 +185,11 @@ namespace Hud.App.Views
                 KnownHandsCount = knownHands.Select(hand => hand.HandIdentity).Distinct(StringComparer.Ordinal).Count();
                 TotalNetBbLabel = $"{villain.TotalNetBb:+0.#;-0.#;0} bb";
                 TotalNetBrush = villain.TotalNetBb >= 0 ? BrushFrom(33, 192, 122) : BrushFrom(226, 78, 91);
-                Subtitle = $"Muestra conocida: {KnownHandsCount} manos reveladas | Total vs heroe: {TotalHandsVsHero} manos";
+                Subtitle = string.Format(
+                    CultureInfo.InvariantCulture,
+                    LocalizationManager.Text("VillainDetail.Subtitle"),
+                    KnownHandsCount,
+                    TotalHandsVsHero);
 
                 Tags = BuildTags(villain, knownHands).ToList();
                 ComparisonRows = BuildComparisonRows(villain, heroStats, villainStats).ToList();
@@ -207,7 +211,7 @@ namespace Hud.App.Views
             public int KnownHandsCount { get; }
             public string TotalNetBbLabel { get; }
             public Brush TotalNetBrush { get; }
-            public string SummaryTitle => ShowAllDataSummary ? "ALL DATA" : "RESUMEN DE MUESTRA";
+            public string SummaryTitle => ShowAllDataSummary ? LocalizationManager.Text("Common.AllData") : LocalizationManager.Text("Common.SampleSummary");
             public string SummaryHandsLabel => ShowAllDataSummary ? Hud.App.Services.LocalizationManager.Text("Common.TotalVillainHands") : Hud.App.Services.LocalizationManager.Text("Common.HandsVsHero");
             public string SummaryHandsValue => ShowAllDataSummary
                 ? _villain.TotalHands.ToString(CultureInfo.InvariantCulture)
@@ -216,7 +220,7 @@ namespace Hud.App.Views
             public string SummaryKnownValue => ShowAllDataSummary
                 ? TotalHandsVsHero.ToString(CultureInfo.InvariantCulture)
                 : KnownHandsCount.ToString(CultureInfo.InvariantCulture);
-            public string SummaryResultLabel => "Mi resultado vs villano";
+            public string SummaryResultLabel => LocalizationManager.Text("Common.MyResultVsVillain");
             public IReadOnlyList<TagViewModel> Tags { get; }
             public IReadOnlyList<ComparisonRow> ComparisonRows { get; }
             public IReadOnlyList<RangeCell> PreflopCells { get; }
@@ -294,7 +298,7 @@ namespace Hud.App.Views
                 PlayerStats? villainStats)
             {
                 if (heroStats is not null)
-                    yield return ComparisonRow.FromStats("Heroe", heroStats, villain.TotalNetBb, villain.Stake);
+                    yield return ComparisonRow.FromStats(LocalizationManager.Text("Common.Hero"), heroStats, villain.TotalNetBb, villain.Stake);
 
                 if (villainStats is not null)
                     yield return ComparisonRow.FromStats(villain.Name, villainStats, -villain.TotalNetBb, villain.Stake);
@@ -304,32 +308,32 @@ namespace Hud.App.Views
                 DataVillainsWindow.DataVillainRow villain,
                 IReadOnlyList<KnownVillainHand> knownHands)
             {
-                yield return TagViewModel.Neutral(villain.Profile, "Perfil base segun VPIP/PFR/3Bet/AF.");
+                yield return TagViewModel.Neutral(villain.Profile, LocalizationManager.Text("Tag.ProfileBase.Desc"));
 
                 if (villain.TotalHands < 30)
-                    yield return TagViewModel.Neutral("Sin muestra", "Menos de 30 manos totales.");
+                    yield return TagViewModel.Neutral(LocalizationManager.Text("Tag.NoSample"), LocalizationManager.Text("Tag.NoSample.Short"));
                 if (villain.TotalHandsVsHero >= 50)
-                    yield return TagViewModel.Neutral("Rival frecuente", $"{villain.TotalHandsVsHero} manos contra el heroe.");
+                    yield return TagViewModel.Neutral(LocalizationManager.Text("Tag.FrequentRival"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.FrequentRival.Dynamic"), villain.TotalHandsVsHero));
                 if (villain.TotalNetBb > 50)
-                    yield return TagViewModel.Positive("Pierde vs Hero", $"{villain.TotalNetBb:0.#} bb a favor del heroe en manos compartidas.");
+                    yield return TagViewModel.Positive(LocalizationManager.Text("Tag.LosesVsHero"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.LosesVsHero.Dynamic"), villain.TotalNetBb));
                 if (villain.TotalNetBb < -50)
-                    yield return TagViewModel.Negative("Gana vs Hero", $"{Math.Abs(villain.TotalNetBb):0.#} bb a favor del villano en manos compartidas.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.WinsVsHero"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.WinsVsHero.Dynamic"), Math.Abs(villain.TotalNetBb)));
                 if (villain.VPIPPct >= 35)
-                    yield return TagViewModel.Negative("Juega muchas manos", $"VPIP {villain.VPIPPct:0.#}%.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.PlaysManyHands"), $"VPIP {villain.VPIPPct:0.#}%.");
                 if (villain.AF >= 4 || villain.AFqPct >= 65)
-                    yield return TagViewModel.Negative("Agresor", $"AF {villain.AF:0.#} | AFq {villain.AFqPct:0.#}%.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.Aggressor"), $"AF {villain.AF:0.#} | AFq {villain.AFqPct:0.#}%.");
                 if (villain.ThreeBetPct >= 10)
-                    yield return TagViewModel.Negative("3Bet alto", $"3Bet {villain.ThreeBetPct:0.#}%.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.High3Bet"), $"3Bet {villain.ThreeBetPct:0.#}%.");
                 if (villain.FoldVsCBetFlopPct >= 65)
-                    yield return TagViewModel.Positive("Foldea mucho a CBet", $"FvCB {villain.FoldVsCBetFlopPct:0.#}%.");
+                    yield return TagViewModel.Positive(LocalizationManager.Text("Tag.FoldsCBet"), $"FvCB {villain.FoldVsCBetFlopPct:0.#}%.");
                 if (villain.FoldVsCBetFlopPct > 0 && villain.FoldVsCBetFlopPct <= 30)
-                    yield return TagViewModel.Negative("No foldea CBet", $"FvCB {villain.FoldVsCBetFlopPct:0.#}%.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.NoFoldCBet"), $"FvCB {villain.FoldVsCBetFlopPct:0.#}%.");
                 if (villain.WTSDPct >= 35)
-                    yield return TagViewModel.Negative("Va mucho a showdown", $"WTSD {villain.WTSDPct:0.#}%.");
+                    yield return TagViewModel.Negative(LocalizationManager.Text("Tag.ShowdownOften"), $"WTSD {villain.WTSDPct:0.#}%.");
                 if (villain.VPIPPct >= 30 && villain.PFRPct < 12 && villain.AF < 1.5)
-                    yield return TagViewModel.Positive("Calling station", "VPIP alto, PFR bajo y agresion baja.");
+                    yield return TagViewModel.Positive("Calling station", LocalizationManager.Text("Tag.CallingStation.Desc"));
                 if (villain.VPIPPct < 14 && villain.PFRPct < 10 && villain.TotalHands >= 50)
-                    yield return TagViewModel.Neutral("Roca", "Rango cerrado con muestra suficiente.");
+                    yield return TagViewModel.Neutral(LocalizationManager.Text("Tag.Rock"), LocalizationManager.Text("Tag.Rock.Desc"));
 
                 var knownUnique = knownHands
                     .GroupBy(hand => hand.HandIdentity, StringComparer.Ordinal)
@@ -352,22 +356,22 @@ namespace Hud.App.Views
                 }.Count(value => value);
 
                 if (premium >= 3 && premium * 100.0 / knownUnique.Count >= 30)
-                    yield return TagViewModel.Neutral($"Amante premium - {premium}/{knownUnique.Count}", "Muchas cartas conocidas son rango premium.");
+                    yield return TagViewModel.Neutral($"{LocalizationManager.Text("Tag.PremiumLover")} - {premium}/{knownUnique.Count}", LocalizationManager.Text("Tag.PremiumLoverKnown.Desc"));
                 if (low >= 3 && low * 100.0 / knownUnique.Count >= 25)
-                    yield return TagViewModel.Neutral($"Manos bajas - {low}/{knownUnique.Count}", "Muestra tendencia a mostrar/jugar manos bajas.");
+                    yield return TagViewModel.Neutral($"{LocalizationManager.Text("Tag.LowHands")} - {low}/{knownUnique.Count}", LocalizationManager.Text("Tag.LowHands.Desc"));
                 if (suitedConnectors >= 3 && suitedConnectors * 100.0 / knownUnique.Count >= 20)
-                    yield return TagViewModel.Neutral($"Suited connectors - {suitedConnectors}/{knownUnique.Count}", "Muestra suited connectors con frecuencia.");
+                    yield return TagViewModel.Neutral($"Suited connectors - {suitedConnectors}/{knownUnique.Count}", LocalizationManager.Text("Tag.SuitedConnectors.Desc"));
                 if (categories >= 4 && knownUnique.Count >= 10)
-                    yield return TagViewModel.Neutral("Mixto", "Muestra variedad amplia de categorias conocidas.");
+                    yield return TagViewModel.Neutral(LocalizationManager.Text("Tag.Mixed"), LocalizationManager.Text("Tag.MixedKnown.Desc"));
 
                 var trapSignals = knownHands.Count(hand => hand.Street is "TURN" or "RIVER" && IsPremium(hand.HandCode) && hand.Action is VillainAction.Raise or VillainAction.AllIn);
                 if (trapSignals >= 2)
-                    yield return TagViewModel.Negative($"Trampero - {trapSignals}", "Manos fuertes conocidas con agresion tardia.");
+                    yield return TagViewModel.Negative($"{LocalizationManager.Text("Tag.Trapper")} - {trapSignals}", LocalizationManager.Text("Tag.TrapperShort.Desc"));
 
                 var allIns = knownHands.Where(hand => hand.Action == VillainAction.AllIn).ToList();
                 var strongAllIns = allIns.Count(hand => IsPremium(hand.HandCode) || IsPair(hand.HandCode) || IsSuitedConnector(hand.HandCode));
                 if (allIns.Count >= 3 && strongAllIns * 100.0 / allIns.Count >= 60)
-                    yield return TagViewModel.Negative($"All-in equity - {strongAllIns}/{allIns.Count}", "All-ins conocidos con rangos fuertes o conectados.");
+                    yield return TagViewModel.Negative($"All-in equity - {strongAllIns}/{allIns.Count}", LocalizationManager.Text("Tag.AllInEquity.Desc"));
                 foreach (var tag in BuildWinningPatternTags(knownUnique))
                     yield return tag;
             }
@@ -380,17 +384,17 @@ namespace Hud.App.Views
                 if (winning.Count == 0)
                     yield break;
 
-                foreach (var tag in WinningPatternTag("Color lover", "Gana muchas bb conectando color.", winning, IsFlushWin))
+                foreach (var tag in WinningPatternTag("Color lover", LocalizationManager.Text("Tag.ColorLover.Desc"), winning, IsFlushWin))
                     yield return tag;
-                foreach (var tag in WinningPatternTag("Set lover", "Gana muchas bb ligando set con par en mano.", winning, IsSetWin))
+                foreach (var tag in WinningPatternTag("Set lover", LocalizationManager.Text("Tag.SetLover.Desc"), winning, IsSetWin))
                     yield return tag;
-                foreach (var tag in WinningPatternTag("Trips lover", "Gana muchas bb conectando trips con una carta en mano y par en mesa.", winning, IsTripsWin))
+                foreach (var tag in WinningPatternTag("Trips lover", LocalizationManager.Text("Tag.TripsLover.Desc"), winning, IsTripsWin))
                     yield return tag;
-                foreach (var tag in WinningPatternTag("Double par", "Gana muchas bb conectando doble par.", winning, IsTwoPairWin))
+                foreach (var tag in WinningPatternTag("Double par", LocalizationManager.Text("Tag.DoublePair.Desc"), winning, IsTwoPairWin))
                     yield return tag;
-                foreach (var tag in WinningPatternTag("Par alto", "Gana muchas bb con par alto.", winning, IsHighPairWin))
+                foreach (var tag in WinningPatternTag(LocalizationManager.Text("Tag.HighPair"), LocalizationManager.Text("Tag.HighPair.Desc"), winning, IsHighPairWin))
                     yield return tag;
-                foreach (var tag in WinningPatternTag("Escalera lover", "Gana muchas bb conectando escalera.", winning, IsStraightWin))
+                foreach (var tag in WinningPatternTag(LocalizationManager.Text("Tag.StraightLover"), LocalizationManager.Text("Tag.StraightLover.Desc"), winning, IsStraightWin))
                     yield return tag;
             }
 
@@ -410,7 +414,7 @@ namespace Hud.App.Views
 
                 yield return TagViewModel.Negative(
                     $"{label} - {matches.Count}/{winning.Count}",
-                    $"{reason} Muestra: {totalBb:+0.#;-0.#;0} bb en {matches.Count} manos ganadas conocidas.");
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.WinningPattern.Dynamic"), reason, totalBb, matches.Count));
             }
 
             private static IEnumerable<KnownVillainHand> LoadKnownHands(
@@ -1168,8 +1172,8 @@ namespace Hud.App.Views
                     0,
                     new[] { new ActionSegment(BrushFrom(38, 43, 50), 100, new Thickness(0)) },
                     BrushFrom(135, 145, 156),
-                    "Sin muestra conocida",
-                    new[] { new ActionSummaryItem("Sin muestra", "0 manos", BrushFrom(80, 86, 96)) },
+                    LocalizationManager.Text("Common.NoKnownSample"),
+                    new[] { new ActionSummaryItem(LocalizationManager.Text("Tag.NoSample"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCount"), 0), BrushFrom(80, 86, 96)) },
                     Array.Empty<ExactVillainHandRow>(),
                     BrushFrom(38, 43, 50));
 
@@ -1197,7 +1201,7 @@ namespace Hud.App.Views
                         var groupAvg = group.Hands.Average(hand => hand.NetBb);
                         return new ActionSummaryItem(
                             $"{LabelForAction(group.Action)} {pct:0.#}%",
-                            $"{group.Hands.Count} manos | {groupAvg:+0.#;-0.#;0} bb media",
+                            string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCountBbAverage"), group.Hands.Count, groupAvg),
                             BrushForAction(group.Action));
                     })
                     .ToList();
@@ -1213,7 +1217,7 @@ namespace Hud.App.Views
                     examples.Count,
                     segments,
                     Brushes.Black,
-                    $"{examples.Count} acciones | {avg:+0.#;-0.#;0} bb media | {string.Join(", ", summaryItems.Select(item => item.Label))}",
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.ActionCountBbAverage"), examples.Count, avg, string.Join(", ", summaryItems.Select(item => item.Label))),
                     summaryItems,
                     exactHands,
                     BrushForBb(avg));

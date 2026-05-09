@@ -22,6 +22,7 @@ namespace Hud.App.Views
                 ChkCompact.Unchecked += (_, __) => ApplyScale(false);
             }
 
+            Loaded += (_, _) => FitToWorkArea();
             Closed += (_, _) => ClearOverlays();
         }
 
@@ -68,6 +69,67 @@ namespace Hud.App.Views
                 : string.Format(LocalizationManager.Text("Common.RtStartedComplete"), matches.Count);
         }
 
+        private void BtnFinishSession_Click(object sender, RoutedEventArgs e)
+        {
+            var slots = GetSlots();
+            var snapshots = slots
+                .Select(slot => slot.GetReportSnapshot())
+                .Where(table => !string.IsNullOrWhiteSpace(table.SourcePath) || table.Players.Count > 0)
+                .ToList();
+
+            if (snapshots.Count == 0)
+            {
+                MessageBox.Show(
+                    LocalizationManager.Text("RT.NoSessionToReport"),
+                    LocalizationManager.Text("RT.FinishSession"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var active = snapshots.Where(table => table.IsRunning).ToList();
+            if (active.Count > 0)
+            {
+                var details = string.Join(
+                    Environment.NewLine,
+                    active.Select(table => string.Format(
+                        LocalizationManager.Text("RT.ActiveTableLine"),
+                        table.TableName,
+                        FormatDate(table.LastHandTime))));
+                var message = string.Format(LocalizationManager.Text("RT.FinishWarning"), active.Count, details);
+                var result = MessageBox.Show(
+                    message,
+                    LocalizationManager.Text("RT.FinishSession"),
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
+
+            try
+            {
+                var path = RealTimeSessionReportService.SavePdf(snapshots);
+                foreach (var slot in slots)
+                    slot.StopSession();
+                ClearOverlays();
+
+                MessageBox.Show(
+                    string.Format(LocalizationManager.Text("RT.ReportSaved"), path),
+                    LocalizationManager.Text("RT.FinishSession"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    string.Format(LocalizationManager.Text("RT.ReportError"), ex.Message),
+                    LocalizationManager.Text("RT.FinishSession"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private SlotTail[] GetSlots() =>
             new[] { Slot1, Slot2, Slot3, Slot4, Slot5, Slot6, Slot7, Slot8 };
 
@@ -87,6 +149,16 @@ namespace Hud.App.Views
                 ScaleProxy.Tag = compact ? 0.80 : 1.00;
         }
 
+        private void FitToWorkArea()
+        {
+            var workArea = SystemParameters.WorkArea;
+            MaxHeight = Math.Max(520, workArea.Height - 24);
+            Height = Math.Min(MaxHeight, Math.Max(720, workArea.Height - 48));
+
+            if (Top + Height > workArea.Bottom)
+                Top = Math.Max(workArea.Top + 12, workArea.Bottom - Height - 12);
+        }
+
         private void BtnDictionary_Click(object sender, RoutedEventArgs e)
         {
             var window = new RealTimeDictionaryWindow
@@ -97,6 +169,9 @@ namespace Hud.App.Views
 
             window.Show();
         }
+
+        private static string FormatDate(DateTime? value) =>
+            value.HasValue ? value.Value.ToString("yyyy-MM-dd HH:mm:ss") : "-";
     }
 }
 

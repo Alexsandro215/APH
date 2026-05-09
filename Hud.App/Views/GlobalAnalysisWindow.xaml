@@ -395,7 +395,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Header="Final bb" Width="94">
+          <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="94">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -417,7 +417,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Header="Fichas/Dinero" Width="120">
+          <DataGridTemplateColumn Header="{DynamicResource Common.ChipsMoney}" Width="120">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding NetAmountLabel}" FontWeight="SemiBold" TextAlignment="Center">

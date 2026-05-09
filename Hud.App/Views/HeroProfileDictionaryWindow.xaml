@@ -45,7 +45,7 @@
 
       <Border Style="{StaticResource PanelBorder}" Margin="0,0,8,0">
         <DockPanel>
-          <TextBlock Text="TAGS" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,10"/>
+          <TextBlock Text="{DynamicResource Common.Tags}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,10"/>
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Tags}">
               <ItemsControl.ItemTemplate>

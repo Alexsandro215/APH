@@ -196,7 +196,7 @@
                 Height="26"
                 Click="Stop_Click"/>
 
-        <TextBlock Text="Líneas:"
+            <TextBlock Text="{DynamicResource Common.Lines}"
                    Foreground="{StaticResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
@@ -204,7 +204,7 @@
                    Text="0"
                    FontWeight="Bold"
                    VerticalAlignment="Center"/>
-        <TextBlock Text="Última:"
+            <TextBlock Text="{DynamicResource Common.Last}"
                    Foreground="{StaticResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
@@ -213,7 +213,7 @@
                    FontWeight="Bold"
                    VerticalAlignment="Center"/>
 
-        <TextBlock Text="Héroe:"
+            <TextBlock Text="{DynamicResource Common.Hero}"
                    Foreground="{StaticResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
@@ -356,7 +356,7 @@
 
         <!-- Columnas -->
         <DataGrid.Columns>
-          <DataGridTextColumn Header="Jugador"
+              <DataGridTextColumn Header="{DynamicResource Grid.Player}"
                               Binding="{Binding Name}"
                               Width="150"/>
           <DataGridTextColumn Header="{DynamicResource Grid.Hands}"
@@ -593,7 +593,7 @@
 
 
           <!-- Últimas 9 / Secuencia -->
-          <DataGridTemplateColumn Header="Últimas 9"
+              <DataGridTemplateColumn Header="{DynamicResource Common.LastNine}"
                                   Width="170">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
@@ -601,7 +601,7 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
-          <DataGridTextColumn Header="Secuencia"
+              <DataGridTextColumn Header="{DynamicResource Common.Sequence}"
                               Binding="{Binding LastActionSeq}"
                               Width="140"/>
         </DataGrid.Columns>

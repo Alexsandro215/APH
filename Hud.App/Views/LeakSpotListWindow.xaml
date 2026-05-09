@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Hud.App.Views.LeakSpotListWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH - Spots de leak"
+        Title="{DynamicResource Common.LeakSpotsTitle}"
         Height="760"
         Width="1420"
         MinHeight="620"
@@ -104,15 +104,15 @@
           </StackPanel>
           <UniformGrid Columns="4" MinWidth="520">
             <StackPanel Margin="4,0">
-              <TextBlock Text="Pos" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
+          <TextBlock Text="{DynamicResource Common.PositionShort}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
               <ComboBox x:Name="PositionFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-              <TextBlock Text="Bote" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
+          <TextBlock Text="{DynamicResource Common.Pot}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
               <ComboBox x:Name="PotFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-              <TextBlock Text="Real" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
+          <TextBlock Text="{DynamicResource Common.Real}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
               <ComboBox x:Name="ResultFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
@@ -129,7 +129,7 @@
         <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding DateStack}" Width="82"/>
         <DataGridTextColumn Header="Eff.Stack" Binding="{Binding EffectiveStackLabel}" Width="78"/>
         <DataGridTextColumn Header="Spot" Binding="{Binding Spot}" Width="115"/>
-        <DataGridTextColumn Header="Pos" Binding="{Binding Position}" Width="58"/>
+        <DataGridTextColumn Header="{DynamicResource Common.PositionShort}" Binding="{Binding Position}" Width="58"/>
         <DataGridTemplateColumn Header="{DynamicResource Common.Hero}" Width="74">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -166,7 +166,7 @@
         <DataGridTextColumn Header="Draw" Binding="{Binding DrawLabel}" Width="90"/>
         <DataGridTextColumn Header="{DynamicResource Common.Result}" Binding="{Binding RealLabel}" Width="76"/>
         <DataGridTemplateColumn Header="Î”bb" CellTemplate="{StaticResource NetBbCellTemplate}" Width="72"/>
-        <DataGridTextColumn Header="Motivo" Binding="{Binding Reason}" Width="*"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Reason}" Binding="{Binding Reason}" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>
   </Grid>

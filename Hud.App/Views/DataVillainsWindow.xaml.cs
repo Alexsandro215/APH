@@ -601,16 +601,16 @@ namespace Hud.App.Views
 
         private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
         {
-            if (hands < 30) return "Sin muestra";
+            if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
             if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
             if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-            if (vpip >= 35 && pfr < 15) return "Loose pasivo";
+                if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
             if (vpip >= 28 && pfr >= 20) return "LAG";
             if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
             if (vpip < 14 && pfr < 10) return "Nit";
             if (vpip < 22 && pfr < 15) return "Tight";
-            if (af < 1.2) return "Pasivo";
-            return "Regular";
+                if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
+                return LocalizationManager.Text("Tag.Regular");
         }
     }
 }

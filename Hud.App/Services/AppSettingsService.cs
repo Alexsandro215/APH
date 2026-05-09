@@ -8,6 +8,11 @@ namespace Hud.App.Services
         public string? PokerStarsHandHistoryFolder { get; set; }
         public string Language { get; set; } = "Espanol";
         public string Palette { get; set; } = ThemePaletteManager.DefaultPaletteKey;
+        public string? ReportsFolder { get; set; }
+        public bool ProtectReportsWithPassword { get; set; }
+        public string? ReportPasswordSalt { get; set; }
+        public string? ReportPasswordHash { get; set; }
+        public string? EncryptedReportPassword { get; set; }
         public bool CloudSyncEnabled { get; set; }
         public bool GoogleSyncEnabled { get; set; }
         public bool EmailSyncEnabled { get; set; }

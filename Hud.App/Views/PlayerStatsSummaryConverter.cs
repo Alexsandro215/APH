@@ -5,6 +5,7 @@ using System.Windows.Data;
 using System.Windows.Controls;
 using System.Windows.Media;
 using HandReader.Core.Models;
+using Hud.App.Services;
 
 namespace Hud.App.Views
 {
@@ -157,7 +158,7 @@ namespace Hud.App.Views
         public IReadOnlyList<PlayerTagSummary> Tags { get; }
 
         public static PlayerStatsSummary Empty { get; } =
-            new("-", "Sin datos.", "", Array.Empty<PlayerTagSummary>());
+            new("-", LocalizationManager.Text("Common.NoData"), "", Array.Empty<PlayerTagSummary>());
 
         public static PlayerStatsSummary From(PlayerStats stats)
         {
@@ -166,7 +167,7 @@ namespace Hud.App.Views
 
             var profile = ClassifyProfile(stats.HandsReceived, stats.VPIPPct, stats.PFRPct, stats.ThreeBetPct, stats.AF);
             var tags = BuildTags(stats, profile);
-            var summary = $"{profile} | {stats.HandsReceived} manos";
+            var summary = string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("PlayerSummary.ProfileHands"), profile, stats.HandsReceived);
             var statsLine =
                 $"VPIP {stats.VPIPPct:0.#}% | PFR {stats.PFRPct:0.#}% | 3Bet {stats.ThreeBetPct:0.#}% | AF {stats.AF:0.#} | WTSD {stats.WTSDPct:0.#}% | W$SD {stats.WSDPct:0.#}%";
 
@@ -186,10 +187,10 @@ namespace Hud.App.Views
                 row.FoldVsCBetFlopPct,
                 row.WTSDPct,
                 row.WSDPct);
-            tags.Insert(0, Neutral($"Historial {row.TotalHandsVsHero} vs hero"));
+            tags.Insert(0, Neutral(string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("PlayerSummary.HistoryTag"), row.TotalHandsVsHero)));
 
             var summary =
-                $"{row.Profile} | Historico: {row.TotalHands} manos | Vs hero: {row.TotalHandsVsHero} | Mesa actual: {live.HandsReceived}";
+                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("PlayerSummary.History"), row.Profile, row.TotalHands, row.TotalHandsVsHero, live.HandsReceived);
             var statsLine =
                 $"VPIP {row.VPIPPct:0.#}% | PFR {row.PFRPct:0.#}% | 3Bet {row.ThreeBetPct:0.#}% | AF {row.AF:0.#} | WTSD {row.WTSDPct:0.#}% | W$SD {row.WSDPct:0.#}%";
 
@@ -224,43 +225,43 @@ namespace Hud.App.Views
             var tags = new List<PlayerTagSummary> { Neutral(profile) };
 
             if (hands < 30)
-                tags.Add(Neutral("Sin muestra"));
+                tags.Add(Neutral(LocalizationManager.Text("Tag.NoSample")));
             if (vpip >= 35)
-                tags.Add(Negative("Juega muchas manos"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.PlaysManyHands")));
             if (pfr >= 20)
-                tags.Add(Neutral("Agresivo preflop"));
+                tags.Add(Neutral(LocalizationManager.Text("Tag.AggressivePreflop")));
             if (pfr > 0 && pfr < 10)
-                tags.Add(Neutral("PFR bajo"));
+                tags.Add(Neutral(LocalizationManager.Text("Tag.LowPfr")));
             if (threeBet >= 10)
-                tags.Add(Negative("3Bet alto"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.High3Bet")));
             if (af >= 4 || afq >= 65)
-                tags.Add(Negative("Agresor"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.Aggressor")));
             if (foldVsCBet >= 65)
-                tags.Add(Positive("Foldea CBet"));
+                tags.Add(Positive(LocalizationManager.Text("Tag.FoldsCBetShort")));
             if (foldVsCBet > 0 && foldVsCBet <= 30)
-                tags.Add(Negative("No foldea CBet"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.NoFoldCBet")));
             if (wtsd >= 35)
-                tags.Add(Negative("Va a showdown"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.GoesShowdown")));
             if (wsd >= 55)
-                tags.Add(Positive("Showdown fuerte"));
+                tags.Add(Positive(LocalizationManager.Text("Tag.StrongShowdown")));
             if (wsd > 0 && wsd < 45)
-                tags.Add(Negative("Showdown debil"));
+                tags.Add(Negative(LocalizationManager.Text("Tag.WeakShowdown")));
 
             return tags;
         }
 
         private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
         {
-            if (hands < 30) return "Sin muestra";
+            if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
             if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
             if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-            if (vpip >= 35 && pfr < 15) return "Loose pasivo";
+            if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
             if (vpip >= 28 && pfr >= 20) return "LAG";
             if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
             if (vpip < 14 && pfr < 10) return "Nit";
             if (vpip < 22 && pfr < 15) return "Tight";
-            if (af < 1.2) return "Pasivo";
-            return "Regular";
+            if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
+            return LocalizationManager.Text("Tag.Regular");
         }
 
         private static PlayerTagSummary Positive(string text) =>

@@ -90,7 +90,7 @@
                 Foreground="Black"
                 Content="?"
                 Click="BtnDictionary_Click"
-                ToolTip="Abrir diccionario de tags y colores"/>
+                 ToolTip="{DynamicResource Common.OpenDictionary}"/>
         <Border Width="58" Height="58" CornerRadius="12" Background="#11261A" BorderBrush="#214E38" BorderThickness="1" Margin="0,0,16,0">
           <Viewbox Stretch="Uniform">
             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource Brush.Accent}" FontWeight="Bold"/>
@@ -123,7 +123,7 @@
             <TextBlock Text="{Binding BbPer100Label}" FontSize="22" FontWeight="Bold" Foreground="{Binding TotalBbBrush}"/>
           </StackPanel>
           <StackPanel Margin="8">
-            <TextBlock Text="Mejor posicion" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.BestPosition}" Foreground="{StaticResource Brush.TextDim}"/>
             <TextBlock Text="{Binding BestPositionLabel}" FontSize="22" FontWeight="Bold"/>
           </StackPanel>
           <StackPanel Margin="8">
@@ -162,7 +162,7 @@
 
     <Border Grid.Row="2" Style="{StaticResource PanelBorder}" Margin="0,0,0,12">
       <StackPanel>
-        <TextBlock Text="GLOBAL STATS" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+      <TextBlock Text="{DynamicResource Main.GlobalStats}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
         <ItemsControl ItemsSource="{Binding StatMetrics}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -210,7 +210,7 @@
 
       <Border Style="{StaticResource PanelBorder}" Margin="0,0,8,8">
         <DockPanel>
-          <TextBlock Text="GANANCIA Y JUEGO POR POSICION" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,8"/>
+          <TextBlock Text="{DynamicResource Common.PositionProfit}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,8"/>
           <DataGrid ItemsSource="{Binding PositionRows}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Pos" Binding="{Binding Position}" Width="50" ElementStyle="{StaticResource NoWrapCellText}"/>
@@ -246,12 +246,12 @@
 
       <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="8,0,8,8">
         <DockPanel>
-          <TextBlock Text="TOP 10 COMBOS QUE MAS JUEGA" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,8"/>
+          <TextBlock Text="{DynamicResource Common.TopCombos}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" DockPanel.Dock="Top" Margin="0,0,0,8"/>
           <DataGrid ItemsSource="{Binding TopCombos}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="{DynamicResource Common.Cards}" Binding="{Binding Combo}" Width="58" ElementStyle="{StaticResource NoWrapCellText}"/>
-              <DataGridTextColumn Header="Veces" Binding="{Binding Count}" Width="52" ElementStyle="{StaticResource NoWrapCellText}"/>
-              <DataGridTextColumn Header="Uso" Binding="{Binding UsageLabel}" Width="58" ElementStyle="{StaticResource NoWrapCellText}"/>
+            <DataGridTextColumn Header="{DynamicResource Common.Times}" Binding="{Binding Count}" Width="52" ElementStyle="{StaticResource NoWrapCellText}"/>
+            <DataGridTextColumn Header="{DynamicResource Common.Usage}" Binding="{Binding UsageLabel}" Width="58" ElementStyle="{StaticResource NoWrapCellText}"/>
               <DataGridTextColumn Header="VPIP" Binding="{Binding VpipLabel}" Width="58" ElementStyle="{StaticResource NoWrapCellText}"/>
               <DataGridTextColumn Header="PFR" Binding="{Binding PfrLabel}" Width="56" ElementStyle="{StaticResource NoWrapCellText}"/>
               <DataGridTemplateColumn Header="{DynamicResource Common.Average}" Width="72">

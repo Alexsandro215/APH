@@ -216,54 +216,54 @@ namespace Hud.App.Views
             {
                 yield return Tag(
                     ClassifyProfile(hero.HandsReceived, hero.VPIPPct, hero.PFRPct, hero.ThreeBetPct, hero.AF),
-                    "Perfil base segun VPIP/PFR/3Bet/AF, igual que en Data Villans.",
+                    LocalizationManager.Text("Tag.ProfileBaseHero.Desc"),
                     Neutral());
 
                 if (hero.HandsReceived < 30)
-                    yield return Tag("Sin muestra", "Menos de 30 manos totales.", Neutral());
+                    yield return Tag(LocalizationManager.Text("Tag.NoSample"), LocalizationManager.Text("Tag.NoSample.Short"), Neutral());
                 if (hero.VPIPPct >= 35)
-                    yield return Tag("Juega muchas manos", $"VPIP {hero.VPIPPct:0.#}%.", Danger());
+                    yield return Tag(LocalizationManager.Text("Tag.PlaysManyHands"), $"VPIP {hero.VPIPPct:0.#}%.", Danger());
                 if (hero.AF >= 4 || hero.AFqPct >= 65)
-                    yield return Tag("Agresor", $"AF {hero.AF:0.#} | AFq {hero.AFqPct:0.#}%.", Danger());
+                    yield return Tag(LocalizationManager.Text("Tag.Aggressor"), $"AF {hero.AF:0.#} | AFq {hero.AFqPct:0.#}%.", Danger());
                 if (hero.ThreeBetPct >= 10)
-                    yield return Tag("3Bet alto", $"3Bet {hero.ThreeBetPct:0.#}%.", Danger());
+                    yield return Tag(LocalizationManager.Text("Tag.High3Bet"), $"3Bet {hero.ThreeBetPct:0.#}%.", Danger());
                 if (hero.FoldVsCBetFlopPct >= 65)
-                    yield return Tag("Foldea mucho a CBet", $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Accent());
+                    yield return Tag(LocalizationManager.Text("Tag.FoldsCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Accent());
                 if (hero.FoldVsCBetFlopPct > 0 && hero.FoldVsCBetFlopPct <= 30)
-                    yield return Tag("No foldea CBet", $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Danger());
+                    yield return Tag(LocalizationManager.Text("Tag.NoFoldCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Danger());
                 if (hero.WTSDPct >= 35)
-                    yield return Tag("Va mucho a showdown", $"WTSD {hero.WTSDPct:0.#}%.", Danger());
+                    yield return Tag(LocalizationManager.Text("Tag.ShowdownOften"), $"WTSD {hero.WTSDPct:0.#}%.", Danger());
                 if (hero.VPIPPct >= 30 && hero.PFRPct < 12 && hero.AF < 1.5)
-                    yield return Tag("Calling station", "VPIP alto, PFR bajo y agresion baja.", Accent());
+                    yield return Tag("Calling station", LocalizationManager.Text("Tag.CallingStation.Desc"), Accent());
                 if (hero.VPIPPct < 14 && hero.PFRPct < 10 && hero.HandsReceived >= 50)
-                    yield return Tag("Roca", "Rango cerrado con muestra suficiente.", Neutral());
+                    yield return Tag(LocalizationManager.Text("Tag.Rock"), LocalizationManager.Text("Tag.Rock.Desc"), Neutral());
 
                 yield return Tag(
-                    hero.VPIPPct >= 35 ? "Loose" : hero.VPIPPct <= 18 ? "Tight" : "Rango medio",
-                    $"VPIP {hero.VPIPPct:0.#}%. Indica cuantas manos juegas voluntariamente preflop.",
+                    hero.VPIPPct >= 35 ? "Loose" : hero.VPIPPct <= 18 ? "Tight" : LocalizationManager.Text("Tag.MidRange"),
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Vpip.Dynamic"), hero.VPIPPct),
                     Accent());
                 yield return Tag(
-                    hero.PFRPct >= 22 ? "Agresivo preflop" : hero.PFRPct <= 10 ? "PFR bajo" : "PFR estable",
-                    $"PFR {hero.PFRPct:0.#}%. Mide cuantas manos subes preflop en vez de solo pagar.",
+                    hero.PFRPct >= 22 ? LocalizationManager.Text("Tag.AggressivePreflop") : hero.PFRPct <= 10 ? LocalizationManager.Text("Tag.LowPfr") : LocalizationManager.Text("Tag.StablePfr"),
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Pfr.Dynamic"), hero.PFRPct),
                     Neutral());
                 yield return Tag(
-                    hero.FoldVsCBetFlopPct >= 65 ? "Overfold vs CBet" : "Defensa vs CBet ok",
-                    $"Fold vs CBet {hero.FoldVsCBetFlopPct:0.#}%. Alto significa que abandonas muchos flops ante apuesta de continuacion.",
+                    hero.FoldVsCBetFlopPct >= 65 ? "Overfold vs CBet" : LocalizationManager.Text("Tag.CBetDefenseOk"),
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.FoldCBet.Dynamic"), hero.FoldVsCBetFlopPct),
                     hero.FoldVsCBetFlopPct >= 65 ? Danger() : Neutral());
                 yield return Tag(
-                    hero.CBetFlopPct >= 55 ? "CBet frecuente" : "CBet selectiva",
-                    $"CBet flop {hero.CBetFlopPct:0.#}%. Frecuencia con la que apuestas flop tras ser agresor preflop.",
+                    hero.CBetFlopPct >= 55 ? LocalizationManager.Text("Tag.FrequentCBet") : LocalizationManager.Text("Tag.SelectiveCBet"),
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.CBet.Dynamic"), hero.CBetFlopPct),
                     Neutral());
                 yield return Tag(
-                    hero.WSDPct >= 55 ? "Showdown fuerte" : "Showdown a revisar",
-                    $"W$SD {hero.WSDPct:0.#}%. Porcentaje de showdowns ganados cuando llegas a mostrar.",
+                    hero.WSDPct >= 55 ? LocalizationManager.Text("Tag.StrongShowdown") : LocalizationManager.Text("Tag.ReviewShowdown"),
+                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Wsd.Dynamic"), hero.WSDPct),
                     hero.WSDPct >= 55 ? Accent() : Danger());
 
                 var worst = positions.Where(position => position.Hands > 0).OrderBy(position => position.TotalBb).FirstOrDefault();
                 if (worst is not null)
                     yield return Tag(
                         $"Leak {worst.Position}",
-                        $"Tu peor posicion por bb total es {worst.Position}: {worst.TotalBbLabel}, {worst.BbPer100Label} bb/100.",
+                        string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.LeakPosition.Dynamic"), worst.Position, worst.TotalBbLabel, worst.BbPer100Label),
                         Danger());
 
                 var top = combos.FirstOrDefault();
@@ -271,7 +271,7 @@ namespace Hud.App.Views
                     yield return CardTag(
                         top.Combo,
                         "lover",
-                        $"{top.Combo} es el combo voluntario mas frecuente: {top.Count} veces, {top.UsageLabel} de la muestra.",
+                        string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.ComboLover.Dynamic"), top.Combo, top.Count, top.UsageLabel),
                         Neutral());
 
                 foreach (var tag in BuildRangeTags(combos))
@@ -297,27 +297,27 @@ namespace Hud.App.Views
                 }.Count(value => value);
 
                 if (premium >= 3 && premium * 100.0 / total >= 30)
-                    yield return Tag($"Amante premium - {premium}/{total}", "Muchas manos frecuentes son rango premium.", Neutral());
+                    yield return Tag($"{LocalizationManager.Text("Tag.PremiumLover")} - {premium}/{total}", LocalizationManager.Text("Tag.PremiumLoverHero.Desc"), Neutral());
                 if (low >= 3 && low * 100.0 / total >= 25)
-                    yield return Tag($"Manos bajas - {low}/{total}", "Muestra tendencia a jugar manos bajas entre tus combos frecuentes.", Neutral());
+                    yield return Tag($"{LocalizationManager.Text("Tag.LowHands")} - {low}/{total}", LocalizationManager.Text("Tag.LowHandsHero.Desc"), Neutral());
                 if (suitedConnectors >= 3 && suitedConnectors * 100.0 / total >= 20)
-                    yield return Tag($"Suited connectors - {suitedConnectors}/{total}", "Juegas suited connectors con frecuencia.", Neutral());
+                    yield return Tag($"Suited connectors - {suitedConnectors}/{total}", LocalizationManager.Text("Tag.SuitedConnectorsHero.Desc"), Neutral());
                 if (categories >= 4 && combos.Count >= 10)
-                    yield return Tag("Mixto", "Muestra variedad amplia de categorias en tus combos frecuentes.", Neutral());
+                    yield return Tag(LocalizationManager.Text("Tag.Mixed"), LocalizationManager.Text("Tag.MixedHero.Desc"), Neutral());
             }
 
             private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
             {
-                if (hands < 30) return "Sin muestra";
+                if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
                 if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
                 if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-                if (vpip >= 35 && pfr < 15) return "Loose pasivo";
+                if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
                 if (vpip >= 28 && pfr >= 20) return "LAG";
                 if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
                 if (vpip < 14 && pfr < 10) return "Nit";
                 if (vpip < 22 && pfr < 15) return "Tight";
-                if (af < 1.2) return "Pasivo";
-                return "Regular";
+                if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
+                return LocalizationManager.Text("Tag.Regular");
             }
 
             private static bool IsPremium(string handCode) =>
@@ -374,24 +374,24 @@ namespace Hud.App.Views
             {
                 var worstPosition = positions.Where(row => row.Hands > 0).OrderBy(row => row.TotalBb).FirstOrDefault();
                 if (worstPosition is not null)
-                    yield return $"La posicion mas costosa en la muestra es {worstPosition.Position}: {worstPosition.TotalBbLabel}, {worstPosition.BbPer100Label}.";
+                    yield return string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("HeroNote.WorstPosition"), worstPosition.Position, worstPosition.TotalBbLabel, worstPosition.BbPer100Label);
 
                 var bestPosition = positions.Where(row => row.Hands > 0).OrderByDescending(row => row.TotalBb).FirstOrDefault();
                 if (bestPosition is not null)
-                    yield return $"La posicion mas rentable es {bestPosition.Position}: {bestPosition.TotalBbLabel}.";
+                    yield return string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("HeroNote.BestPosition"), bestPosition.Position, bestPosition.TotalBbLabel);
 
                 var worstAction = actions.OrderBy(row => row.TotalBb).FirstOrDefault();
                 if (worstAction is not null)
-                    yield return $"La accion con peor EV agregado es {worstAction.Action}: {worstAction.TotalBbLabel}.";
+                    yield return string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("HeroNote.WorstAction"), worstAction.Action, worstAction.TotalBbLabel);
 
                 var topCombo = combos.FirstOrDefault();
                 if (topCombo is not null)
-                    yield return $"El combo mas jugado voluntariamente es {topCombo.Combo}: {topCombo.Count} veces, {topCombo.UsageLabel} de la muestra.";
+                    yield return string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("HeroNote.TopCombo"), topCombo.Combo, topCombo.Count, topCombo.UsageLabel);
 
                 if (hero.FoldVsCBetFlopPct >= 65)
-                    yield return "Fold vs CBet alto: revisar defensas en flop, sobre todo en posicion y BB.";
+                    yield return LocalizationManager.Text("HeroNote.HighFoldCBet");
                 if (hero.WTSDPct >= 30 && hero.WSDPct < 50)
-                    yield return "Vas bastante al showdown y ganas poco: revisar calls de turn/river.";
+                    yield return LocalizationManager.Text("HeroNote.ShowdownReview");
             }
 
             private static IEnumerable<HeroHandRow> LoadHands(MainWindow.TableSessionStats table)
@@ -520,7 +520,7 @@ namespace Hud.App.Views
                         raisesBeforeHero++;
                 }
 
-                return new HeroActionInfo("Sin accion", false, false, false);
+                return new HeroActionInfo(LocalizationManager.Text("Common.NoAction"), false, false, false);
             }
 
             private static IEnumerable<string> GetPreflopLines(IReadOnlyList<string> hand)

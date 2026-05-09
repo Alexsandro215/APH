@@ -76,7 +76,7 @@ namespace Hud.App
             if (!string.IsNullOrWhiteSpace(settings.PokerStarsHandHistoryFolder) &&
                 Directory.Exists(settings.PokerStarsHandHistoryFolder))
             {
-                await AnalyzeAndLoadFolderAsync(settings.PokerStarsHandHistoryFolder, "Carpeta predefinida cargada desde configuracion.");
+                await AnalyzeAndLoadFolderAsync(settings.PokerStarsHandHistoryFolder, LocalizationManager.Text("Common.DefaultFolderLoaded"));
             }
         }
 
@@ -154,6 +154,18 @@ namespace Hud.App
 
             window.Show();
             InfoText.Text = LocalizationManager.Text("Common.StatusLeaksOpen");
+        }
+
+        private void BtnSessions_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new SessionsWindow
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = true
+            };
+
+            window.Show();
+            InfoText.Text = "Sesiones guardadas abiertas.";
         }
 
         private void BtnHeroProfile_Click(object sender, RoutedEventArgs e)
@@ -573,7 +585,7 @@ namespace Hud.App
 
             return isCash
                 ? $"{sign}${absolute.ToString("0.00", CultureInfo.InvariantCulture)}"
-                : $"{sign}{absolute.ToString("0", CultureInfo.InvariantCulture)} fichas";
+                : $"{sign}{absolute.ToString("0", CultureInfo.InvariantCulture)} {LocalizationManager.Text("Common.Chips").ToLowerInvariant()}";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

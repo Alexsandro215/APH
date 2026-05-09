@@ -394,7 +394,7 @@ namespace Hud.App.Views
             }
 
             AddLabel("bb", 8, plotTop - 20, textBrush);
-            AddLabel("manos", plotRight - 42, plotBottom + 22, textBrush);
+            AddLabel(Services.LocalizationManager.Text("Common.Hands").ToLowerInvariant(), plotRight - 42, plotBottom + 22, textBrush);
         }
 
         private void AddLabel(string text, double left, double top, Brush brush)
@@ -487,7 +487,7 @@ namespace Hud.App.Views
 
             public string SelectedHandTitle =>
                 SelectedHand is null
-                    ? "Selecciona una mano"
+                    ? Services.LocalizationManager.Text("Common.SelectHand")
                     : $"{SelectedHand.HandNumberLabel} | {SelectedHand.CardsLabel} | {SelectedHand.NetBbLabel}";
 
             public string SelectedHandTitleSuffix =>
@@ -620,7 +620,7 @@ namespace Hud.App.Views
                     .ToList();
 
                 return lines.Count == 0
-                    ? new[] { new StreetActionViewModel("Sin accion registrada.", false, true, false, false) }
+                    ? new[] { new StreetActionViewModel(Services.LocalizationManager.Text("Common.NoActionRegistered"), false, true, false, false) }
                     : lines;
             }
 
@@ -747,7 +747,7 @@ namespace Hud.App.Views
 
                 var show = PokerStarsHandHistory.ShowCardsRx.Match(line);
                 if (show.Success)
-                    return $"{ActorLabel(PokerStarsHandHistory.NormalizeName(show.Groups["name"].Value), heroName, positions)} muestra {FormatCards(show.Groups["cards"].Value)}";
+                    return $"{ActorLabel(PokerStarsHandHistory.NormalizeName(show.Groups["name"].Value), heroName, positions)} {Services.LocalizationManager.Text("Common.Shows")} {FormatCards(show.Groups["cards"].Value)}";
 
                 var collected = PokerStarsHandHistory.CollectedRx.Match(line);
                 if (collected.Success)
@@ -776,7 +776,7 @@ namespace Hud.App.Views
                 IReadOnlyDictionary<string, string> positions)
             {
                 var position = positions.TryGetValue(player, out var value) ? value : "?";
-                var prefix = PokerStarsHandHistory.SamePlayer(player, heroName) ? "Heroe " : "";
+                var prefix = PokerStarsHandHistory.SamePlayer(player, heroName) ? $"{Services.LocalizationManager.Text("Common.Hero")} " : "";
                 return $"{position}-{prefix}{player}:";
             }
 
@@ -890,7 +890,7 @@ namespace Hud.App.Views
             IReadOnlyList<StreetActionViewModel> TurnActions,
             IReadOnlyList<StreetActionViewModel> RiverActions)
         {
-            public string HandNumberLabel => $"Mano {Index}";
+            public string HandNumberLabel => $"{Services.LocalizationManager.Text("Common.Hand")} {Index}";
             public string CardsLabel => Cards;
             public IReadOnlyList<CardChipViewModel> CardChips => CardChipViewModel.FromCards(Cards);
             public string NetBbLabel => $"{(NetBb >= 0 ? "+" : "")}{NetBb:F0} bb";

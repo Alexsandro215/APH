@@ -87,9 +87,9 @@ namespace Hud.App.Views
                         .FirstOrDefault()?.Key ?? "Sin datos";
 
                 PositionLeaks = BuildPositionSummaries(hands);
-                ActionLeaks = BuildSummaries("Accion", hands, hand => hand.Action, "Sin accion", 10);
-                PotLeaks = BuildSummaries("Tipo de bote", hands, hand => hand.PotType, "Sin bote", 10);
-                ComboLeaks = BuildSummaries("Mano", hands, hand => hand.Combo, "Sin mano", 16);
+                ActionLeaks = BuildSummaries(Hud.App.Services.LocalizationManager.Text("Common.Action"), hands, hand => hand.Action, Hud.App.Services.LocalizationManager.Text("Common.NoAction"), 10);
+                PotLeaks = BuildSummaries(Hud.App.Services.LocalizationManager.Text("Common.PotType"), hands, hand => hand.PotType, Hud.App.Services.LocalizationManager.Text("Common.NoPot"), 10);
+                ComboLeaks = BuildSummaries(Hud.App.Services.LocalizationManager.Text("Common.Hand"), hands, hand => hand.Combo, Hud.App.Services.LocalizationManager.Text("Common.NoHand"), 16);
                 BoardLeaks = BuildSummaries("Board", hands.Where(hand => hand.BoardTexture != "Preflop"), hand => hand.BoardTexture, "Sin board", 10);
                 SessionLeaks = new ObservableCollection<LeakSummaryViewModel>(
                     hands.GroupBy(hand => hand.DateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
@@ -112,7 +112,7 @@ namespace Hud.App.Views
                     : "Sin datos";
                 WorstReviewActionLabel = BuildWorstLabel(ReviewHands, hand => hand.Action);
                 WorstReviewPotLabel = BuildWorstLabel(ReviewHands, hand => hand.PotType);
-                ReviewCountLabel = $"{ReviewHands.Count} de {hands.Count} manos";
+                ReviewCountLabel = string.Format(CultureInfo.InvariantCulture, Hud.App.Services.LocalizationManager.Text("Common.CountOfHands"), ReviewHands.Count, hands.Count);
                 ReviewSummary = string.Format(Hud.App.Services.LocalizationManager.Text("Common.ReviewSummary"), ReviewHands.Count);
             }
 
@@ -476,7 +476,7 @@ namespace Hud.App.Views
                 if (actions.Contains("Fold", StringComparer.OrdinalIgnoreCase))
                     return "Fold";
 
-                return "Sin accion";
+                return Hud.App.Services.LocalizationManager.Text("Common.NoAction");
             }
 
             private static StreetInfo BuildStreetInfo(IReadOnlyList<string> hand, string heroName)
@@ -793,13 +793,13 @@ namespace Hud.App.Views
             private static string BuildReason(double netBb, string position, string action, string potType, string combo, string boardTexture)
             {
                 if (netBb <= -50)
-                    return $"Perdida grande con {combo} en {position}, {action}, {potType}.";
+                    return string.Format(CultureInfo.InvariantCulture, Hud.App.Services.LocalizationManager.Text("LeakReason.BigLoss"), combo, position, action, potType);
                 if (netBb <= -10)
                     return $"Spot repetible: {position}, {action}, {potType}, board {boardTexture}.";
                 if (netBb < 0)
-                    return $"Perdida menor: revisar si el fold/call era obligatorio.";
+                    return Hud.App.Services.LocalizationManager.Text("LeakReason.SmallLoss");
 
-                return $"Mano ganadora util para comparar lineas similares.";
+                return Hud.App.Services.LocalizationManager.Text("LeakReason.WinCompare");
             }
 
             private static double EstimateHeroNetForHand(IReadOnlyList<string> hand, string heroName)
@@ -845,7 +845,7 @@ namespace Hud.App.Views
             public Brush TotalBbTrendBrush => TrendBrush(TotalBb);
             public string AverageBbTrendIcon => TrendIcon(AverageBb);
             public Brush AverageBbTrendBrush => TrendBrush(AverageBb);
-            public string SummaryLabel => $"{Count} manos | {TotalBb:+0.#;-0.#;0} bb | media {AverageBbLabel}";
+            public string SummaryLabel => string.Format(CultureInfo.InvariantCulture, Hud.App.Services.LocalizationManager.Text("Common.SummaryHandsBbAverage"), Count, TotalBb, AverageBbLabel);
         }
 
         private static string TrendIcon(double value) =>

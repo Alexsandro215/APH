@@ -111,7 +111,7 @@ namespace Hud.App.Views
             public IReadOnlyList<LeakSpotRow> AllHands => _allHands;
             public ObservableCollection<LeakSpotRow> Hands { get; }
             public double TotalBb => Hands.Sum(item => item.NetBb);
-            public string CountLabel => $"{Hands.Count} manos";
+            public string CountLabel => string.Format(CultureInfo.InvariantCulture, Hud.App.Services.LocalizationManager.Text("Common.HandCount"), Hands.Count);
             public string TotalBbLabel => $"{TotalBb:+0.#;-0.#;0} bb";
             public Brush TotalBbBrush => TotalBb >= 0
                 ? new SolidColorBrush(Color.FromRgb(33, 192, 122))

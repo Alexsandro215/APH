@@ -195,6 +195,78 @@
         </Border>
 
         <Border Style="{StaticResource SectionCard}">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="1*"/>
+              <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Margin="0,0,12,0">
+              <TextBlock Text="Seguridad de reportes"
+                         FontSize="19"
+                         FontWeight="Bold"/>
+              <TextBlock Text="Guarda una contrasena codificada para proteger informes futuros."
+                         Foreground="{StaticResource Brush.TextDim}"
+                         Margin="0,4,0,12"/>
+              <CheckBox x:Name="ProtectReportsCheck"
+                        Margin="0,0,0,10"
+                        Click="ProtectReportsCheck_Click">
+                <TextBlock Text="Aplicar contrasena a reportes futuros"
+                           Foreground="{StaticResource Brush.Text}"/>
+              </CheckBox>
+              <TextBlock Text="Contrasena actual" Style="{StaticResource FieldLabel}"/>
+              <PasswordBox x:Name="OldPasswordBox"
+                           Height="32"
+                           Margin="0,0,0,8"/>
+              <TextBlock Text="Nueva contrasena" Style="{StaticResource FieldLabel}"/>
+              <PasswordBox x:Name="NewPasswordBox"
+                           Height="32"
+                           Margin="0,0,0,8"/>
+              <TextBlock Text="Confirmar nueva contrasena" Style="{StaticResource FieldLabel}"/>
+              <PasswordBox x:Name="ConfirmPasswordBox"
+                           Height="32"
+                           Margin="0,0,0,10"/>
+              <Button Content="Guardar contrasena"
+                      Style="{StaticResource Btn.Primary}"
+                      Width="160"
+                      HorizontalAlignment="Left"
+                      Click="BtnSaveReportPassword_Click"/>
+              <TextBlock x:Name="ReportPasswordStatus"
+                         Foreground="{StaticResource Brush.TextDim}"
+                         Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Margin="12,0,0,0">
+              <TextBlock Text="Ubicacion de reportes"
+                         FontSize="19"
+                         FontWeight="Bold"/>
+              <TextBlock Text="La app guarda y carga las sesiones desde esta carpeta."
+                         Foreground="{StaticResource Brush.TextDim}"
+                         Margin="0,4,0,12"/>
+              <TextBlock Text="Carpeta de reportes" Style="{StaticResource FieldLabel}"/>
+              <TextBox x:Name="ReportsFolderText"
+                       Height="34"
+                       IsReadOnly="True"
+                       Background="{DynamicResource Brush.Surface}"
+                       Foreground="{DynamicResource Brush.SurfaceText}"
+                       BorderThickness="0"
+                       Padding="10,6"
+                       Margin="0,0,0,10"/>
+              <Button Style="{StaticResource Btn.Primary}"
+                      Width="132"
+                      Height="38"
+                      HorizontalAlignment="Left"
+                      Click="BtnPickReportsFolder_Click">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                  <TextBlock Text="Buscar"/>
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <Border Style="{StaticResource SectionCard}">
           <StackPanel>
             <TextBlock Text="{DynamicResource Settings.Sync}"
                        FontSize="19"

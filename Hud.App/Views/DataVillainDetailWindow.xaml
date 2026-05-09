@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Hud.App.Views"
-        Title="APH - Villan Detail"
+        Title="{DynamicResource Common.VillainDetailTitle}"
         Height="880"
         Width="1460"
         MinHeight="720"
@@ -154,7 +154,7 @@
                   Background="#111A24"
                   BorderBrush="{StaticResource Brush.Border}"
                   Cursor="Help"
-                  ToolTip="Abrir diccionario del perfil"
+                   ToolTip="{DynamicResource Common.OpenDictionary}"
                   Click="BtnDictionary_Click"/>
 
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -226,7 +226,7 @@
                       Foreground="{StaticResource FgLight}"
                       ColumnHeaderStyle="{StaticResource HeaderStyle}">
               <DataGrid.Columns>
-                <DataGridTextColumn Header="Jugador" Binding="{Binding Name}" Width="150" ElementStyle="{StaticResource CellText}"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Player}" Binding="{Binding Name}" Width="150" ElementStyle="{StaticResource CellText}"/>
                 <DataGridTextColumn Header="{DynamicResource Grid.Hands}" Binding="{Binding Hands}" Width="70" ElementStyle="{StaticResource CenterCellText}"/>
                 <DataGridTemplateColumn Header="VPIP" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
@@ -398,7 +398,7 @@
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="BB propia" Width="82">
+              <DataGridTemplateColumn Header="{DynamicResource Common.OwnBb}" Width="82">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -427,7 +427,7 @@
             <DockPanel Margin="0,0,0,8">
               <CheckBox x:Name="SummaryModeToggle"
                         DockPanel.Dock="Right"
-                        Content="ALL DATA"
+              Content="{DynamicResource Common.AllData}"
                         Style="{StaticResource ProfitToggle}"
                         Checked="SummaryModeToggle_Changed"
                         Unchecked="SummaryModeToggle_Changed"/>
@@ -606,7 +606,7 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTextColumn Header="Posicion" Binding="{Binding Position}" Width="0.7*" ElementStyle="{StaticResource CenterCellText}"/>
+              <DataGridTextColumn Header="{DynamicResource Common.Position}" Binding="{Binding Position}" Width="0.7*" ElementStyle="{StaticResource CenterCellText}"/>
               <DataGridTemplateColumn Header="{DynamicResource Common.FinalBoard}" Width="1.35*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>

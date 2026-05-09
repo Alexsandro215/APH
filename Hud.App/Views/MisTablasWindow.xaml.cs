@@ -351,8 +351,8 @@ namespace Hud.App.Views
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Stretch,
                 ToolTip = stats is null || stats.Total == 0
-                    ? $"{handCode} | sin muestra"
-                    : $"{handCode} | {stats.Total} acciones | {stats.AverageBb:0.#} bb media"
+                    ? $"{handCode} | {LocalizationManager.Text("Common.NoSampleLower")}"
+                    : string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandActionAverage"), handCode, stats.Total, stats.AverageBb)
             };
 
             button.Click += Cell_Click;
@@ -845,7 +845,7 @@ namespace Hud.App.Views
                 {
                     return new[]
                     {
-                        new ActionSummaryItem("Sin muestra", "0 manos", new SolidColorBrush(Color.FromRgb(80, 86, 96)))
+                        new ActionSummaryItem(LocalizationManager.Text("Tag.NoSample"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCount"), 0), new SolidColorBrush(Color.FromRgb(80, 86, 96)))
                     };
                 }
 
@@ -858,7 +858,7 @@ namespace Hud.App.Views
                         var avg = actionStats.TotalBb / actionStats.Count;
                         return new ActionSummaryItem(
                             $"{LabelForAction(action)} {pct:0.#}%",
-                            $"{actionStats.Count} manos | {avg:+0.#;-0.#;0} bb media",
+                            string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCountBbAverage"), actionStats.Count, avg),
                             colorByProfit ? BrushForBb(avg) : BrushForAction(action));
                     })
                     .ToList();
