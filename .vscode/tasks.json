@@ -7,33 +7,33 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/HudPokerHUD.sln",
+                "${workspaceFolder}/Hud.App/Hud.App.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/HudPokerHUD.sln",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "watch",
+            "label": "watch run HUD (WPF)",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/HudPokerHUD.sln"
+                "${workspaceFolder}/Hud.App/Hud.App.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch run Console",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/HandReader.Console/HandReader.Console.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

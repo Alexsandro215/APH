@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -37,6 +37,8 @@ internal static class Program
         };
         tail.Start();
 
+        try { System.Console.CursorVisible = false; } catch { }
+        try { System.Console.Clear(); } catch { }
         System.Console.WriteLine("Leyendo y analizando en vivo. Presiona ESC para salir.");
         Render(agg, Path.GetFileName(path));
 
@@ -73,9 +75,9 @@ internal static class Program
 
     private static void Render(StatsAggregator agg, string fileName)
     {
-        System.Console.Clear();
-        System.Console.WriteLine($"HUD Reader — Fuente: {fileName}");
-        System.Console.WriteLine("ESC para salir\n");
+        try { System.Console.SetCursorPosition(0, 0); } catch { System.Console.Clear(); }
+        System.Console.WriteLine($"HUD Reader — Fuente: {fileName}".PadRight(120));
+        System.Console.WriteLine("ESC para salir\n".PadRight(120));
 
         // Cabeceras
         WriteHeader(

@@ -7,7 +7,7 @@
         Width="1280"
         MinHeight="620"
         MinWidth="1040"
-        Background="{StaticResource Brush.Bg}">
+        Background="{DynamicResource Brush.Bg}">
 
   <Window.Resources>
     <views:StatToBrushConverter x:Key="StatToBrush"/>
@@ -15,12 +15,12 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style x:Key="LabelText" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Margin" Value="0,0,0,3"/>
     </Style>
@@ -32,8 +32,8 @@
     </Style>
 
     <Style x:Key="InfoCell" TargetType="Border">
-      <Setter Property="Background" Value="{StaticResource Brush.Card}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="10"/>
@@ -43,17 +43,17 @@
     <Style x:Key="HandListItem" TargetType="ListBoxItem">
       <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
       <Setter Property="Background" Value="{Binding ResultBackground}"/>
-      <Setter Property="BorderBrush" Value="#1F2B38"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="0,0,0,1"/>
       <Setter Property="Padding" Value="8"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Style.Triggers>
         <Trigger Property="IsSelected" Value="True">
-          <Setter Property="Background" Value="#213A56"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
         </Trigger>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#182433"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
         </Trigger>
       </Style.Triggers>
     </Style>
@@ -63,17 +63,17 @@
       <Setter Property="TextWrapping" Value="Wrap"/>
       <Setter Property="Padding" Value="6,3"/>
       <Setter Property="Margin" Value="0,0,0,3"/>
-      <Setter Property="Background" Value="#111820"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
       <Style.Triggers>
         <DataTrigger Binding="{Binding IsHero}" Value="True">
-          <Setter Property="Foreground" Value="#21C07A"/>
+          <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
           <Setter Property="FontWeight" Value="Bold"/>
-          <Setter Property="Background" Value="#10251C"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
         </DataTrigger>
         <DataTrigger Binding="{Binding IsSystem}" Value="True">
-          <Setter Property="Foreground" Value="#8FD3F4"/>
+          <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
           <Setter Property="FontWeight" Value="SemiBold"/>
-          <Setter Property="Background" Value="#101C29"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
         </DataTrigger>
       </Style.Triggers>
     </Style>
@@ -109,7 +109,7 @@
     </Style>
   </Window.Resources>
 
-  <Grid Background="{StaticResource Brush.Bg}" Margin="12">
+  <Grid Background="{DynamicResource Brush.Bg}" Margin="12">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -117,8 +117,8 @@
       <RowDefinition Height="1.1*"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+    <Border Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
@@ -156,10 +156,10 @@
             <TextBlock Text="{Binding TrendIcon}" FontWeight="Bold" FontSize="16" Margin="0,0,6,0">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
-                  <Setter Property="Foreground" Value="#E24E5B"/>
+                  <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding IsWin}" Value="True">
-                      <Setter Property="Foreground" Value="#21C07A"/>
+                      <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
                     </DataTrigger>
                   </Style.Triggers>
                 </Style>
@@ -173,10 +173,10 @@
           <TextBlock Text="{Binding NetAmountLabel}">
             <TextBlock.Style>
               <Style TargetType="TextBlock" BasedOn="{StaticResource ValueText}">
-                <Setter Property="Foreground" Value="#E24E5B"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
                 <Style.Triggers>
                   <DataTrigger Binding="{Binding IsProfitable}" Value="True">
-                    <Setter Property="Foreground" Value="#21C07A"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
@@ -191,8 +191,8 @@
     </Border>
 
     <Border Grid.Row="1"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="6"
@@ -308,8 +308,8 @@
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0"
-              Background="{StaticResource Brush.Card}"
-              BorderBrush="{StaticResource Brush.Border}"
+              Background="{DynamicResource Brush.Card}"
+              BorderBrush="{DynamicResource Brush.Border}"
               BorderThickness="1"
               CornerRadius="8"
               Padding="10"
@@ -368,22 +368,22 @@
                     <ContentControl Content="{Binding CardChips}"
                                     ContentTemplate="{StaticResource CardChipListTemplate}"
                                     Margin="0,2,0,0"/>
-                    <TextBlock Text="{Binding PositionLabel}" Foreground="#8FD3F4" FontSize="11" Margin="0,2,0,0"/>
+                    <TextBlock Text="{Binding PositionLabel}" Foreground="{DynamicResource Brush.Accent}" FontSize="11" Margin="0,2,0,0"/>
                   </StackPanel>
                   <StackPanel Grid.Column="1" HorizontalAlignment="Right" Panel.ZIndex="1">
                     <TextBlock Text="{Binding NetBbLabel}" FontWeight="SemiBold" TextAlignment="Right">
                       <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                          <Setter Property="Foreground" Value="#E24E5B"/>
+                          <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
                           <Style.Triggers>
                             <DataTrigger Binding="{Binding IsProfitable}" Value="True">
-                              <Setter Property="Foreground" Value="#21C07A"/>
+                              <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
                             </DataTrigger>
                           </Style.Triggers>
                         </Style>
                       </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Text="{Binding CumulativeBbLabel}" Foreground="{StaticResource Brush.TextDim}" TextAlignment="Right"/>
+                    <TextBlock Text="{Binding CumulativeBbLabel}" Foreground="{DynamicResource Brush.TextDim}" TextAlignment="Right"/>
                   </StackPanel>
                 </Grid>
               </DataTemplate>
@@ -393,8 +393,8 @@
       </Border>
 
       <Border Grid.Column="1"
-              Background="{StaticResource Brush.Card}"
-              BorderBrush="{StaticResource Brush.Border}"
+              Background="{DynamicResource Brush.Card}"
+              BorderBrush="{DynamicResource Brush.Border}"
               BorderThickness="1"
               CornerRadius="8"
               Padding="10">
@@ -410,7 +410,7 @@
                      Margin="0,0,0,8"/>
           <Canvas x:Name="ProfitChart"
                   Grid.Row="1"
-                  Background="#10161E"
+                  Background="{DynamicResource Brush.Inset}"
                   SizeChanged="ProfitChart_SizeChanged"
                   MouseMove="ProfitChart_MouseMove"
                   MouseLeave="ProfitChart_MouseLeave"
@@ -420,8 +420,8 @@
     </Grid>
 
     <Border Grid.Row="3"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10">

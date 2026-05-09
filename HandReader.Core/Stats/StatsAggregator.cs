@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using HandReader.Core.Models;
@@ -7,20 +8,15 @@ namespace HandReader.Core.Stats;
 
 public sealed class StatsAggregator
 {
-    private readonly Dictionary<string, PlayerStats> _players = new(StringComparer.Ordinal);
-    private readonly List<string> _currentTableOrder = new(6);
+    private readonly ConcurrentDictionary<string, PlayerStats> _players = new(StringComparer.Ordinal);
+    private string[] _currentTableOrder = Array.Empty<string>();
 
     public IReadOnlyDictionary<string, PlayerStats> Players => _players;
     public IReadOnlyList<string> CurrentTableOrder => _currentTableOrder;
 
     public PlayerStats GetOrAdd(string name)
     {
-        if (!_players.TryGetValue(name, out var ps))
-        {
-            ps = new PlayerStats(name);
-            _players[name] = ps;
-        }
-        return ps;
+        return _players.GetOrAdd(name, n => new PlayerStats(n));
     }
 
     public void RegisterHandParticipation(IEnumerable<string> playersInHand)
@@ -58,7 +54,6 @@ public sealed class StatsAggregator
 
     public void SetCurrentTableOrder(IEnumerable<string> orderedPlayersBySeat)
     {
-        _currentTableOrder.Clear();
-        _currentTableOrder.AddRange(orderedPlayersBySeat.Where(p => !string.IsNullOrWhiteSpace(p)).Take(6));
+        _currentTableOrder = orderedPlayersBySeat.Where(p => !string.IsNullOrWhiteSpace(p)).Take(6).ToArray();
     }
 }

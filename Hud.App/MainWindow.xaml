@@ -1,4 +1,4 @@
-﻿<Window x:Class="Hud.App.MainWindow"
+<Window x:Class="Hud.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Hud.App.Views"
@@ -10,12 +10,12 @@
     <views:StatToBrushConverter x:Key="StatToBrush"/>
     <views:StatTextBrushConverter x:Key="StatTextBrush"/>
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
   </Window.Resources>
 
-  <!-- Fondo con patrón tenue de palos -->
+  <!-- Fondo con patr?n tenue de palos -->
   <Window.Background>
     <VisualBrush TileMode="Tile" Viewport="0,0,80,80" ViewportUnits="Absolute"
                  Viewbox="0,0,80,80" ViewboxUnits="Absolute" Opacity="0.04">
@@ -38,17 +38,48 @@
 
     <!-- HERO -->
     <Border Style="{StaticResource HeroCard}" Margin="24,24,24,6">
-      <DockPanel>
-        <Border Width="52" Height="52" CornerRadius="12" Background="#11261A" BorderBrush="#214E38" BorderThickness="1" Margin="0,0,14,0">
-          <Viewbox Stretch="Uniform">
-            <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="{StaticResource Brush.Accent}" FontWeight="Bold"/>
-          </Viewbox>
-        </Border>
-        <StackPanel>
-          <TextBlock Text="{DynamicResource App.Title}" FontSize="26" FontWeight="Bold"/>
-          <TextBlock Text="{DynamicResource Main.Subtitle}" Foreground="{StaticResource Brush.TextDim}" Margin="0,2,0,0"/>
+      <Grid>
+        <DockPanel HorizontalAlignment="Left">
+          <Border Width="52" Height="52" CornerRadius="12" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Margin="0,0,14,0">
+            <Viewbox Stretch="Uniform">
+              <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="{DynamicResource Brush.Accent}" FontWeight="Bold"/>
+            </Viewbox>
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{DynamicResource App.Title}" FontSize="26" FontWeight="Bold"/>
+            <TextBlock Text="{DynamicResource Main.Subtitle}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
+          </StackPanel>
+        </DockPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button Style="{StaticResource Btn.Primary}"
+                  Click="BtnHeroProfile_Click"
+                  Width="44"
+                  Height="44"
+                  Padding="0"
+                  Margin="0,0,8,0"
+                  ToolTip="{DynamicResource Main.HeroProfileTip}">
+            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
+          <Button Style="{StaticResource Btn.Primary}"
+                  Click="BtnPickFolder_Click"
+                  Width="44"
+                  Height="44"
+                  Padding="0"
+                  Margin="0,0,8,0"
+                  ToolTip="{DynamicResource Main.PickFolderTip}">
+            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
+          <Button Style="{StaticResource Btn.Primary}"
+                  Click="BtnSettings_Click"
+                  Width="44"
+                  Height="44"
+                  Padding="0"
+                  ToolTip="{DynamicResource Main.SettingsTip}">
+            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
         </StackPanel>
-      </DockPanel>
+      </Grid>
     </Border>
 
     <!-- Acciones -->
@@ -65,7 +96,7 @@
       </Grid.RowDefinitions>
 
       <!-- Dashboard -->
-      <Border Grid.Row="0" Background="{StaticResource Brush.Card}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="6,10,6,16">
+      <Border Grid.Row="0" Background="{DynamicResource Brush.Card}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="6,10,6,16">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -73,38 +104,9 @@
             <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
 
-          <Grid Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-              <Button Style="{StaticResource Btn.Primary}"
-                      Click="BtnHeroProfile_Click"
-                      Width="44"
-                      Height="44"
-                      Padding="0"
-                      Margin="0,0,8,0"
-                      ToolTip="{DynamicResource Main.HeroProfileTip}">
-                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Button>
-              <Button Style="{StaticResource Btn.Primary}"
-                      Click="BtnPickFolder_Click"
-                      Width="44"
-                      Height="44"
-                      Padding="0"
-                      Margin="0,0,8,0"
-                      ToolTip="{DynamicResource Main.PickFolderTip}">
-                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Button>
-              <Button Style="{StaticResource Btn.Primary}"
-                      Click="BtnSettings_Click"
-                      Width="44"
-                      Height="44"
-                      Padding="0"
-                      ToolTip="{DynamicResource Main.SettingsTip}">
-                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Button>
-            </StackPanel>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="56,0,56,0">
+          <Grid Margin="0,4,0,10">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
               <TextBlock Text="{DynamicResource Main.GlobalStats}" FontSize="20" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"/>
-              <TextBlock x:Name="DashboardInfoText" Text="{DynamicResource Main.SelectFolderHint}" Foreground="{StaticResource Brush.TextDim}" Margin="0,2,0,0"/>
             </StackPanel>
           </Grid>
 
@@ -155,11 +157,11 @@
                     MaxHeight="32"
                     VerticalScrollBarVisibility="Disabled"
                     GridLinesVisibility="None"
-                    Background="{StaticResource BgDark}"
-                    RowBackground="{StaticResource BgDark}"
-                    AlternatingRowBackground="{StaticResource BgDark}"
-                    BorderBrush="{StaticResource BorderDark}"
-                    Foreground="{StaticResource FgLight}">
+                    Background="{DynamicResource Brush.Inset}"
+                    RowBackground="{DynamicResource Brush.Inset}"
+                    AlternatingRowBackground="{DynamicResource Brush.Inset}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    Foreground="{DynamicResource Brush.Text}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="{DynamicResource Grid.Player}" Binding="{Binding Name}" Width="2.4*" IsReadOnly="True"/>
               <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="1*" IsReadOnly="True">
@@ -346,7 +348,7 @@
       </Border>
 
       <!-- Mesas recientes -->
-      <Border Grid.Row="1" Background="{StaticResource Brush.Card}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"                                                                                         CornerRadius="8" Padding="12" Margin="6,0,6,16">
+      <Border Grid.Row="1" Background="{DynamicResource Brush.Card}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"                                                                                         CornerRadius="8" Padding="12" Margin="6,0,6,16">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -405,13 +407,14 @@
                     HeadersVisibility="None"
                     RowHeaderWidth="0"
                     RowHeight="28"
-                    MaxHeight="170"
+                    MinHeight="305"
+                    VerticalScrollBarVisibility="Disabled"
                     GridLinesVisibility="None"
-                    Background="{StaticResource BgDark}"
-                    RowBackground="{StaticResource BgDark}"
-                    AlternatingRowBackground="{StaticResource BgDark}"
-                    BorderBrush="{StaticResource BorderDark}"
-                    Foreground="{StaticResource FgLight}">
+                    Background="{DynamicResource Brush.Inset}"
+                    RowBackground="{DynamicResource Brush.Inset}"
+                    AlternatingRowBackground="{DynamicResource Brush.Inset}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    Foreground="{DynamicResource Brush.Text}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="1.9*"/>
               <DataGridTextColumn Header="{DynamicResource Grid.Format}" Binding="{Binding GameFormat}" Width="0.85*"/>
@@ -602,16 +605,16 @@
                       <TextBlock Text="{Binding TrendIcon}" FontWeight="Bold" Margin="0,0,5,0">
                         <TextBlock.Style>
                           <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="#E24E5B"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
                             <Style.Triggers>
                               <DataTrigger Binding="{Binding IsWin}" Value="True">
-                                <Setter Property="Foreground" Value="#21C07A"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
                               </DataTrigger>
                             </Style.Triggers>
                           </Style>
                         </TextBlock.Style>
                       </TextBlock>
-                      <TextBlock Text="{Binding NetBb, StringFormat={}{0:0.#} bb}" Foreground="{StaticResource FgLight}"/>
+                      <TextBlock Text="{Binding NetBb, StringFormat={}{0:0.#} bb}" Foreground="{DynamicResource Brush.Text}"/>
                     </StackPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -630,7 +633,7 @@
             <TextBlock Text="{DynamicResource Main.OpenRT}" FontSize="18" FontWeight="SemiBold"/>
           </StackPanel>
         </Button>
-        <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{StaticResource Brush.Accent}" Margin="12,8,0,0"/>
+        <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{DynamicResource Brush.Accent}" Margin="12,8,0,0"/>
       </StackPanel>
 
       <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,0">
@@ -640,35 +643,35 @@
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnAll_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.TablesAnalysis}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.TablesAnalysisDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="{DynamicResource Main.TablesAnalysisDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnOne_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.MyTables}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.MyTablesDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="{DynamicResource Main.MyTablesDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnBestWorst_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.DataVillains}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.DataVillainsDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="{DynamicResource Main.DataVillainsDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnLeakFinder_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.LeakFinder}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.LeakFinderDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="{DynamicResource Main.LeakFinderDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
 
           <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnSessions_Click">
             <StackPanel>
               <TextBlock Text="{DynamicResource Main.Sessions}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.SessionsDesc}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0"/>
+              <TextBlock Text="{DynamicResource Main.SessionsDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
             </StackPanel>
           </Button>
         </UniformGrid>

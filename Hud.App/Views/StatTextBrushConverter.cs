@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -25,7 +25,7 @@ namespace Hud.App.Views
                 return Application.Current.TryFindResource("Brush.Text") as Brush
                     ?? new SolidColorBrush(Color.FromRgb(231, 238, 245));
 
-            return Brushes.Black;
+            return Brushes.White;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>

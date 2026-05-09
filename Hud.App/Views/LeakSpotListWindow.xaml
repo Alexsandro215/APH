@@ -6,23 +6,23 @@
         Width="1420"
         MinHeight="620"
         MinWidth="1180"
-        Background="{StaticResource Brush.Bg}"
+        Background="{DynamicResource Brush.Bg}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
     <Style TargetType="DataGrid">
-      <Setter Property="Background" Value="#101720"/>
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="GridLinesVisibility" Value="All"/>
-      <Setter Property="HorizontalGridLinesBrush" Value="#223244"/>
-      <Setter Property="VerticalGridLinesBrush" Value="#223244"/>
-      <Setter Property="RowBackground" Value="#111821"/>
-      <Setter Property="AlternatingRowBackground" Value="#171F2B"/>
+      <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="RowBackground" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="AlternatingRowBackground" Value="{DynamicResource Brush.Card}"/>
       <Setter Property="HeadersVisibility" Value="Column"/>
       <Setter Property="CanUserAddRows" Value="False"/>
       <Setter Property="CanUserDeleteRows" Value="False"/>
@@ -32,14 +32,16 @@
       <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
     <Style TargetType="DataGridColumnHeader">
-      <Setter Property="Background" Value="#E9EEF3"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="6,5"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+      <Setter Property="BorderThickness" Value="0,0,1,1"/>
     </Style>
     <Style TargetType="DataGridCell">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="Padding" Value="6,3"/>
     </Style>
 
@@ -57,7 +59,7 @@
                     Margin="1,0"
                     CornerRadius="3"
                     Background="{Binding Background}"
-                    BorderBrush="#506176"
+                    BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="1">
               <TextBlock Text="{Binding Rank}"
                          Foreground="{Binding Foreground}"
@@ -86,8 +88,8 @@
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+    <Border Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="16"
@@ -95,7 +97,7 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Left">
           <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"/>
-          <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0"/>
+          <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
         </StackPanel>
         <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
@@ -104,20 +106,20 @@
           </StackPanel>
           <UniformGrid Columns="4" MinWidth="520">
             <StackPanel Margin="4,0">
-          <TextBlock Text="{DynamicResource Common.PositionShort}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
-              <ComboBox x:Name="PositionFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
+          <TextBlock Text="{DynamicResource Common.PositionShort}" Foreground="{DynamicResource Brush.TextDim}" FontSize="11"/>
+              <ComboBox x:Name="PositionFilter" Height="26" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-          <TextBlock Text="{DynamicResource Common.Pot}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
-              <ComboBox x:Name="PotFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
+          <TextBlock Text="{DynamicResource Common.Pot}" Foreground="{DynamicResource Brush.TextDim}" FontSize="11"/>
+              <ComboBox x:Name="PotFilter" Height="26" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-          <TextBlock Text="{DynamicResource Common.Real}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
-              <ComboBox x:Name="ResultFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
+          <TextBlock Text="{DynamicResource Common.Real}" Foreground="{DynamicResource Brush.TextDim}" FontSize="11"/>
+              <ComboBox x:Name="ResultFilter" Height="26" SelectionChanged="Filter_Changed"/>
             </StackPanel>
             <StackPanel Margin="4,0">
-              <TextBlock Text="{DynamicResource Common.Sort}" Foreground="{StaticResource Brush.TextDim}" FontSize="11"/>
-              <ComboBox x:Name="SortFilter" Height="26" Foreground="Black" SelectionChanged="Filter_Changed"/>
+              <TextBlock Text="{DynamicResource Common.Sort}" Foreground="{DynamicResource Brush.TextDim}" FontSize="11"/>
+              <ComboBox x:Name="SortFilter" Height="26" SelectionChanged="Filter_Changed"/>
             </StackPanel>
           </UniformGrid>
         </StackPanel>
@@ -165,7 +167,7 @@
         <DataGridTextColumn Header="Combo" Binding="{Binding MadeHand}" Width="100"/>
         <DataGridTextColumn Header="Draw" Binding="{Binding DrawLabel}" Width="90"/>
         <DataGridTextColumn Header="{DynamicResource Common.Result}" Binding="{Binding RealLabel}" Width="76"/>
-        <DataGridTemplateColumn Header="Î”bb" CellTemplate="{StaticResource NetBbCellTemplate}" Width="72"/>
+        <DataGridTemplateColumn Header="?bb" CellTemplate="{StaticResource NetBbCellTemplate}" Width="72"/>
         <DataGridTextColumn Header="{DynamicResource Common.Reason}" Binding="{Binding Reason}" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>

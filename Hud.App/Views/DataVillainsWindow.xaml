@@ -7,7 +7,7 @@
         Width="1660"
         MinHeight="460"
         MinWidth="1180"
-        Background="{StaticResource Brush.Bg}"
+        Background="{DynamicResource Brush.Bg}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
@@ -15,23 +15,23 @@
     <views:StatTextBrushConverter x:Key="StatTextBrush"/>
     <views:TotalHandsRowBrushConverter x:Key="TotalHandsRowBrush"/>
     <views:TotalHandsTextBrushConverter x:Key="TotalHandsTextBrush"/>
-    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#8FD3F4"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{DynamicResource Col.Accent}"/>
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
     <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
 
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style x:Key="HeaderStyle" TargetType="DataGridColumnHeader">
-      <Setter Property="Background" Value="#17212C"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
       <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
       <Setter Property="TextElement.Foreground" Value="{StaticResource FgLight}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="4"/>
-      <Setter Property="BorderBrush" Value="#253343"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="0,0,1,1"/>
     </Style>
 
@@ -48,7 +48,7 @@
 
     <Style x:Key="SampleCellStyle" TargetType="DataGridCell">
       <Setter Property="Background" Value="{Binding TotalHands, Converter={StaticResource TotalHandsRowBrush}}"/>
-      <Setter Property="BorderBrush" Value="#253343"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="0,0,1,1"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -61,43 +61,32 @@
     </Style>
 
     <DataTemplate x:Key="FilterComboItemTemplate">
-      <TextBlock Text="{Binding}" Foreground="Black"/>
+      <TextBlock Text="{Binding}" Foreground="{DynamicResource Brush.SurfaceText}"/>
     </DataTemplate>
 
     <Style x:Key="FilterLabel" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Margin" Value="0,0,0,3"/>
     </Style>
 
     <Style x:Key="FilterTextBox" TargetType="TextBox">
       <Setter Property="Height" Value="28"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="BorderBrush" Value="#263648"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="7,3"/>
     </Style>
 
-    <Style x:Key="FilterComboBox" TargetType="ComboBox">
+    <Style x:Key="FilterComboBox" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
       <Setter Property="Height" Value="28"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="BorderBrush" Value="#263648"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="7,3"/>
       <Setter Property="ItemTemplate" Value="{StaticResource FilterComboItemTemplate}"/>
-    </Style>
-
-    <Style TargetType="ComboBoxItem">
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="TextElement.Foreground" Value="Black"/>
-      <Style.Resources>
-        <Style TargetType="TextBlock">
-          <Setter Property="Foreground" Value="Black"/>
-        </Style>
-      </Style.Resources>
     </Style>
   </Window.Resources>
 
@@ -108,8 +97,8 @@
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+    <Border Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="14"
@@ -121,15 +110,15 @@
                    TextAlignment="Center"
                    HorizontalAlignment="Center"/>
         <TextBlock x:Name="SummaryText"
-                   Foreground="{StaticResource Brush.TextDim}"
+                   Foreground="{DynamicResource Brush.TextDim}"
                    Margin="0,4,0,0"
                    TextAlignment="Center"/>
       </StackPanel>
     </Border>
 
     <Border Grid.Row="1"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
@@ -208,8 +197,8 @@
     </Border>
 
     <Border Grid.Row="2"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="8">
@@ -231,8 +220,8 @@
                 HeadersVisibility="Column"
                 GridLinesVisibility="None"
                 Background="{StaticResource BgDark}"
-                RowBackground="{StaticResource BgDark}"
-                AlternatingRowBackground="#151A21"
+                RowBackground="{DynamicResource Brush.Inset}"
+                AlternatingRowBackground="{DynamicResource Brush.Card}"
                 BorderBrush="{StaticResource BorderDark}"
                 BorderThickness="1"
                 Foreground="{StaticResource FgLight}"

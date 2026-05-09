@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using Hud.App.Services;
@@ -20,9 +20,9 @@ namespace Hud.App.Views
                 ? LocalizationManager.NormalizeLanguage(null)
                 : LocalizationManager.NormalizeLanguage(_settings.Language);
 
-            PaletteCombo.ItemsSource = ThemePaletteManager.Palettes;
-            PaletteCombo.SelectedItem = ThemePaletteManager.Get(_settings.Palette);
-            PalettePreviewList.ItemsSource = ThemePaletteManager.Palettes.Select(PalettePreview.FromPalette).ToList();
+            var previews = ThemePaletteManager.Palettes.Select(PalettePreview.FromPalette).ToList();
+            foreach (var p in previews) p.IsSelected = p.Key == _settings.Palette;
+            PalettePreviewList.ItemsSource = previews;
 
             PokerStarsFolderText.Text = _settings.PokerStarsHandHistoryFolder ?? "";
             ReportsFolderText.Text = string.IsNullOrWhiteSpace(_settings.ReportsFolder)
@@ -177,15 +177,21 @@ namespace Hud.App.Views
             return ReportSecurityService.VerifyPassword(_settings, prompt.Password);
         }
 
-        private void PaletteCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void BtnPalette_Click(object sender, RoutedEventArgs e)
         {
-            if (PaletteCombo.SelectedItem is ThemePalette palette)
+            if (sender is FrameworkElement element && element.Tag is string key)
             {
-                SyncSettingsFromControls();
-                _settings.Palette = palette.Key;
-                AppSettingsService.Save(_settings);
-                ThemePaletteManager.Apply(palette.Key);
-                StatusText.Text = string.Format(LocalizationManager.Text("Common.PreviewApplied"), palette.Name);
+                _settings.Palette = key;
+                ThemePaletteManager.Apply(key);
+                
+                // Actualizar seleccion visual
+                if (PalettePreviewList.ItemsSource is List<PalettePreview> previews)
+                {
+                    foreach (var p in previews) p.IsSelected = p.Key == key;
+                    PalettePreviewList.Items.Refresh();
+                }
+
+                StatusText.Text = string.Format(LocalizationManager.Text("Common.PreviewApplied"), ThemePaletteManager.Get(key).Name);
             }
         }
 
@@ -214,13 +220,13 @@ namespace Hud.App.Views
                 : ReportsFolderText.Text.Trim();
             _settings.ProtectReportsWithPassword = ProtectReportsCheck.IsChecked == true && ReportSecurityService.HasPassword(_settings);
             _settings.Language = LocalizationManager.NormalizeLanguage(LanguageCombo.SelectedItem?.ToString());
-            _settings.Palette = PaletteCombo.SelectedItem is ThemePalette palette
-                ? palette.Key
-                : ThemePaletteManager.DefaultPaletteKey;
+            _settings.Palette = _settings.Palette ?? ThemePaletteManager.DefaultPaletteKey;
         }
 
         private sealed class PalettePreview
         {
+            public bool IsSelected { get; set; }
+            public required string Key { get; init; }
             public required string Name { get; init; }
             public required string Description { get; init; }
             public required Brush CardBrush { get; init; }
@@ -233,6 +239,7 @@ namespace Hud.App.Views
             public static PalettePreview FromPalette(ThemePalette palette) =>
                 new()
                 {
+                    Key = palette.Key,
                     Name = palette.Name,
                     Description = palette.Description,
                     CardBrush = new SolidColorBrush(palette.Card),

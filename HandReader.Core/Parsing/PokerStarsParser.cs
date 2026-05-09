@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -12,6 +12,19 @@ public sealed class PokerStarsParser
 
     private readonly List<string> _buffer = new();
     private bool _insideHand = false;
+
+    // Object pools for GC reduction
+    private readonly HashSet<string> _didVpipPool = new(StringComparer.Ordinal);
+    private readonly List<string> _raisesOrderPool = new();
+    private readonly HashSet<string> _playersInHandPool = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _foldedPrePool = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _showersPool = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _winnersPool = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _firstResponsePool = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _knownCardsPool = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<string>> _seqPerPlayerPool = new(StringComparer.Ordinal);
+    private readonly List<(int seat, string name)> _seatsPool = new();
+    private readonly List<string> _actedPool = new();
 
     // Hand boundaries / streets
     private static readonly Regex HandStartRx = new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -68,41 +81,52 @@ public sealed class PokerStarsParser
     {
         if (_buffer.Count == 0) return;
 
+        // Clear pools
+        _didVpipPool.Clear();
+        _raisesOrderPool.Clear();
+        _playersInHandPool.Clear();
+        _foldedPrePool.Clear();
+        _showersPool.Clear();
+        _winnersPool.Clear();
+        _firstResponsePool.Clear();
+        _knownCardsPool.Clear();
+        foreach (var list in _seqPerPlayerPool.Values) list.Clear();
+        _seatsPool.Clear();
+        _actedPool.Clear();
+
         // ---- SEATS / ORDER (6-max render) ----
-        var seats = new List<(int seat, string name)>();
         foreach (var l in _buffer)
         {
             var m = SeatRx.Match(l);
             if (m.Success)
-                seats.Add((int.Parse(m.Groups[1].Value), NormalizeName(m.Groups[2].Value)));
+                _seatsPool.Add((int.Parse(m.Groups[1].Value), NormalizeName(m.Groups[2].Value)));
         }
-        seats.Sort((a, b) => a.seat.CompareTo(b.seat));
-        var orderedBySeat = seats.Select(s => s.name).ToList();
+        _seatsPool.Sort((a, b) => a.seat.CompareTo(b.seat));
+        var orderedBySeat = _seatsPool.Select(s => s.name).ToList();
 
         if (orderedBySeat.Count == 0)
         {
             // Fallback: quienes actuaron
-            var acted = new List<string>();
             foreach (var l in _buffer)
             {
                 var ma = PlayerActionRx.Match(l);
                 if (ma.Success)
                 {
                     var n = NormalizeName(ma.Groups[1].Value);
-                    if (!acted.Contains(n)) acted.Add(n);
+                    if (!_actedPool.Contains(n)) _actedPool.Add(n);
                 }
             }
-            orderedBySeat = acted;
+            orderedBySeat = _actedPool;
         }
         _agg.SetCurrentTableOrder(orderedBySeat);
 
         // ---- PARTICIPANTES DE LA MANO ----
-        var playersInHand = new HashSet<string>(orderedBySeat, StringComparer.Ordinal);
-        _agg.RegisterHandParticipation(playersInHand);
+        foreach (var name in orderedBySeat) _playersInHandPool.Add(name);
+        _agg.RegisterHandParticipation(_playersInHandPool);
 
         // ---- CARTAS CONOCIDAS (hero + shows) ----
         string? hero = null; string? heroCards = null;
-        var known = new Dictionary<string, string>(StringComparer.Ordinal);
+        var known = _knownCardsPool;
         foreach (var l in _buffer)
         {
             var md = DealtToRx.Match(l);
@@ -127,7 +151,7 @@ public sealed class PokerStarsParser
         }
 
         // ---- ACCIONES (para secuencia por jugador) ----
-        var seqPerPlayer = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var seqPerPlayer = _seqPerPlayerPool;
         foreach (var l in _buffer)
         {
             var ma = PlayerActionRx.Match(l);
@@ -155,7 +179,7 @@ public sealed class PokerStarsParser
             list.Add(token);
         }
         foreach (var kv in seqPerPlayer)
-            _agg.SetActionSeq(kv.Key, string.Join("-", kv.Value));
+            if (kv.Value.Count > 0) _agg.SetActionSeq(kv.Key, string.Join("-", kv.Value));
 
         // ---- ESTADÃSTICAS PRE-FLOP + set VPIP por mano ----
         AnalyzePreflop(out var vpipThisHand, out var pfrPlayer, out var raisesOrder);
@@ -165,7 +189,7 @@ public sealed class PokerStarsParser
         if (raisesOrder.Count >= 2) for (int i = 1; i < raisesOrder.Count; i++) _agg.IncThreeBet(raisesOrder[i]);
 
         // ---- Postflop Aggro / CBet / FvCBet / WTSD / WSD / WWSF ----
-        ComputePostflopAndShowdown(playersInHand, pfrPlayer);
+        ComputePostflopAndShowdown(_playersInHandPool, pfrPlayer);
 
         // ---- WWSF adicional (ganador en mano con flop) ----
         var winners = DetectWinners();
@@ -196,8 +220,8 @@ public sealed class PokerStarsParser
     // ---------------- PRE-FLOP ----------------
     private void AnalyzePreflop(out HashSet<string> didVPIP, out string? pfr, out List<string> raisesOrder)
     {
-        didVPIP = new HashSet<string>(StringComparer.Ordinal);
-        raisesOrder = new List<string>();
+        didVPIP = _didVpipPool;
+        raisesOrder = _raisesOrderPool;
         pfr = null;
 
         int holeIdx = _buffer.FindIndex(l => HoleCardsHeaderRx.IsMatch(l));
@@ -240,7 +264,7 @@ public sealed class PokerStarsParser
         // SawFlop
         if (flopIdx >= 0)
         {
-            var foldedPre = new HashSet<string>(StringComparer.Ordinal);
+            var foldedPre = _foldedPrePool;
             int holeIdx = _buffer.FindIndex(l => HoleCardsHeaderRx.IsMatch(l));
             for (int i = holeIdx + 1; i < flopIdx; i++)
             {
@@ -258,7 +282,7 @@ public sealed class PokerStarsParser
         ScanStreetAggro(riverIdx, summIdx, "RIVER", pfr: null);
 
         // Showdown: WTSD (shows/muestra)
-        var showers = new HashSet<string>(StringComparer.Ordinal);
+        var showers = _showersPool;
         int startSD = (riverIdx >= 0 ? riverIdx : (flopIdx >= 0 ? flopIdx : 0)) + 1;
         for (int i = startSD; i < summIdx; i++)
         {
@@ -286,7 +310,7 @@ public sealed class PokerStarsParser
         // Para CBet en FLOP:
         bool sawFirstBet = false;
         string? bettor = null;
-        var firstResponse = new HashSet<string>(StringComparer.Ordinal); // ya respondieron al cbet
+        var firstResponse = _firstResponsePool; // ya respondieron al cbet
 
         for (int i = start + 1; i < endExclusive; i++)
         {
@@ -329,7 +353,7 @@ public sealed class PokerStarsParser
 
     private HashSet<string> DetectWinners()
     {
-        var winners = new HashSet<string>(StringComparer.Ordinal);
+        var winners = _winnersPool;
         foreach (var l in _buffer)
         {
             var en = CollectedEnRx.Match(l);

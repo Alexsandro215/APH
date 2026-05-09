@@ -6,12 +6,12 @@
         Width="1420"
         MinHeight="620"
         MinWidth="1280"
-        Background="{StaticResource Brush.Bg}"
+        Background="{DynamicResource Brush.Bg}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
@@ -23,103 +23,22 @@
     </Style>
 
     <Style x:Key="FilterLabel" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Margin" Value="0,0,0,3"/>
     </Style>
 
-    <Style x:Key="FilterComboItem" TargetType="ComboBoxItem">
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="Padding" Value="6,4"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="ComboBoxItem">
-            <Border x:Name="ItemBorder"
-                    Background="{TemplateBinding Background}"
-                    Padding="{TemplateBinding Padding}">
-              <TextBlock Text="{Binding}"
-                         Foreground="Black"
-                         VerticalAlignment="Center"/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsHighlighted" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="#87D7F7"/>
-              </Trigger>
-              <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="#87D7F7"/>
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-
-    <Style x:Key="FilterCombo" TargetType="ComboBox">
+    <Style x:Key="FilterCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
       <Setter Property="MinWidth" Value="118"/>
       <Setter Property="Height" Value="28"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="Margin" Value="0"/>
-      <Setter Property="ItemContainerStyle" Value="{StaticResource FilterComboItem}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="ComboBox">
-            <Grid>
-              <ToggleButton x:Name="ToggleButton"
-                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                            Focusable="False"
-                            ClickMode="Press">
-                <ToggleButton.Template>
-                  <ControlTemplate TargetType="ToggleButton">
-                    <Border Background="#EEF2F6"
-                            BorderBrush="#B8C1CC"
-                            BorderThickness="1">
-                      <Grid>
-                        <Path Data="M 0 0 L 4 4 L 8 0 Z"
-                              Fill="Black"
-                              Width="8"
-                              Height="4"
-                              HorizontalAlignment="Right"
-                              VerticalAlignment="Center"
-                              Margin="0,0,8,0"/>
-                      </Grid>
-                    </Border>
-                  </ControlTemplate>
-                </ToggleButton.Template>
-              </ToggleButton>
-
-              <TextBlock Text="{Binding SelectedItem, RelativeSource={RelativeSource TemplatedParent}}"
-                         Foreground="Black"
-                         Margin="7,0,24,0"
-                         VerticalAlignment="Center"
-                         HorizontalAlignment="Left"
-                         IsHitTestVisible="False"/>
-
-              <Popup x:Name="Popup"
-                     Placement="Bottom"
-                     IsOpen="{TemplateBinding IsDropDownOpen}"
-                     AllowsTransparency="True"
-                     Focusable="False"
-                     PopupAnimation="Slide">
-                <Border Background="#EEF2F6"
-                        BorderBrush="#B8C1CC"
-                        BorderThickness="1"
-                        MinWidth="{TemplateBinding ActualWidth}">
-                  <ScrollViewer MaxHeight="240">
-                    <ItemsPresenter/>
-                  </ScrollViewer>
-                </Border>
-              </Popup>
-            </Grid>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
     </Style>
 
     <Style x:Key="FilterCalendarDayButton" TargetType="CalendarDayButton">
       <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="MinWidth" Value="22"/>
       <Setter Property="MinHeight" Value="18"/>
       <Setter Property="Template">
@@ -130,17 +49,17 @@
                     CornerRadius="2"
                     Padding="2">
               <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
-                         Foreground="Black"
+                         Foreground="{DynamicResource Brush.SurfaceText}"
                          FontWeight="SemiBold"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="DayBorder" Property="Background" Value="#DCE6EF"/>
+                <Setter TargetName="DayBorder" Property="Background" Value="{DynamicResource Brush.Card}"/>
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="DayBorder" Property="Background" Value="#87D7F7"/>
+                <Setter TargetName="DayBorder" Property="Background" Value="{DynamicResource Brush.Accent}"/>
               </Trigger>
               <Trigger Property="IsInactive" Value="True">
                 <Setter TargetName="DayBorder" Property="Opacity" Value="0.45"/>
@@ -153,7 +72,7 @@
 
     <Style x:Key="FilterCalendarButton" TargetType="CalendarButton">
       <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="CalendarButton">
@@ -162,14 +81,14 @@
                     CornerRadius="3"
                     Padding="4">
               <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
-                         Foreground="Black"
+                         Foreground="{DynamicResource Brush.SurfaceText}"
                          FontWeight="SemiBold"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="CalendarButtonBorder" Property="Background" Value="#DCE6EF"/>
+                <Setter TargetName="CalendarButtonBorder" Property="Background" Value="{DynamicResource Brush.Card}"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -179,13 +98,13 @@
 
     <Style x:Key="FilterCalendar" TargetType="Calendar">
       <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="CalendarDayButtonStyle" Value="{StaticResource FilterCalendarDayButton}"/>
       <Setter Property="CalendarButtonStyle" Value="{StaticResource FilterCalendarButton}"/>
       <Style.Resources>
         <Style TargetType="Button">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
           <Setter Property="BorderBrush" Value="Transparent"/>
           <Setter Property="Template">
             <Setter.Value>
@@ -197,15 +116,15 @@
                         Padding="4,2">
                   <ContentPresenter HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    TextElement.Foreground="Black"
+                                    TextElement.Foreground="{DynamicResource Brush.SurfaceText}"
                                     TextElement.FontWeight="SemiBold"/>
                 </Border>
                 <ControlTemplate.Triggers>
                   <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="CalendarHeaderButton" Property="Background" Value="#DCE6EF"/>
+                    <Setter TargetName="CalendarHeaderButton" Property="Background" Value="{DynamicResource Brush.Card}"/>
                   </Trigger>
                   <Trigger Property="IsPressed" Value="True">
-                    <Setter TargetName="CalendarHeaderButton" Property="Background" Value="#87D7F7"/>
+                    <Setter TargetName="CalendarHeaderButton" Property="Background" Value="{DynamicResource Brush.Accent}"/>
                   </Trigger>
                 </ControlTemplate.Triggers>
               </ControlTemplate>
@@ -222,25 +141,25 @@
       <Setter Property="MinWidth" Value="154"/>
       <Setter Property="Height" Value="28"/>
       <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="Margin" Value="0"/>
       <Setter Property="CalendarStyle" Value="{StaticResource FilterCalendar}"/>
       <Style.Resources>
         <Style TargetType="DatePickerTextBox">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
         </Style>
         <Style TargetType="Calendar">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
         </Style>
         <Style TargetType="CalendarItem">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
         </Style>
         <Style TargetType="CalendarDayButton">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
           <Setter Property="MinWidth" Value="22"/>
           <Setter Property="MinHeight" Value="18"/>
           <Setter Property="Template">
@@ -251,17 +170,17 @@
                         CornerRadius="2"
                         Padding="2">
                   <TextBlock Text="{TemplateBinding Content}"
-                             Foreground="Black"
+                             Foreground="{DynamicResource Brush.SurfaceText}"
                              FontWeight="SemiBold"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center"/>
                 </Border>
                 <ControlTemplate.Triggers>
                   <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="DayBorder" Property="Background" Value="#DCE6EF"/>
+                    <Setter TargetName="DayBorder" Property="Background" Value="{DynamicResource Brush.Card}"/>
                   </Trigger>
                   <Trigger Property="IsSelected" Value="True">
-                    <Setter TargetName="DayBorder" Property="Background" Value="#87D7F7"/>
+                    <Setter TargetName="DayBorder" Property="Background" Value="{DynamicResource Brush.Accent}"/>
                   </Trigger>
                   <Trigger Property="IsInactive" Value="True">
                     <Setter TargetName="DayBorder" Property="Opacity" Value="0.55"/>
@@ -273,7 +192,7 @@
         </Style>
         <Style TargetType="CalendarButton">
           <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="#EEF2F6"/>
+          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="CalendarButton">
@@ -282,14 +201,14 @@
                         CornerRadius="3"
                         Padding="4">
                   <TextBlock Text="{TemplateBinding Content}"
-                             Foreground="Black"
+                             Foreground="{DynamicResource Brush.SurfaceText}"
                              FontWeight="SemiBold"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center"/>
                 </Border>
                 <ControlTemplate.Triggers>
                   <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="CalendarButtonBorder" Property="Background" Value="#DCE6EF"/>
+                    <Setter TargetName="CalendarButtonBorder" Property="Background" Value="{DynamicResource Brush.Card}"/>
                   </Trigger>
                 </ControlTemplate.Triggers>
               </ControlTemplate>
@@ -299,48 +218,34 @@
       </Style.Resources>
     </Style>
 
-    <DataTemplate x:Key="ExactHandsHeaderTemplate">
-      <TextBlock Text="{Binding}"
-                 Foreground="Black"
-                 FontWeight="SemiBold"
-                 TextAlignment="Center"
-                 HorizontalAlignment="Center"/>
-    </DataTemplate>
-
     <Style x:Key="ExactHandsHeaderStyle" TargetType="DataGridColumnHeader">
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="TextElement.Foreground" Value="Black"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="TextElement.Foreground" Value="{StaticResource FgLight}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="4,2"/>
-      <Setter Property="ContentTemplate" Value="{StaticResource ExactHandsHeaderTemplate}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="DataGridColumnHeader">
-            <Border Background="#EEF2F6"
-                    BorderBrush="#B8C1CC"
+            <Border Background="{DynamicResource Brush.Header}"
+                    BorderBrush="{DynamicResource Brush.HeaderBorder}"
                     BorderThickness="0,0,1,1"
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                 VerticalAlignment="Center"
-                                TextElement.Foreground="Black"
+                                TextElement.Foreground="{StaticResource FgLight}"
                                 TextElement.FontWeight="SemiBold"/>
             </Border>
           </ControlTemplate>
         </Setter.Value>
       </Setter>
-      <Style.Resources>
-        <Style TargetType="TextBlock">
-          <Setter Property="Foreground" Value="Black"/>
-        </Style>
-      </Style.Resources>
     </Style>
 
     <Style x:Key="ExactHandsButton" TargetType="Button">
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="Background" Value="#EEF2F6"/>
-      <Setter Property="BorderBrush" Value="#B8C1CC"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -355,12 +260,12 @@
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                TextElement.Foreground="Black"
+                                TextElement.Foreground="{DynamicResource Brush.SurfaceText}"
                                 TextElement.FontWeight="SemiBold"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ButtonBorder" Property="Background" Value="#DCE6EF"/>
+                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Brush.Card}"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.65"/>
@@ -372,9 +277,9 @@
     </Style>
 
     <Style x:Key="ExactFilterChip" TargetType="Button">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
-      <Setter Property="Background" Value="#111A24"/>
-      <Setter Property="BorderBrush" Value="#2A3A4C"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,5"/>
       <Setter Property="Margin" Value="0,0,6,6"/>
@@ -396,7 +301,7 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ChipBorder" Property="BorderBrush" Value="#8FD3F4"/>
+                <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -419,14 +324,14 @@
           <ControlTemplate TargetType="Button">
             <Border x:Name="CellBorder"
                     Background="{TemplateBinding Background}"
-                    BorderBrush="#05070A"
+                    BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="1">
               <ContentPresenter HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="CellBorder" Property="BorderBrush" Value="#E7EEF5"/>
+                <Setter TargetName="CellBorder" Property="BorderBrush" Value="{DynamicResource Brush.Text}"/>
                 <Setter TargetName="CellBorder" Property="BorderThickness" Value="2"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
@@ -451,8 +356,8 @@
       <RowDefinition Height="360"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+    <Border Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="14"
@@ -466,8 +371,8 @@
     </Border>
 
     <Border Grid.Row="1"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
@@ -490,7 +395,7 @@
           <TextBlock Text="{DynamicResource Common.Color}" Style="{StaticResource FilterLabel}"/>
           <CheckBox x:Name="ProfitColorToggle"
                     Content="{DynamicResource Common.ProfitBb}"
-                    Foreground="{StaticResource Brush.Text}"
+                    Foreground="{DynamicResource Brush.Text}"
                     VerticalAlignment="Center"
                     Checked="ProfitColorToggle_Changed"
                     Unchecked="ProfitColorToggle_Changed"/>
@@ -526,8 +431,8 @@
     </Border>
 
     <Border Grid.Row="2"
-            Background="#101720"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Inset}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="8">
@@ -541,8 +446,8 @@
     </Border>
 
     <Border Grid.Row="3"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="12"
@@ -555,7 +460,7 @@
 
         <StackPanel>
           <TextBlock x:Name="SelectedHandText" Text="{DynamicResource Common.SelectCell}" FontSize="18" FontWeight="Bold"/>
-          <TextBlock x:Name="SelectedStreetText" Text="PRE-FLOP" Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0"/>
+          <TextBlock x:Name="SelectedStreetText" Text="PRE-FLOP" Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
         </StackPanel>
 
         <ItemsControl x:Name="ActionSummaryList" Grid.Column="1">
@@ -572,8 +477,8 @@
                       Margin="5,0,0,0"
                       MinWidth="120">
                 <StackPanel>
-                  <TextBlock Text="{Binding Label}" Foreground="Black" FontWeight="Bold" TextAlignment="Center"/>
-                  <TextBlock Text="{Binding Detail}" Foreground="Black" TextAlignment="Center" FontSize="12"/>
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="Bold" TextAlignment="Center"/>
+                  <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource Brush.SurfaceText}" TextAlignment="Center" FontSize="12"/>
                 </StackPanel>
               </Border>
             </DataTemplate>
@@ -584,8 +489,8 @@
 
     <Border x:Name="ExactHandsPanel"
             Grid.Row="4"
-            Background="{StaticResource Brush.Card}"
-            BorderBrush="{StaticResource Brush.Border}"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
@@ -608,7 +513,7 @@
 
         <DockPanel Grid.Row="1" Margin="0,0,0,8">
           <WrapPanel DockPanel.Dock="Left">
-            <TextBlock Text="{DynamicResource Common.Action}" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="0,0,8,6"/>
+            <TextBlock Text="{DynamicResource Common.Action}" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center" Margin="0,0,8,6"/>
             <Button x:Name="ActionAllChip" Content="{DynamicResource Common.All}" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
             <Button x:Name="ActionFoldChip" Content="Fold" Tag="Fold" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
             <Button x:Name="ActionCheckChip" Content="Check" Tag="Check" Style="{StaticResource ExactFilterChip}" Click="ExactActionFilter_Click"/>
@@ -621,7 +526,7 @@
           </WrapPanel>
 
           <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
-            <TextBlock Text="{DynamicResource Common.Result}" Foreground="{StaticResource Brush.TextDim}" VerticalAlignment="Center" Margin="12,0,8,6"/>
+            <TextBlock Text="{DynamicResource Common.Result}" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center" Margin="12,0,8,6"/>
             <Button x:Name="ResultAllChip" Content="{DynamicResource Common.AllMale}" Tag="ALL" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
             <Button x:Name="ResultWinChip" Content="{DynamicResource Common.Won}" Tag="WIN" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
             <Button x:Name="ResultLossChip" Content="{DynamicResource Common.Lost}" Tag="LOSS" Style="{StaticResource ExactFilterChip}" Click="ExactResultFilter_Click"/>
@@ -639,14 +544,14 @@
                   HeadersVisibility="Column"
                   RowHeaderWidth="0"
                   RowHeight="26"
-                  Background="#101720"
-                  RowBackground="#101720"
-                  AlternatingRowBackground="#141B24"
-                  Foreground="{StaticResource Brush.Text}"
-                  BorderBrush="{StaticResource Brush.Border}"
+                  Background="{DynamicResource Brush.Inset}"
+                  RowBackground="{DynamicResource Brush.Inset}"
+                  AlternatingRowBackground="{DynamicResource Brush.Panel}"
+                  Foreground="{DynamicResource Brush.Text}"
+                  BorderBrush="{DynamicResource Brush.Border}"
                   ColumnHeaderStyle="{StaticResource ExactHandsHeaderStyle}"
                   GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#05070A"
+                  HorizontalGridLinesBrush="{DynamicResource Brush.Border}"
                   VerticalScrollBarVisibility="Auto">
           <DataGrid.Resources>
             <Style TargetType="DataGridCell">
@@ -683,7 +588,7 @@
                 <DataTemplate>
                   <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <TextBlock Text="{Binding NetTrendIcon}" FontWeight="Bold" Margin="0,0,5,0" Foreground="{Binding NetTrendBrush}"/>
-                    <TextBlock Text="{Binding NetBbLabel}" Foreground="{StaticResource Brush.Text}"/>
+                    <TextBlock Text="{Binding NetBbLabel}" Foreground="{DynamicResource Brush.Text}"/>
                   </StackPanel>
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>

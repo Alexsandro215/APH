@@ -282,7 +282,7 @@
                     </Border>
                   </Grid>
                   <ControlTemplate.Triggers>
-                    <!-- héroe -->
+                    <!-- h?roe -->
                     <DataTrigger Value="True">
                       <DataTrigger.Binding>
                         <MultiBinding Converter="{StaticResource Eq}">
@@ -492,7 +492,7 @@
                           Path="DataContext.Stake"/>
                       <Binding Source="CBF"/>
                       <!-- clave -->
-                      <!-- Si algún día expones "CBetOppFlop" como oportunidades, pasalo como 5º binding -->
+                      <!-- Si alg?n d?a expones "CBetOppFlop" como oportunidades, pasalo como 5? binding -->
                     </MultiBinding>
                   </TextBlock.Background>
                 </TextBlock>
@@ -518,7 +518,7 @@
                       <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
                                Path="DataContext.Stake"/>
                       <Binding Source="FVCBF"/>
-                      <!-- esta clave ya está marcada Invert=true en los presets -->
+                      <!-- esta clave ya est? marcada Invert=true en los presets -->
                     </MultiBinding>
                   </TextBlock.Background>
                 </TextBlock>
@@ -592,7 +592,7 @@
           </DataGridTemplateColumn>
 
 
-          <!-- Últimas 9 / Secuencia -->
+          <!-- ?ltimas 9 / Secuencia -->
               <DataGridTemplateColumn Header="{DynamicResource Common.LastNine}"
                                   Width="170">
             <DataGridTemplateColumn.CellTemplate>

@@ -7,7 +7,7 @@
         Width="1480"
         MinHeight="720"
         MinWidth="1180"
-        Background="{StaticResource Brush.Bg}"
+        Background="{DynamicResource Brush.Bg}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
@@ -15,26 +15,26 @@
     <views:StatTextBrushConverter x:Key="StatTextBrush"/>
 
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style x:Key="PanelBorder" TargetType="Border">
-      <Setter Property="Background" Value="{StaticResource Brush.Card}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="14"/>
     </Style>
 
     <Style TargetType="DataGrid">
-      <Setter Property="Background" Value="#101720"/>
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-      <Setter Property="HorizontalGridLinesBrush" Value="#223244"/>
-      <Setter Property="RowBackground" Value="#101720"/>
-      <Setter Property="AlternatingRowBackground" Value="#141C26"/>
+      <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="RowBackground" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="AlternatingRowBackground" Value="{DynamicResource Brush.Card}"/>
       <Setter Property="HeadersVisibility" Value="Column"/>
       <Setter Property="CanUserAddRows" Value="False"/>
       <Setter Property="CanUserDeleteRows" Value="False"/>
@@ -46,24 +46,26 @@
     </Style>
 
     <Style TargetType="DataGridColumnHeader">
-      <Setter Property="Background" Value="#E9EEF3"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="6,4"/>
       <Setter Property="TextElement.FontSize" Value="12"/>
-      <Setter Property="TextElement.FontWeight" Value="Bold"/>
-      <Setter Property="TextElement.Foreground" Value="Black"/>
+      <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+      <Setter Property="TextElement.Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+      <Setter Property="BorderThickness" Value="0,0,1,1"/>
     </Style>
 
     <Style TargetType="DataGridCell">
-      <Setter Property="BorderBrush" Value="#223244"/>
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="Padding" Value="6,2"/>
     </Style>
 
     <Style x:Key="NoWrapCellText" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="NoWrap"/>
       <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
@@ -87,18 +89,18 @@
                 Padding="0"
                 FontSize="20"
                 FontWeight="Bold"
-                Foreground="Black"
+                Foreground="{DynamicResource Brush.SurfaceText}"
                 Content="?"
                 Click="BtnDictionary_Click"
                  ToolTip="{DynamicResource Common.OpenDictionary}"/>
-        <Border Width="58" Height="58" CornerRadius="12" Background="#11261A" BorderBrush="#214E38" BorderThickness="1" Margin="0,0,16,0">
+        <Border Width="58" Height="58" CornerRadius="12" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Margin="0,0,16,0">
           <Viewbox Stretch="Uniform">
-            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource Brush.Accent}" FontWeight="Bold"/>
+            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontWeight="Bold"/>
           </Viewbox>
         </Border>
         <StackPanel>
           <TextBlock Text="{Binding HeroTitle}" FontSize="26" FontWeight="Bold"/>
-          <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Brush.TextDim}" Margin="0,5,0,0"/>
+          <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,5,0,0"/>
         </StackPanel>
       </DockPanel>
     </Border>
@@ -111,24 +113,24 @@
         </Grid.RowDefinitions>
         <UniformGrid Columns="5">
           <StackPanel Margin="8">
-            <TextBlock Text="{DynamicResource Common.Hands}" Foreground="{StaticResource Brush.TextDim}"/>
+            <TextBlock Text="{DynamicResource Common.Hands}" Foreground="{DynamicResource Brush.TextDim}"/>
             <TextBlock Text="{Binding HandsLabel}" FontSize="22" FontWeight="Bold"/>
           </StackPanel>
           <StackPanel Margin="8">
-            <TextBlock Text="{DynamicResource Common.TotalResult}" Foreground="{StaticResource Brush.TextDim}"/>
+            <TextBlock Text="{DynamicResource Common.TotalResult}" Foreground="{DynamicResource Brush.TextDim}"/>
             <TextBlock Text="{Binding TotalBbLabel}" FontSize="22" FontWeight="Bold" Foreground="{Binding TotalBbBrush}"/>
           </StackPanel>
           <StackPanel Margin="8">
-            <TextBlock Text="BB/100" Foreground="{StaticResource Brush.TextDim}"/>
+            <TextBlock Text="BB/100" Foreground="{DynamicResource Brush.TextDim}"/>
             <TextBlock Text="{Binding BbPer100Label}" FontSize="22" FontWeight="Bold" Foreground="{Binding TotalBbBrush}"/>
           </StackPanel>
           <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.BestPosition}" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.BestPosition}" Foreground="{DynamicResource Brush.TextDim}"/>
             <TextBlock Text="{Binding BestPositionLabel}" FontSize="22" FontWeight="Bold"/>
           </StackPanel>
           <StackPanel Margin="8">
-            <TextBlock Text="{DynamicResource Common.WorstPosition}" Foreground="{StaticResource Brush.TextDim}"/>
-            <TextBlock Text="{Binding WorstPositionLabel}" FontSize="22" FontWeight="Bold" Foreground="#FF6B7A"/>
+            <TextBlock Text="{DynamicResource Common.WorstPosition}" Foreground="{DynamicResource Brush.TextDim}"/>
+            <TextBlock Text="{Binding WorstPositionLabel}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Brush.Negative}"/>
           </StackPanel>
         </UniformGrid>
 
@@ -171,13 +173,13 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border BorderBrush="#223244" BorderThickness="1" Margin="1">
+              <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Margin="1">
                 <Grid>
                   <Grid.RowDefinitions>
                     <RowDefinition Height="24"/>
                     <RowDefinition Height="30"/>
                   </Grid.RowDefinitions>
-                  <TextBlock Text="{Binding Label}" Background="#E9EEF3" Foreground="Black" FontWeight="Bold" TextAlignment="Center" Padding="4,2"/>
+                  <TextBlock Text="{Binding Label}" Background="{DynamicResource Brush.Header}" Foreground="{StaticResource FgLight}" FontWeight="SemiBold" TextAlignment="Center" Padding="4,2"/>
                   <TextBlock Grid.Row="1" Text="{Binding DisplayValue}" TextAlignment="Center" FontWeight="SemiBold" Padding="4,6"
                              Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
                     <TextBlock.Background>
@@ -383,8 +385,8 @@
           <ItemsControl ItemsSource="{Binding Notes}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Background="#101720" BorderBrush="#223244" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
-                  <TextBlock Text="{Binding}" Foreground="{StaticResource Brush.Text}"/>
+                <Border Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                  <TextBlock Text="{Binding}" Foreground="{DynamicResource Brush.Text}"/>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

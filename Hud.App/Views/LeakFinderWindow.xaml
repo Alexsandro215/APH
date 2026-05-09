@@ -6,23 +6,23 @@
         Width="1420"
         MinHeight="720"
         MinWidth="1180"
-        Background="{StaticResource Brush.Bg}"
+        Background="{DynamicResource Brush.Bg}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style TargetType="DataGrid">
-      <Setter Property="Background" Value="#101720"/>
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-      <Setter Property="HorizontalGridLinesBrush" Value="#223244"/>
-      <Setter Property="RowBackground" Value="#101720"/>
-      <Setter Property="AlternatingRowBackground" Value="#141C26"/>
+      <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="RowBackground" Value="{DynamicResource Brush.Inset}"/>
+      <Setter Property="AlternatingRowBackground" Value="{DynamicResource Brush.Card}"/>
       <Setter Property="HeadersVisibility" Value="Column"/>
       <Setter Property="CanUserAddRows" Value="False"/>
       <Setter Property="CanUserDeleteRows" Value="False"/>
@@ -32,22 +32,24 @@
     </Style>
 
     <Style TargetType="DataGridColumnHeader">
-      <Setter Property="Background" Value="#E9EEF3"/>
-      <Setter Property="Foreground" Value="Black"/>
-      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+      <Setter Property="BorderThickness" Value="0,0,1,1"/>
     </Style>
 
     <Style TargetType="DataGridCell">
-      <Setter Property="BorderBrush" Value="#223244"/>
-      <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="Padding" Value="6,2"/>
     </Style>
 
     <Style x:Key="PanelBorder" TargetType="Border">
-      <Setter Property="Background" Value="{StaticResource Brush.Card}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="14"/>
@@ -79,30 +81,30 @@
     <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,12" Padding="18">
       <StackPanel HorizontalAlignment="Center">
         <TextBlock Text="DETECTOR DE LEAKS" FontSize="26" FontWeight="Bold" TextAlignment="Center"/>
-        <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Brush.TextDim}" Margin="0,6,0,0" TextAlignment="Center"/>
+        <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0" TextAlignment="Center"/>
       </StackPanel>
     </Border>
 
     <Border Grid.Row="1" Style="{StaticResource PanelBorder}" Margin="0,0,0,12">
       <UniformGrid Columns="5">
         <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.LoadedTables}" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.LoadedTables}" Foreground="{DynamicResource Brush.TextDim}"/>
           <TextBlock Text="{Binding TableCount}" FontSize="23" FontWeight="Bold"/>
         </StackPanel>
         <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.AnalyzedHands}" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.AnalyzedHands}" Foreground="{DynamicResource Brush.TextDim}"/>
           <TextBlock Text="{Binding HeroHands}" FontSize="23" FontWeight="Bold"/>
         </StackPanel>
         <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.TotalResult}" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.TotalResult}" Foreground="{DynamicResource Brush.TextDim}"/>
           <TextBlock Text="{Binding TotalBbLabel}" FontSize="23" FontWeight="Bold" Foreground="{Binding TotalBbBrush}"/>
         </StackPanel>
         <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.BiggestLeak}" Foreground="{StaticResource Brush.TextDim}"/>
-          <TextBlock Text="{Binding BiggestLeakLabel}" FontSize="23" FontWeight="Bold" Foreground="#FF6B7A"/>
+          <TextBlock Text="{DynamicResource Common.BiggestLeak}" Foreground="{DynamicResource Brush.TextDim}"/>
+          <TextBlock Text="{Binding BiggestLeakLabel}" FontSize="23" FontWeight="Bold" Foreground="{DynamicResource Brush.Negative}"/>
         </StackPanel>
         <StackPanel Margin="8">
-          <TextBlock Text="{DynamicResource Common.CriticalHands}" Foreground="{StaticResource Brush.TextDim}"/>
+          <TextBlock Text="{DynamicResource Common.CriticalHands}" Foreground="{DynamicResource Brush.TextDim}"/>
           <TextBlock Text="{Binding CriticalHands}" FontSize="23" FontWeight="Bold"/>
         </StackPanel>
       </UniformGrid>
@@ -221,36 +223,36 @@
                   Width="120"
                   Height="34"
                   FontWeight="Bold"
-                  Foreground="Black"
+                  Foreground="{DynamicResource Brush.SurfaceText}"
                   Click="BtnViewAllReview_Click"/>
           <StackPanel>
             <TextBlock Text="{DynamicResource Common.ReviewHands}" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="{Binding ReviewSummary}" Foreground="{StaticResource Brush.TextDim}" Margin="0,4,0,0"/>
+            <TextBlock Text="{Binding ReviewSummary}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
           </StackPanel>
         </DockPanel>
 
         <UniformGrid Grid.Row="1" Columns="4">
-          <Border Background="#101720" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
+          <Border Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
             <StackPanel>
-              <TextBlock Text="{DynamicResource Common.WorstHand}" Foreground="{StaticResource Brush.TextDim}"/>
+              <TextBlock Text="{DynamicResource Common.WorstHand}" Foreground="{DynamicResource Brush.TextDim}"/>
               <TextBlock Text="{Binding WorstReviewHandLabel}" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
             </StackPanel>
           </Border>
-          <Border Background="#101720" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
+          <Border Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
             <StackPanel>
-              <TextBlock Text="{DynamicResource Common.MostExpensiveAction}" Foreground="{StaticResource Brush.TextDim}"/>
+              <TextBlock Text="{DynamicResource Common.MostExpensiveAction}" Foreground="{DynamicResource Brush.TextDim}"/>
               <TextBlock Text="{Binding WorstReviewActionLabel}" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
             </StackPanel>
           </Border>
-          <Border Background="#101720" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
+          <Border Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
             <StackPanel>
-              <TextBlock Text="{DynamicResource Common.MostExpensivePot}" Foreground="{StaticResource Brush.TextDim}"/>
+              <TextBlock Text="{DynamicResource Common.MostExpensivePot}" Foreground="{DynamicResource Brush.TextDim}"/>
               <TextBlock Text="{Binding WorstReviewPotLabel}" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
             </StackPanel>
           </Border>
-          <Border Background="#101720" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
+          <Border Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="6">
             <StackPanel>
-              <TextBlock Text="{DynamicResource Common.Sample}" Foreground="{StaticResource Brush.TextDim}"/>
+              <TextBlock Text="{DynamicResource Common.Sample}" Foreground="{DynamicResource Brush.TextDim}"/>
               <TextBlock Text="{Binding ReviewCountLabel}" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
             </StackPanel>
           </Border>
