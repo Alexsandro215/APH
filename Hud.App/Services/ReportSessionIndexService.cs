@@ -13,7 +13,10 @@ namespace Hud.App.Services
         int TableCount,
         TimeSpan Duration,
         string Hero,
-        string ResultLabel);
+        string ResultLabel,
+        int HandCount = 0,
+        string HeroStatsLabel = "-",
+        IReadOnlyList<string>? TableSourcePaths = null);
 
     public static class ReportSessionIndexService
     {

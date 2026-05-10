@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -531,7 +531,15 @@ namespace Hud.App.Views
                         ExtractStreetActions(hand, "PREFLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
                         ExtractStreetActions(hand, "FLOP", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
                         ExtractStreetActions(hand, "TURN", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
-                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind)));
+                        ExtractStreetActions(hand, "RIVER", table.HeroName, positions, shouldTrackVillain ? trackedVillainName : null, table.BigBlind),
+                        PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName).Result,
+                        PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName).Combination,
+                        PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName).VillainName,
+                        PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName).VillainCards,
+                        PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName).VillainCombination,
+                        PokerStarsHandHistory.ExtractBoardStreets(hand).Flop,
+                        PokerStarsHandHistory.ExtractBoardStreets(hand).Turn,
+                        PokerStarsHandHistory.ExtractBoardStreets(hand).River));
                 }
 
                 return result;
@@ -669,10 +677,7 @@ namespace Hud.App.Views
                        line.Contains(" cobra ", StringComparison.OrdinalIgnoreCase) ||
                        line.Contains(" se llev", StringComparison.OrdinalIgnoreCase) ||
                        line.Contains(" shows ", StringComparison.OrdinalIgnoreCase) ||
-                       line.Contains(" muestra ", StringComparison.OrdinalIgnoreCase) ||
-                       line.StartsWith("*** FLOP ***", StringComparison.Ordinal) ||
-                       line.StartsWith("*** TURN ***", StringComparison.Ordinal) ||
-                       line.StartsWith("*** RIVER ***", StringComparison.Ordinal);
+                       line.Contains(" muestra ", StringComparison.OrdinalIgnoreCase);
             }
 
             private static bool IsPlayerActionLine(string line)
@@ -888,11 +893,24 @@ namespace Hud.App.Views
             IReadOnlyList<StreetActionViewModel> PreflopActions,
             IReadOnlyList<StreetActionViewModel> FlopActions,
             IReadOnlyList<StreetActionViewModel> TurnActions,
-            IReadOnlyList<StreetActionViewModel> RiverActions)
+            IReadOnlyList<StreetActionViewModel> RiverActions,
+            string ResultSummary,
+            string MadeHand,
+            string VillainName,
+            string VillainCards,
+            string VillainCombination,
+            string FlopCards,
+            string TurnCard,
+            string RiverCard)
         {
             public string HandNumberLabel => $"{Services.LocalizationManager.Text("Common.Hand")} {Index}";
             public string CardsLabel => Cards;
             public IReadOnlyList<CardChipViewModel> CardChips => CardChipViewModel.FromCards(Cards);
+            public IReadOnlyList<CardChipViewModel> VillainCardChips => CardChipViewModel.FromCards(VillainCards);
+            public IReadOnlyList<CardChipViewModel> FlopCardChips => CardChipViewModel.FromCards(FlopCards);
+            public IReadOnlyList<CardChipViewModel> TurnCardChips => CardChipViewModel.FromCards(TurnCard);
+            public IReadOnlyList<CardChipViewModel> RiverCardChips => CardChipViewModel.FromCards(RiverCard);
+            public bool HasVillainCards => !string.IsNullOrEmpty(VillainCards);
             public string NetBbLabel => $"{(NetBb >= 0 ? "+" : "")}{NetBb:F0} bb";
             public string CumulativeBbLabel => $"{(CumulativeBb >= 0 ? "+" : "")}{CumulativeBb:F0} bb total";
             public string ChartTooltip => $"{HandNumberLabel}\n{CardsLabel}\n{NetBbLabel}\n{CumulativeBbLabel}";
@@ -922,94 +940,6 @@ namespace Hud.App.Views
                     return new SolidColorBrush(Color.FromRgb(170, 44, 48));
                 return new SolidColorBrush(Color.FromRgb(90, 18, 28));
             }
-        }
-
-        private sealed class StreetActionViewModel
-        {
-            public StreetActionViewModel(string text, bool isHero, bool isSystem, bool isBoardHeader, bool isTrackedVillain)
-            {
-                Text = text;
-                IsHero = isHero;
-                IsSystem = isSystem;
-                IsBoardHeader = isBoardHeader;
-                IsTrackedVillain = isTrackedVillain;
-
-                var baseForeground = isTrackedVillain
-                    ? new SolidColorBrush(Color.FromRgb(255, 132, 146))
-                    : isHero
-                    ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
-                    : isSystem
-                        ? new SolidColorBrush(Color.FromRgb(143, 211, 244))
-                        : Brushes.White;
-
-                Background = isTrackedVillain
-                    ? new SolidColorBrush(Color.FromRgb(61, 22, 30))
-                    : isHero
-                    ? new SolidColorBrush(Color.FromRgb(16, 37, 28))
-                    : isSystem
-                        ? new SolidColorBrush(Color.FromRgb(16, 28, 41))
-                        : new SolidColorBrush(Color.FromRgb(17, 24, 32));
-
-                VisualParts = BuildActionVisualParts(text, baseForeground, isBoardHeader);
-            }
-
-            public string Text { get; }
-            public bool IsHero { get; }
-            public bool IsSystem { get; }
-            public bool IsBoardHeader { get; }
-            public bool IsTrackedVillain { get; }
-            public Brush Background { get; }
-            public IReadOnlyList<ActionVisualPartViewModel> VisualParts { get; }
-        }
-
-        private sealed record ActionVisualPartViewModel(
-            string Text,
-            Brush Foreground,
-            FontWeight FontWeight,
-            IReadOnlyList<CardChipViewModel> CardChips)
-        {
-            public bool IsCards => CardChips.Count > 0;
-            public bool IsText => !IsCards;
-        }
-
-        private static IReadOnlyList<ActionVisualPartViewModel> BuildActionVisualParts(string text, Brush baseForeground, bool boardHeader)
-        {
-            var segments = new List<ActionVisualPartViewModel>();
-            var buffer = "";
-            var textBrush = boardHeader ? new SolidColorBrush(Color.FromRgb(143, 211, 244)) : baseForeground;
-
-            void Flush()
-            {
-                if (buffer.Length == 0)
-                    return;
-
-                segments.Add(new ActionVisualPartViewModel(
-                    buffer,
-                    textBrush,
-                    FontWeights.SemiBold,
-                    Array.Empty<CardChipViewModel>()));
-                buffer = "";
-            }
-
-            foreach (Match token in Regex.Matches(text, @"\S+|\s+"))
-            {
-                var value = token.Value;
-                if (!CardChipViewModel.LooksLikeCardToken(value))
-                {
-                    buffer += value;
-                    continue;
-                }
-
-                Flush();
-                segments.Add(new ActionVisualPartViewModel(
-                    "",
-                    textBrush,
-                    FontWeights.Bold,
-                    CardChipViewModel.FromCards(value)));
-            }
-
-            Flush();
-            return segments;
         }
 
         private sealed record ChartHitPoint(TableHandViewModel Hand, double X, double Y);

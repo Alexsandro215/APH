@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -161,30 +161,67 @@ namespace Hud.App.Views
         }
     }
 
-    public sealed record LeakSpotRow(
-        MainWindow.TableSessionStats Table,
-        string TableName,
-        DateTime DateTime,
-        int HandIndex,
-        string Cards,
-        string Combo,
-        string Position,
-        string Action,
-        string PotType,
-        string BoardTexture,
-        string FlopCards,
-        string TurnCard,
-        string RiverCard,
-        string PreflopLine,
-        string FlopLine,
-        string TurnLine,
-        string RiverLine,
-        string MadeHand,
-        string DrawLabel,
-        double NetBb,
-        double CumulativeBb,
-        string Reason)
+    public sealed class LeakSpotRow : INotifyPropertyChanged
     {
+        public MainWindow.TableSessionStats Table { get; }
+        public string TableName { get; }
+        public DateTime DateTime { get; }
+        public int HandIndex { get; }
+        public string Cards { get; }
+        public string Combo { get; }
+        public string Position { get; }
+        public string Action { get; }
+        public string PotType { get; }
+        public string BoardTexture { get; }
+        public string FlopCards { get; }
+        public string TurnCard { get; }
+        public string RiverCard { get; }
+        public string PreflopLine { get; }
+        public string FlopLine { get; }
+        public string TurnLine { get; }
+        public string RiverLine { get; }
+        public string MadeHand { get; }
+        public string HandResultSummary { get; }
+        public string VillainName { get; }
+        public string VillainCards { get; }
+        public string VillainCombination { get; }
+        public string DrawLabel { get; }
+        public double NetBb { get; }
+        public double CumulativeBb { get; }
+        public string Reason { get; }
+
+        private bool _isReviewed;
+        public bool IsReviewed
+        {
+            get => _isReviewed;
+            set
+            {
+                if (_isReviewed == value) return;
+                _isReviewed = value;
+                OnPropertyChanged(nameof(IsReviewed));
+                OnPropertyChanged(nameof(ReviewIcon));
+                OnPropertyChanged(nameof(ReviewBrush));
+            }
+        }
+
+        public LeakSpotRow(
+            MainWindow.TableSessionStats table, string tableName, DateTime dateTime, int handIndex,
+            string cards, string combo, string position, string action, string potType,
+            string boardTexture, string flopCards, string turnCard, string riverCard,
+            string preflopLine, string flopLine, string turnLine, string riverLine,
+            string madeHand, string handResultSummary, 
+            string villainName, string villainCards, string villainCombination,
+            string drawLabel, double netBb, double cumulativeBb, string reason)
+        {
+            Table = table; TableName = tableName; DateTime = dateTime; HandIndex = handIndex;
+            Cards = cards; Combo = combo; Position = position; Action = action; PotType = potType;
+            BoardTexture = boardTexture; FlopCards = flopCards; TurnCard = turnCard; RiverCard = riverCard;
+            PreflopLine = preflopLine; FlopLine = flopLine; TurnLine = turnLine; RiverLine = riverLine;
+            MadeHand = madeHand; HandResultSummary = handResultSummary; 
+            VillainName = villainName; VillainCards = villainCards; VillainCombination = villainCombination;
+            DrawLabel = drawLabel; NetBb = netBb; CumulativeBb = cumulativeBb; Reason = reason;
+        }
+
         public double AbsNetBb => Math.Abs(NetBb);
         public string DateTimeLabel => DateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         public string DateStack => DateTime.ToString("yyyy-MM-dd\nHH:mm", CultureInfo.InvariantCulture);
@@ -192,6 +229,9 @@ namespace Hud.App.Views
         public string Spot => $"{Position} | {PotType}";
         public string RealLabel => NetBb >= 0 ? "win" : "loss";
         public string NetBbLabel => $"{NetBb:+0.#;-0.#;0} bb";
+        public string ReviewIcon => IsReviewed ? "\u2714" : ""; // Checkmark
+        public Brush ReviewBrush => IsReviewed ? new SolidColorBrush(Color.FromRgb(33, 192, 122)) : Brushes.Transparent;
+
         public string NetBbTrendIcon => NetBb switch
         {
             > 0 => "\u25B2",
@@ -204,10 +244,16 @@ namespace Hud.App.Views
             < 0 => new SolidColorBrush(Color.FromRgb(226, 78, 91)),
             _ => new SolidColorBrush(Color.FromRgb(135, 145, 156))
         };
+
         public IReadOnlyList<CardChipViewModel> HeroCards => CardChipViewModel.FromCards(Cards);
         public IReadOnlyList<CardChipViewModel> FlopCardChips => CardChipViewModel.FromCards(FlopCards);
         public IReadOnlyList<CardChipViewModel> TurnCardChips => CardChipViewModel.FromCards(TurnCard);
         public IReadOnlyList<CardChipViewModel> RiverCardChips => CardChipViewModel.FromCards(RiverCard);
+        public IReadOnlyList<CardChipViewModel> VillainCardChips => CardChipViewModel.FromCards(VillainCards);
+        public bool HasVillainCards => !string.IsNullOrEmpty(VillainCards);
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
 

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Hud.App.Services
@@ -39,7 +39,7 @@ namespace Hud.App.Services
             new(@"(?:raises|sube)\s+\$?[\d,.]+\s+(?:to|a|hasta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ActionAmountRx =
-            new(@":+\s+(?:posts (?:small blind|big blind|the ante)|pone ciega peque(?:\u00F1|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@":+\s+(?:posts (?:small blind|big blind|small & big blinds|small and big blinds|the ante)|pone ciega peque(?:\u00F1|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static IEnumerable<IReadOnlyList<string>> SplitHands(IEnumerable<string> lines)
         {
@@ -155,6 +155,10 @@ namespace Hud.App.Services
 
             foreach (var line in hand)
             {
+                if (line.StartsWith("*** HOLE CARDS", StringComparison.OrdinalIgnoreCase) ||
+                    line.StartsWith("*** CARTAS PROPIAS", StringComparison.OrdinalIgnoreCase))
+                    break;
+
                 if (buttonSeat == 0)
                 {
                     var button = ButtonRx.Match(line);
@@ -294,6 +298,150 @@ namespace Hud.App.Services
                 5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
                 _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
             };
+
+        public static (string Result, string Combination, string VillainName, string VillainCards, string VillainCombination) ExtractHandSummaryInfo(IReadOnlyList<string> hand, string heroName)
+        {
+            string combination = "";
+            string result = "Foldeo en Preflop";
+            string villainName = "";
+            string villainCards = "";
+            string villainCombination = "";
+            
+            int lastStreetHeroActive = 0;
+            bool heroFolded = false;
+            bool showdownReached = false;
+            
+            int flopIdx = FindStreetIndex(hand, "FLOP");
+            int turnIdx = FindStreetIndex(hand, "TURN");
+            int riverIdx = FindStreetIndex(hand, "RIVER");
+            int summaryIdx = FindStreetIndex(hand, "SUMMARY");
+            
+            for (int i = 0; i < hand.Count; i++)
+            {
+                var line = hand[i];
+                var actorMatch = ActorRx.Match(line);
+                if (actorMatch.Success && SamePlayer(actorMatch.Groups["actor"].Value, heroName))
+                {
+                    var action = NormalizeAction(actorMatch.Groups["action"].Value);
+                    
+                    int currentStreet = 0;
+                    if (riverIdx >= 0 && i > riverIdx) currentStreet = 3;
+                    else if (turnIdx >= 0 && i > turnIdx) currentStreet = 2;
+                    else if (flopIdx >= 0 && i > flopIdx) currentStreet = 1;
+                    
+                    lastStreetHeroActive = currentStreet;
+                    if (action == "folds") { heroFolded = true; break; }
+                }
+                
+                if (line.Contains("*** SHOW DOWN") || line.Contains("*** CONFRONT")) showdownReached = true;
+            }
+            
+            bool heroWon = false;
+            if (heroFolded)
+            {
+                string street = lastStreetHeroActive switch { 1 => "Flop", 2 => "Turn", 3 => "River", _ => "Preflop" };
+                result = $"Foldeo en {street}";
+            }
+            else
+            {
+                foreach (var line in hand)
+                {
+                    var collected = CollectedRx.Match(line);
+                    if (collected.Success && SamePlayer(collected.Groups["name"].Value, heroName)) { heroWon = true; break; }
+                }
+                
+                if (heroWon) result = showdownReached ? "Gano en Showdown" : "Gano sin ver el Showdown";
+                else result = showdownReached ? "Perdio en Showdown" : "Perdio sin ver el Showdown";
+            }
+
+            // If Hero lost or folded, find the main winner
+            if (!heroWon)
+            {
+                double maxWin = 0;
+                foreach (var line in hand)
+                {
+                    var collected = CollectedRx.Match(line);
+                    if (collected.Success && !SamePlayer(collected.Groups["name"].Value, heroName))
+                    {
+                        var amtText = collected.Groups["amount"].Success ? collected.Groups["amount"].Value : collected.Groups["amount2"].Value;
+                        if (PokerAmountParser.TryParse(amtText, out var amt) && amt > maxWin)
+                        {
+                            maxWin = amt;
+                            villainName = NormalizeName(collected.Groups["name"].Value);
+                        }
+                    }
+                }
+            }
+            
+            if (summaryIdx >= 0)
+            {
+                foreach (var line in hand.Skip(summaryIdx))
+                {
+                    if (line.Contains(heroName))
+                    {
+                        var comboMatch = Regex.Match(line, @"with\s+(?<combo>[^,\r\n(]+)", RegexOptions.IgnoreCase);
+                        if (comboMatch.Success) combination = comboMatch.Groups["combo"].Value.Trim();
+                        var shownMatch = Regex.Match(line, @"\((?<combo>[^)]+)\)", RegexOptions.IgnoreCase);
+                        if (shownMatch.Success && string.IsNullOrEmpty(combination)) combination = shownMatch.Groups["combo"].Value.Trim();
+                    }
+
+                    if (!string.IsNullOrEmpty(villainName) && line.Contains(villainName))
+                    {
+                        var vCardsMatch = Regex.Match(line, @"\[(?<cards>[^\]]+)\]");
+                        if (vCardsMatch.Success) villainCards = vCardsMatch.Groups["cards"].Value.Trim();
+                        
+                        var vComboMatch = Regex.Match(line, @"with\s+(?<combo>[^,\r\n(]+)", RegexOptions.IgnoreCase);
+                        if (vComboMatch.Success) villainCombination = vComboMatch.Groups["combo"].Value.Trim();
+                        var vShownMatch = Regex.Match(line, @"\((?<combo>[^)]+)\)", RegexOptions.IgnoreCase);
+                        if (vShownMatch.Success && string.IsNullOrEmpty(villainCombination)) villainCombination = vShownMatch.Groups["combo"].Value.Trim();
+                    }
+                }
+            }
+            
+            return (result, TranslateCombination(combination), villainName, villainCards, TranslateCombination(villainCombination));
+        }
+
+        public static (string Flop, string Turn, string River) ExtractBoardStreets(IReadOnlyList<string> hand)
+        {
+            string flop = "";
+            string turn = "";
+            string river = "";
+            
+            foreach (var line in hand)
+            {
+                if (line.StartsWith("*** FLOP ***", StringComparison.OrdinalIgnoreCase))
+                {
+                    var match = Regex.Match(line, @"\[(?<cards>[^\]]+)\]");
+                    if (match.Success) flop = match.Groups["cards"].Value;
+                }
+                else if (line.StartsWith("*** TURN ***", StringComparison.OrdinalIgnoreCase))
+                {
+                    var matches = Regex.Matches(line, @"\[(?<cards>[^\]]+)\]");
+                    if (matches.Count > 0) turn = matches[^1].Groups["cards"].Value;
+                }
+                else if (line.StartsWith("*** RIVER ***", StringComparison.OrdinalIgnoreCase))
+                {
+                    var matches = Regex.Matches(line, @"\[(?<cards>[^\]]+)\]");
+                    if (matches.Count > 0) river = matches[^1].Groups["cards"].Value;
+                }
+            }
+            return (flop, turn, river);
+        }
+
+        private static string TranslateCombination(string combo)
+        {
+            if (string.IsNullOrEmpty(combo)) return "";
+            return combo.Replace("high card", "Carta alta", StringComparison.OrdinalIgnoreCase)
+                        .Replace("one pair", "Pareja", StringComparison.OrdinalIgnoreCase)
+                        .Replace("two pair", "Doble pareja", StringComparison.OrdinalIgnoreCase)
+                        .Replace("three of a kind", "Trio", StringComparison.OrdinalIgnoreCase)
+                        .Replace("straight flush", "Escalera de color", StringComparison.OrdinalIgnoreCase)
+                        .Replace("straight", "Escalera", StringComparison.OrdinalIgnoreCase)
+                        .Replace("flush", "Color", StringComparison.OrdinalIgnoreCase)
+                        .Replace("full house", "Full", StringComparison.OrdinalIgnoreCase)
+                        .Replace("four of a kind", "Poker", StringComparison.OrdinalIgnoreCase)
+                        .Replace("royal flush", "Escalera Real", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
 

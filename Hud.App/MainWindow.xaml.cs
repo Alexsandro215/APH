@@ -23,6 +23,7 @@ namespace Hud.App
 
         public ObservableCollection<PlayerStats> DashboardPlayers { get; } = new();
         public ObservableCollection<TableSessionStats> RecentTables { get; } = new();
+        private readonly List<TableSessionStats> _allTables = new();
 
         public StakeProfile DashboardStake
         {
@@ -63,7 +64,7 @@ namespace Hud.App
                 return;
             }
 
-            var window = new GlobalAnalysisWindow(RecentTables, "")
+            var window = new GlobalAnalysisWindow(_allTables, "")
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
@@ -82,7 +83,7 @@ namespace Hud.App
                 return;
             }
 
-            var window = new MisTablasWindow(RecentTables, "")
+            var window = new MisTablasWindow(_allTables, "")
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
@@ -101,7 +102,7 @@ namespace Hud.App
                 return;
             }
 
-            var window = new DataVillainsWindow(RecentTables, "")
+            var window = new DataVillainsWindow(_allTables, "")
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
@@ -120,7 +121,7 @@ namespace Hud.App
                 return;
             }
 
-            var window = new LeakFinderWindow(RecentTables, "")
+            var window = new LeakFinderWindow(_allTables, "")
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
@@ -152,7 +153,7 @@ namespace Hud.App
                 return;
             }
 
-            var window = new HeroProfileWindow(hero, RecentTables, DashboardStake, "")
+            var window = new HeroProfileWindow(hero, _allTables, DashboardStake, "")
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
@@ -232,6 +233,7 @@ namespace Hud.App
         {
             DashboardPlayers.Clear();
             RecentTables.Clear();
+            _allTables.Clear();
 
             try
             {
@@ -240,7 +242,10 @@ namespace Hud.App
                 DashboardStake = result.Stake;
                 if (result.Hero is not null)
                     DashboardPlayers.Add(result.Hero);
+
                 foreach (var table in result.Tables)
+                    _allTables.Add(table);
+                foreach (var table in result.Tables.Take(10))
                     RecentTables.Add(table);
 
                 await Task.Run(() => VillainHistoryStore.RebuildFromTables(result.Tables));

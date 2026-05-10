@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -49,6 +49,12 @@ namespace Hud.App.Views
                 ShowInTaskbar = true
             };
             window.Show();
+        }
+
+        private void BtnSessionAnalysis_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new SessionLeakAnalysisWindow() { Owner = this };
+            window.ShowDialog();
         }
 
         private sealed class LeakFinderViewModel
@@ -243,7 +249,7 @@ namespace Hud.App.Views
                     var dateTime = ExtractHandDateTime(hand, table.LastPlayedAt);
                     var combo = NormalizeCombo(cards);
                     var streets = BuildStreetInfo(hand, table.HeroName);
-                    var madeHand = DetectMadeHand(cards, board);
+                    var summaryInfo = PokerStarsHandHistory.ExtractHandSummaryInfo(hand, table.HeroName);
                     var draw = DetectDraw(cards, board);
 
                     yield return new LeakSpotRow(
@@ -264,7 +270,11 @@ namespace Hud.App.Views
                         streets.FlopLine,
                         streets.TurnLine,
                         streets.RiverLine,
-                        madeHand,
+                        summaryInfo.Combination,
+                        summaryInfo.Result,
+                        summaryInfo.VillainName,
+                        summaryInfo.VillainCards,
+                        summaryInfo.VillainCombination,
                         draw,
                         netBb,
                         cumulative,

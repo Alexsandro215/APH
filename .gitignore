@@ -21,6 +21,11 @@ TestResults/
 *.tmp
 *.temp
 
+# Local poker/session data
+Muestras/
+*.session.json
+*.pdf
+
 # Archives / backups
 *.zip
 *.rar

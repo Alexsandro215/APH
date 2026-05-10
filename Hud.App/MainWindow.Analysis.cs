@@ -77,7 +77,6 @@ namespace Hud.App
                     .Cast<TableSessionStats>()
                     .OrderByDescending(table => table.LastPlayedAt)
                     .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
-                    .Take(10)
                     .ToList();
 
             return new DashboardResult(files.Count, stake, hero, tables);

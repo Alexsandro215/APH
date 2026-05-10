@@ -12,6 +12,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\APH_Reference_100bb_6max.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="PDFsharp" Version="6.2.2" />
   </ItemGroup>
 </Project>
+

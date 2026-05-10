@@ -1,4 +1,4 @@
-﻿<Window x:Class="Hud.App.Views.LeakFinderWindow"
+<Window x:Class="Hud.App.Views.LeakFinderWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{DynamicResource Common.LeakFinderTitle}"
@@ -218,6 +218,15 @@
         </Grid.RowDefinitions>
 
         <DockPanel Margin="0,0,0,10">
+          <Button Content="ANÁLISIS DE LEAK POR SESIÓN"
+                  DockPanel.Dock="Right"
+                  Width="240"
+                  Height="34"
+                  FontWeight="Bold"
+                  Background="{DynamicResource Brush.Accent}"
+                  Foreground="White"
+                  Margin="10,0,0,0"
+                  Click="BtnSessionAnalysis_Click"/>
           <Button Content="{DynamicResource Common.ViewAll}"
                   DockPanel.Dock="Right"
                   Width="120"

@@ -67,7 +67,10 @@ namespace Hud.App.Services
                 model.RegisteredTables,
                 model.Duration,
                 model.Hero,
-                $"{FormatMoneyText(model.NetAmount, model.IsCash)} / {model.NetBb:+0.#;-0.#;0} bb"));
+                $"{FormatMoneyText(model.NetAmount, model.IsCash)} / {model.NetBb:+0.#;-0.#;0} bb",
+                model.TotalHands,
+                $"VPIP: {model.AverageStats.VPIP:0.#} / PFR: {model.AverageStats.PFR:0.#}",
+                tables.Where(t => !string.IsNullOrWhiteSpace(t.SourcePath)).Select(t => t.SourcePath!).ToList()));
             return path;
         }
 
