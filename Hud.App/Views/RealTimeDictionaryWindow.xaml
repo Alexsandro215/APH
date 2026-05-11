@@ -1,4 +1,4 @@
-﻿<Window x:Class="Hud.App.Views.RealTimeDictionaryWindow"
+<Window x:Class="Hud.App.Views.RealTimeDictionaryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{DynamicResource Common.RealTimeHelpTitle}"
@@ -6,7 +6,7 @@
         Width="1080"
         MinHeight="620"
         MinWidth="920"
-        Background="{DynamicResource Brush.Bg}"
+        Background="{DynamicResource Brush.AppShell}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
@@ -15,13 +15,7 @@
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
-    <Style x:Key="PanelBorder" TargetType="Border">
-      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="CornerRadius" Value="8"/>
-      <Setter Property="Padding" Value="14"/>
-    </Style>
+    <Style x:Key="PanelBorder" TargetType="Border" BasedOn="{StaticResource ProjectPanelBorder}"/>
   </Window.Resources>
 
   <Grid Margin="16">

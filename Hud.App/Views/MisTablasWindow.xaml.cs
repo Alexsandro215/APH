@@ -47,16 +47,34 @@ namespace Hud.App.Views
         public MisTablasWindow(IEnumerable<MainWindow.TableSessionStats> tables, string summary)
         {
             InitializeComponent();
-            Height = SystemParameters.WorkArea.Height;
-            Width = Math.Min(1420, SystemParameters.WorkArea.Width);
-            MaxHeight = SystemParameters.WorkArea.Height;
-            MaxWidth = SystemParameters.WorkArea.Width;
-            Top = SystemParameters.WorkArea.Top;
+            FitHeightToScreen();
+            Loaded += MisTablasWindow_Loaded;
             _tables = tables.ToList();
             LoadStats();
             PopulateFilterOptions();
             RebuildFilteredCells();
             RenderGrid();
+        }
+
+        private void MisTablasWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= MisTablasWindow_Loaded;
+            FitHeightToScreen();
+        }
+
+        private void FitHeightToScreen()
+        {
+            var workArea = SystemParameters.WorkArea;
+            const double desiredWidth = 1420;
+
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Height = workArea.Height;
+            Top = workArea.Top;
+            Width = Math.Min(desiredWidth, workArea.Width);
+            MaxWidth = workArea.Width;
+            Left = workArea.Width > Width
+                ? workArea.Left + (workArea.Width - Width) / 2
+                : workArea.Left;
         }
 
         private void Street_Click(object sender, RoutedEventArgs e)
@@ -740,9 +758,7 @@ namespace Hud.App.Views
             HeroAction.Check => new SolidColorBrush(Color.FromRgb(75, 102, 122)),
             HeroAction.Call => new SolidColorBrush(Color.FromRgb(0, 148, 198)),
             HeroAction.Bet => new SolidColorBrush(Color.FromRgb(64, 184, 4)),
-            HeroAction.Raise => new SolidColorBrush(Color.FromRgb(184, 181, 4)),
-            HeroAction.ThreeBet => new SolidColorBrush(Color.FromRgb(226, 137, 0)),
-            HeroAction.FourBetPlus => new SolidColorBrush(Color.FromRgb(255, 115, 115)),
+            HeroAction.Raise or HeroAction.ThreeBet or HeroAction.FourBetPlus => new SolidColorBrush(Color.FromRgb(184, 181, 4)),
             HeroAction.AllIn => new SolidColorBrush(Color.FromRgb(156, 0, 0)),
             _ => Brushes.Transparent
         };

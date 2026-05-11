@@ -4,19 +4,19 @@
 
 
   <!-- Colores base -->
-  <Color x:Key="Col.Bg">#0C1016</Color>
-  <Color x:Key="Col.Panel">#0F141C</Color>
-  <Color x:Key="Col.Card">#141B24</Color>
-  <Color x:Key="Col.Border">#223040</Color>
-  <Color x:Key="Col.Text">#E7EEF5</Color>
-  <Color x:Key="Col.TextDim">#A4B8CB</Color>
+  <Color x:Key="Col.Bg">#070A0F</Color>
+  <Color x:Key="Col.Panel">#101722</Color>
+  <Color x:Key="Col.Card">#131C28</Color>
+  <Color x:Key="Col.Border">#263548</Color>
+  <Color x:Key="Col.Text">#F3F7FB</Color>
+  <Color x:Key="Col.TextDim">#9EADBC</Color>
 
   <!-- Acentos p�ker -->
-  <Color x:Key="Col.Accent">#21C07A</Color>
-  <Color x:Key="Col.Heart">#E24E5B</Color>
-  <Color x:Key="Col.Diamond">#E3B341</Color>
-  <Color x:Key="Col.Club">#1AA1D1</Color>
-  <Color x:Key="Col.Glow">#4521C07A</Color>
+  <Color x:Key="Col.Accent">#30D98B</Color>
+  <Color x:Key="Col.Heart">#F05D6C</Color>
+  <Color x:Key="Col.Diamond">#F0C75E</Color>
+  <Color x:Key="Col.Club">#4FB7E7</Color>
+  <Color x:Key="Col.Glow">#5530D98B</Color>
   <Color x:Key="Col.GlowTransparent">#0021C07A</Color>
 
 
@@ -78,16 +78,26 @@
       Color="{StaticResource Col.TextDim}"/>
   <SolidColorBrush x:Key="Brush.Accent"
       Color="{StaticResource Col.Accent}"/>
+  <SolidColorBrush x:Key="Brush.Club"
+      Color="{StaticResource Col.Club}"/>
   <SolidColorBrush x:Key="Brush.Surface"
-      Color="#0A0C10"/>
+      Color="#0B1119"/>
   <SolidColorBrush x:Key="Brush.SurfaceText"
       Color="#FFFFFF"/>
   <SolidColorBrush x:Key="Brush.Inset"
-      Color="#08090C"/>
+      Color="#080D13"/>
   <SolidColorBrush x:Key="Brush.Header"
-      Color="#17212C"/>
+      Color="#182333"/>
   <SolidColorBrush x:Key="Brush.HeaderBorder"
-      Color="#253343"/>
+      Color="#2B3D52"/>
+  <SolidColorBrush x:Key="Brush.CardHover"
+      Color="#182536"/>
+  <SolidColorBrush x:Key="Brush.RowHover"
+      Color="#1B2B3D"/>
+  <SolidColorBrush x:Key="Brush.RowSelected"
+      Color="#203A42"/>
+  <SolidColorBrush x:Key="Brush.AccentSoft"
+      Color="#1E30D98B"/>
   <SolidColorBrush x:Key="Brush.Positive"
       Color="#21C07A"/>
   <SolidColorBrush x:Key="Brush.Negative"
@@ -97,6 +107,53 @@
 
   <FontFamily x:Key="Font.UI">Segoe UI</FontFamily>
   <FontFamily x:Key="Font.Symbol">Segoe UI Symbol</FontFamily>
+
+  <VisualBrush x:Key="Brush.AppShell" Stretch="Fill">
+    <VisualBrush.Visual>
+      <Grid Width="1440" Height="900" ClipToBounds="True">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{DynamicResource Col.Bg}" Offset="0"/>
+            <GradientStop Color="{DynamicResource Col.Panel}" Offset="0.58"/>
+            <GradientStop Color="{DynamicResource Col.Card}" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+
+        <TextBlock Text="&#x2660;"
+                   FontFamily="Segoe UI Symbol"
+                   Foreground="{DynamicResource Brush.Accent}"
+                   FontSize="380"
+                   FontWeight="Black"
+                   Opacity="0.065"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Margin="0,0,74,-108"/>
+        <TextBlock Text="APH"
+                   Foreground="{DynamicResource Brush.Accent}"
+                   FontSize="148"
+                   FontWeight="Black"
+                   Opacity="0.07"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Margin="0,0,105,84"/>
+        <Border HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Width="560"
+                Height="420"
+                Margin="0,0,-130,-150"
+                Opacity="0.42"
+                IsHitTestVisible="False">
+          <Border.Background>
+            <RadialGradientBrush GradientOrigin="0.72,0.74" Center="0.72,0.74" RadiusX="0.78" RadiusY="0.78">
+              <GradientStop Color="{DynamicResource Col.Glow}" Offset="0"/>
+              <GradientStop Color="{DynamicResource Col.Glow}" Offset="0.36"/>
+              <GradientStop Color="{DynamicResource Col.GlowTransparent}" Offset="1"/>
+            </RadialGradientBrush>
+          </Border.Background>
+        </Border>
+      </Grid>
+    </VisualBrush.Visual>
+  </VisualBrush>
 
   <DataTemplate x:Key="CardChipListTemplate">
     <ItemsControl ItemsSource="{Binding}">
@@ -130,7 +187,7 @@
   <!-- Base -->
   <Style TargetType="Window">
     <Setter Property="Background"
-        Value="{DynamicResource Brush.Bg}"/>
+        Value="{DynamicResource Brush.AppShell}"/>
     <Setter Property="Foreground"
         Value="{DynamicResource Brush.Text}"/>
     <Setter Property="FontFamily"
@@ -149,6 +206,233 @@
         Value="1"/>
     <Setter Property="Margin"
         Value="0,8,0,8"/>
+  </Style>
+
+  <Style TargetType="ToolTip">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="HasDropShadow" Value="False"/>
+    <Setter Property="Placement" Value="Right"/>
+    <Setter Property="HorizontalOffset" Value="10"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToolTip">
+          <Border Background="{DynamicResource Brush.Inset}"
+                  BorderBrush="{DynamicResource Brush.Accent}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="11,8"
+                  MaxWidth="260">
+            <Border.Effect>
+              <DropShadowEffect BlurRadius="18"
+                                ShadowDepth="0"
+                                Opacity="0.42"
+                                Color="#000000"/>
+            </Border.Effect>
+            <Grid>
+              <Border Width="3"
+                      CornerRadius="2"
+                      HorizontalAlignment="Left"
+                      Background="{DynamicResource Brush.Accent}"
+                      Opacity="0.95"/>
+              <ContentPresenter Margin="12,0,0,0"/>
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="FunctionToolTipStyle" TargetType="ToolTip" BasedOn="{StaticResource {x:Type ToolTip}}">
+    <Setter Property="Placement" Value="Right"/>
+    <Setter Property="HorizontalOffset" Value="12"/>
+    <Setter Property="VerticalOffset" Value="-2"/>
+  </Style>
+
+  <Style x:Key="FunctionTipTitle" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="TextWrapping" Value="NoWrap"/>
+  </Style>
+
+  <Style x:Key="FunctionTipDetail" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="Margin" Value="0,2,0,0"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+  </Style>
+
+  <Style x:Key="PanelCard" TargetType="Border">
+    <Setter Property="Background">
+      <Setter.Value>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#182333" Offset="0"/>
+          <GradientStop Color="#111A25" Offset="0.42"/>
+          <GradientStop Color="#0B1119" Offset="1"/>
+        </LinearGradientBrush>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="16"/>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <DropShadowEffect BlurRadius="18"
+                          ShadowDepth="0"
+                          Opacity="0.26"
+                          Color="#000000"/>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="ProjectPanelBorder" TargetType="Border" BasedOn="{StaticResource PanelCard}">
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="14"/>
+  </Style>
+
+  <Style x:Key="PanelBorder" TargetType="Border" BasedOn="{StaticResource ProjectPanelBorder}"/>
+
+  <Style x:Key="GlowPanelShell" TargetType="Grid">
+    <Setter Property="Margin" Value="6,10,6,16"/>
+  </Style>
+
+  <Style x:Key="PanelBackGlow" TargetType="Border">
+    <Setter Property="CornerRadius" Value="16"/>
+    <Setter Property="Opacity" Value="0.78"/>
+    <Setter Property="Margin" Value="10,18,-14,-12"/>
+    <Setter Property="IsHitTestVisible" Value="False"/>
+    <Setter Property="Background">
+      <Setter.Value>
+        <RadialGradientBrush GradientOrigin="0.88,0.92" Center="0.88,0.92" RadiusX="0.9" RadiusY="0.9">
+          <GradientStop Color="{DynamicResource Col.Glow}" Offset="0"/>
+          <GradientStop Color="{DynamicResource Col.Glow}" Offset="0.42"/>
+          <GradientStop Color="{DynamicResource Col.GlowTransparent}" Offset="1"/>
+        </RadialGradientBrush>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <BlurEffect Radius="22"/>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="MiniCardBackGlow" TargetType="Border">
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Opacity" Value="0.42"/>
+    <Setter Property="Margin" Value="14,16,-5,-5"/>
+    <Setter Property="IsHitTestVisible" Value="False"/>
+    <Setter Property="Background">
+      <Setter.Value>
+        <RadialGradientBrush GradientOrigin="0.9,0.95" Center="0.9,0.95" RadiusX="0.8" RadiusY="0.8">
+          <GradientStop Color="{DynamicResource Col.Glow}" Offset="0"/>
+          <GradientStop Color="{DynamicResource Col.Glow}" Offset="0.44"/>
+          <GradientStop Color="{DynamicResource Col.GlowTransparent}" Offset="1"/>
+        </RadialGradientBrush>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <BlurEffect Radius="12"/>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="BrandWatermarkText" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+    <Setter Property="FontWeight" Value="Black"/>
+    <Setter Property="IsHitTestVisible" Value="False"/>
+    <Setter Property="TextWrapping" Value="NoWrap"/>
+  </Style>
+
+  <Style x:Key="DashboardMetricCard" TargetType="Border">
+    <Setter Property="Background">
+      <Setter.Value>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#1C2B3D" Offset="0"/>
+          <GradientStop Color="#101923" Offset="1"/>
+        </LinearGradientBrush>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="12,10"/>
+    <Setter Property="Margin" Value="0,0,10,0"/>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <DropShadowEffect BlurRadius="8"
+                          ShadowDepth="0"
+                          Opacity="0.16"
+                          Color="#000000"/>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="CockpitRail" TargetType="Border">
+    <Setter Property="Background">
+      <Setter.Value>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+          <GradientStop Color="#111A25" Offset="0"/>
+          <GradientStop Color="#080D13" Offset="0.52"/>
+          <GradientStop Color="#0E151E" Offset="1"/>
+        </LinearGradientBrush>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+  </Style>
+
+  <Style x:Key="HeroMetricPill" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="10,6"/>
+    <Setter Property="Margin" Value="0,0,8,0"/>
+  </Style>
+
+  <Style x:Key="SectionEyebrow" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="TextWrapping" Value="NoWrap"/>
+  </Style>
+
+  <Style x:Key="SectionHeading" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="FontSize" Value="20"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="TextWrapping" Value="NoWrap"/>
+  </Style>
+
+  <Style x:Key="GridHeaderText" TargetType="TextBlock">
+    <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="TextAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Stretch"/>
+    <Setter Property="Padding" Value="5,4"/>
+  </Style>
+
+  <Style x:Key="StatCellText" TargetType="TextBlock">
+    <Setter Property="TextAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Padding" Value="5,2"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <Style x:Key="StatGlowText" TargetType="TextBlock" BasedOn="{StaticResource StatCellText}">
+    <Setter Property="Margin" Value="4,3"/>
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="MinWidth" Value="48"/>
+    <Setter Property="Opacity" Value="0.96"/>
   </Style>
 
   <!-- Controles claros embebidos en popups: el calendario no debe heredar texto claro. -->
@@ -227,14 +511,15 @@
     <Setter Property="BorderThickness"
         Value="1"/>
     <Setter Property="CornerRadius"
-        Value="18"/>
+        Value="14"/>
     <Setter Property="Padding"
         Value="22"/>
     <Setter Property="Effect">
       <Setter.Value>
-        <DropShadowEffect BlurRadius="18"
+        <DropShadowEffect BlurRadius="16"
             ShadowDepth="0"
-            Color="#60000000"/>
+            Opacity="0.24"
+            Color="#000000"/>
       </Setter.Value>
     </Setter>
   </Style>
@@ -329,45 +614,208 @@
   <Style TargetType="Button"
       x:Key="Btn.Primary">
     <Setter Property="Foreground"
-        Value="{DynamicResource Brush.Text}"/>
+        Value="{DynamicResource Brush.SurfaceText}"/>
     <Setter Property="Background"
-        Value="{DynamicResource Brush.Card}"/>
+        Value="{DynamicResource Brush.Panel}"/>
     <Setter Property="BorderBrush"
         Value="{DynamicResource Brush.Border}"/>
     <Setter Property="BorderThickness"
         Value="1"/>
     <Setter Property="Padding"
-        Value="10,8"/>
+        Value="12,8"/>
+    <Setter Property="FontWeight"
+        Value="SemiBold"/>
     <Setter Property="Cursor"
         Value="Hand"/>
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
-          <Border Background="{TemplateBinding Background}"
+          <Border x:Name="Root"
+                  Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}"
                   CornerRadius="8"
-              Padding="{TemplateBinding Padding}">
-            <ContentPresenter HorizontalAlignment="Center"
-                VerticalAlignment="Center"/>
+                  Padding="{TemplateBinding Padding}">
+            <Grid>
+              <Border x:Name="AccentLine"
+                      Height="2"
+                      CornerRadius="2"
+                      Background="{DynamicResource Brush.Accent}"
+                      VerticalAlignment="Top"
+                      Opacity="0.72"/>
+              <ContentPresenter HorizontalAlignment="Center"
+                  VerticalAlignment="Center"/>
+            </Grid>
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver"
                 Value="True">
-              <Setter Property="Background"
-                  Value="{DynamicResource Brush.Panel}"/>
-              <Setter Property="BorderBrush"
-                  Value="{DynamicResource Brush.Border}"/>
+              <Setter TargetName="Root" Property="Background"
+                  Value="{DynamicResource Brush.CardHover}"/>
+              <Setter TargetName="Root" Property="BorderBrush"
+                  Value="{DynamicResource Brush.Accent}"/>
+              <Setter TargetName="AccentLine" Property="Opacity"
+                  Value="1"/>
             </Trigger>
             <Trigger Property="IsPressed"
                 Value="True">
-              <Setter Property="Background"
+              <Setter TargetName="Root" Property="Background"
                   Value="{DynamicResource Brush.Inset}"/>
             </Trigger>
             <Trigger Property="IsEnabled"
                 Value="False">
               <Setter Property="Opacity"
                   Value="0.55"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="RailIconButton" TargetType="Button" BasedOn="{StaticResource Btn.Primary}">
+    <Setter Property="Width" Value="44"/>
+    <Setter Property="Height" Value="44"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Margin" Value="0,0,0,10"/>
+    <Setter Property="Background" Value="#121D2A"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="ToolTipService.Placement" Value="Right"/>
+    <Setter Property="ToolTipService.InitialShowDelay" Value="90"/>
+    <Setter Property="ToolTipService.ShowDuration" Value="30000"/>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <DropShadowEffect BlurRadius="10"
+                          ShadowDepth="0"
+                          Opacity="0.18"
+                          Color="#000000"/>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="DataGrid">
+    <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="GridLinesVisibility" Value="None"/>
+    <Setter Property="HeadersVisibility" Value="Column"/>
+    <Setter Property="HorizontalGridLinesBrush" Value="Transparent"/>
+    <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+    <Setter Property="RowBackground" Value="{DynamicResource Brush.Inset}"/>
+    <Setter Property="AlternatingRowBackground" Value="{DynamicResource Brush.Panel}"/>
+    <Setter Property="AlternationCount" Value="2"/>
+    <Setter Property="RowHeight" Value="32"/>
+    <Setter Property="ColumnHeaderHeight" Value="32"/>
+    <Setter Property="SelectionMode" Value="Single"/>
+    <Setter Property="SelectionUnit" Value="FullRow"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+  </Style>
+
+  <Style TargetType="DataGridColumnHeader">
+    <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Padding" Value="6,4"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="BorderThickness" Value="0,0,1,1"/>
+  </Style>
+
+  <Style TargetType="DataGridRow">
+    <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+    <Style.Triggers>
+      <Trigger Property="AlternationIndex" Value="1">
+        <Setter Property="Background" Value="{DynamicResource Brush.Panel}"/>
+      </Trigger>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource Brush.RowHover}"/>
+      </Trigger>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="{DynamicResource Brush.RowSelected}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style TargetType="DataGridCell">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="DataGridCell">
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="4,0">
+            <ContentPresenter VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style TargetType="Thumb">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Thumb">
+          <Border x:Name="ThumbBorder"
+                  Background="{DynamicResource Brush.HeaderBorder}"
+                  CornerRadius="4"
+                  Margin="2"/>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+            <Trigger Property="IsDragging" Value="True">
+              <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="ScrollBar">
+    <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.HeaderBorder}"/>
+    <Setter Property="Width" Value="12"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ScrollBar">
+          <Grid Background="{TemplateBinding Background}">
+            <Track x:Name="PART_Track"
+                   IsDirectionReversed="True">
+              <Track.DecreaseRepeatButton>
+                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
+              </Track.DecreaseRepeatButton>
+              <Track.Thumb>
+                <Thumb/>
+              </Track.Thumb>
+              <Track.IncreaseRepeatButton>
+                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
+              </Track.IncreaseRepeatButton>
+            </Track>
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+              <Setter Property="Height" Value="12"/>
+              <Setter Property="Width" Value="Auto"/>
+              <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>

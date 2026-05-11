@@ -6,7 +6,7 @@
         Width="1420"
         MinHeight="620"
         MinWidth="1180"
-        Background="{DynamicResource Brush.Bg}"
+        Background="{DynamicResource Brush.AppShell}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
@@ -88,10 +88,7 @@
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{DynamicResource Brush.Card}"
-            BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="1"
-            CornerRadius="8"
+    <Border Style="{StaticResource ProjectPanelBorder}"
             Padding="16"
             Margin="0,0,0,12">
       <DockPanel>

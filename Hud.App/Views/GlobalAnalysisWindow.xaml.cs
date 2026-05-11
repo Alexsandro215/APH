@@ -18,6 +18,8 @@ namespace Hud.App.Views
         public GlobalAnalysisWindow(IEnumerable<MainWindow.TableSessionStats> tables, string summary)
         {
             InitializeComponent();
+            FitToWorkArea();
+            Loaded += GlobalAnalysisWindow_Loaded;
 
             _summary = summary;
             _allTables = tables
@@ -30,6 +32,27 @@ namespace Hud.App.Views
             DataContext = this;
             ConfigureFilters();
             ApplyFilters();
+        }
+
+        private void GlobalAnalysisWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= GlobalAnalysisWindow_Loaded;
+            FitToWorkArea();
+        }
+
+        private void FitToWorkArea()
+        {
+            var workArea = SystemParameters.WorkArea;
+            const double desiredWidth = 1460;
+
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Height = workArea.Height;
+            Top = workArea.Top;
+            Width = Math.Min(desiredWidth, workArea.Width);
+            MaxWidth = workArea.Width;
+            Left = workArea.Width > Width
+                ? workArea.Left + (workArea.Width - Width) / 2
+                : workArea.Left;
         }
 
         private void ConfigureFilters()

@@ -6,7 +6,7 @@
         Width="1420"
         MinHeight="720"
         MinWidth="1180"
-        Background="{DynamicResource Brush.Bg}"
+        Background="{DynamicResource Brush.AppShell}"
         WindowStartupLocation="CenterOwner">
 
   <Window.Resources>
@@ -47,13 +47,7 @@
       <Setter Property="Padding" Value="6,2"/>
     </Style>
 
-    <Style x:Key="PanelBorder" TargetType="Border">
-      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="CornerRadius" Value="8"/>
-      <Setter Property="Padding" Value="14"/>
-    </Style>
+    <Style x:Key="PanelBorder" TargetType="Border" BasedOn="{StaticResource ProjectPanelBorder}"/>
 
     <DataTemplate x:Key="TotalBbCellTemplate">
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

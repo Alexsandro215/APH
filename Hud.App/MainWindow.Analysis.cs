@@ -39,7 +39,7 @@ namespace Hud.App
         private static readonly Regex HeaderTimestampRx =
             new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
 
-        private static DashboardResult AnalyzeFolder(string folder)
+        private static DashboardResult AnalyzeFolder(string folder, string pokerRoom)
         {
             var files = Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories)
                 .Where(path =>
@@ -72,7 +72,7 @@ namespace Hud.App
 
             var tables = hero is null
                 ? new List<TableSessionStats>()
-                : files.Select(file => AnalyzeTableFile(file, hero.Name))
+                : files.Select(file => AnalyzeTableFile(file, hero.Name, pokerRoom))
                     .Where(table => table is not null)
                     .Cast<TableSessionStats>()
                     .OrderByDescending(table => table.LastPlayedAt)
@@ -114,7 +114,7 @@ namespace Hud.App
             return StakeProfile.Low;
         }
 
-        private static TableSessionStats? AnalyzeTableFile(string path, string heroName)
+        private static TableSessionStats? AnalyzeTableFile(string path, string heroName, string pokerRoom)
         {
             var lines = File.ReadLines(path).ToList();
             var agg = new StatsAggregator();
@@ -136,6 +136,7 @@ namespace Hud.App
                 lastPlayedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 lastPlayedAt,
                 path,
+                pokerRoom,
                 heroName,
                 bigBlind,
                 GetStakeFromBigBlind(bigBlind),

@@ -374,6 +374,7 @@ namespace Hud.App.Views
                 lastPlayed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 lastPlayed,
                 _path ?? "",
+                "PokerStars",
                 _service.HeroName ?? "",
                 bigBlind,
                 Stake,

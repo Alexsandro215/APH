@@ -38,7 +38,7 @@
     </Style>
   </Window.Resources>
 
-  <Grid Background="{DynamicResource Brush.Bg}">
+  <Grid Background="{DynamicResource Brush.AppShell}">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
@@ -83,43 +83,6 @@
                   HorizontalScrollBarVisibility="Disabled"
                   Padding="22">
       <StackPanel>
-        <Border Style="{StaticResource SectionCard}">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Settings.PokerStars}"
-                         FontSize="19"
-                         FontWeight="Bold"/>
-              <TextBlock Text="{DynamicResource Settings.PokerStarsDesc}"
-                         Foreground="{DynamicResource Brush.TextDim}"
-                         Margin="0,4,0,12"/>
-              <TextBlock Text="{DynamicResource Settings.FolderLabel}" Style="{StaticResource FieldLabel}"/>
-              <TextBox x:Name="PokerStarsFolderText"
-                       Height="34"
-                       IsReadOnly="True"
-                       Background="{DynamicResource Brush.Surface}"
-                       Foreground="{DynamicResource Brush.SurfaceText}"
-                       BorderThickness="0"
-                       Padding="10,6"/>
-            </StackPanel>
-            <Button Grid.Column="1"
-                    Style="{StaticResource Btn.Primary}"
-                    Width="132"
-                    Height="38"
-                    Margin="14,74,0,0"
-                    VerticalAlignment="Top"
-                    Click="BtnPickPokerStarsFolder_Click">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
-                    <TextBlock Text="{DynamicResource Settings.Search}"/>
-              </StackPanel>
-            </Button>
-          </Grid>
-        </Border>
-
         <Border Style="{StaticResource SectionCard}">
           <Grid>
             <Grid.ColumnDefinitions>

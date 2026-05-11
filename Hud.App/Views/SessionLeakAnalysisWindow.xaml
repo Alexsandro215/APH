@@ -4,7 +4,7 @@
         Title="Análisis de Leak por Sesión"
         Height="720" Width="1180"
         MinHeight="600" MinWidth="900"
-        Background="{DynamicResource Brush.Bg}"
+        Background="{DynamicResource Brush.AppShell}"
         WindowStartupLocation="CenterOwner">
     
     <Window.Resources>

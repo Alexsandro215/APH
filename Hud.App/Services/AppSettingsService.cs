@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 
 namespace Hud.App.Services
@@ -6,6 +6,8 @@ namespace Hud.App.Services
     public sealed class AppSettings
     {
         public string? PokerStarsHandHistoryFolder { get; set; }
+        public Dictionary<string, string> PokerRoomFolders { get; set; } = new();
+        public string SelectedPokerRoom { get; set; } = "PokerStars";
         public string Language { get; set; } = "Espanol";
         public string Palette { get; set; } = ThemePaletteManager.DefaultPaletteKey;
         public string? ReportsFolder { get; set; }
@@ -16,6 +18,7 @@ namespace Hud.App.Services
         public bool CloudSyncEnabled { get; set; }
         public bool GoogleSyncEnabled { get; set; }
         public bool EmailSyncEnabled { get; set; }
+        public string? LastIrtSession { get; set; }
     }
 
     public static class AppSettingsService
@@ -39,11 +42,15 @@ namespace Hud.App.Services
                     return new AppSettings();
 
                 var json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                Normalize(settings);
+                return settings;
             }
             catch
             {
-                return new AppSettings();
+                var settings = new AppSettings();
+                Normalize(settings);
+                return settings;
             }
         }
 
@@ -58,6 +65,20 @@ namespace Hud.App.Services
             catch
             {
                 // Settings must never block the app.
+            }
+        }
+
+        private static void Normalize(AppSettings settings)
+        {
+            settings.PokerRoomFolders ??= new Dictionary<string, string>();
+
+            if (string.IsNullOrWhiteSpace(settings.SelectedPokerRoom))
+                settings.SelectedPokerRoom = "PokerStars";
+
+            if (!string.IsNullOrWhiteSpace(settings.PokerStarsHandHistoryFolder) &&
+                !settings.PokerRoomFolders.ContainsKey("PokerStars"))
+            {
+                settings.PokerRoomFolders["PokerStars"] = settings.PokerStarsHandHistoryFolder;
             }
         }
     }

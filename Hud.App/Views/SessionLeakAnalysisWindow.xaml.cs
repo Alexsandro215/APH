@@ -119,19 +119,33 @@ namespace Hud.App.Views
             var txtFiles = Directory.GetFiles(folder, "*.txt");
             if (txtFiles.Length > 0) return txtFiles.ToList();
 
-            // Try to look into PokerStarsHandHistoryFolder if defined
+            // Try to look into the selected poker-room history folder if defined.
             var settings = AppSettingsService.Load();
-            if (!string.IsNullOrEmpty(settings.PokerStarsHandHistoryFolder) && Directory.Exists(settings.PokerStarsHandHistoryFolder))
+            var historyFolder = ResolveSelectedHistoryFolder(settings);
+            if (!string.IsNullOrEmpty(historyFolder) && Directory.Exists(historyFolder))
             {
                 // Search for files modified on the same day as the session
                 if (record.StartedAt.HasValue)
                 {
                     var dateStr = record.StartedAt.Value.ToString("yyyyMMdd");
-                    results.AddRange(Directory.EnumerateFiles(settings.PokerStarsHandHistoryFolder, $"*{dateStr}*", SearchOption.AllDirectories));
+                    results.AddRange(Directory.EnumerateFiles(historyFolder, $"*{dateStr}*", SearchOption.AllDirectories));
                 }
             }
 
             return results.Distinct().ToList();
+        }
+
+        private static string? ResolveSelectedHistoryFolder(AppSettings settings)
+        {
+            if (settings.PokerRoomFolders.TryGetValue(settings.SelectedPokerRoom, out var selectedFolder) &&
+                !string.IsNullOrWhiteSpace(selectedFolder))
+            {
+                return selectedFolder;
+            }
+
+            return string.Equals(settings.SelectedPokerRoom, "PokerStars", StringComparison.OrdinalIgnoreCase)
+                ? settings.PokerStarsHandHistoryFolder
+                : null;
         }
 
         private List<LeakSpotRow> ExtractFilteredHands(string path, string hero)
@@ -208,7 +222,7 @@ namespace Hud.App.Views
             var summaryInfo = PokerStarsHandHistory.ExtractHandSummaryInfo(hand, hero);
 
             var dummyTable = new MainWindow.TableSessionStats(
-                displayTable, "Hold'em", stamp.ToString("yyyy-MM-dd"), stamp, path, hero, bigBlind, 
+                displayTable, "Hold'em", stamp.ToString("yyyy-MM-dd"), stamp, path, "PokerStars", hero, bigBlind, 
                 Hud.App.Services.StakeProfile.Low, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, netBb, 0.0, true, "");
 
             return new LeakSpotRow(

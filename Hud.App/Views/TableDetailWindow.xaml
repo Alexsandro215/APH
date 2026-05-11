@@ -7,7 +7,7 @@
         Width="1280"
         MinHeight="620"
         MinWidth="1040"
-        Background="{DynamicResource Brush.Bg}">
+        Background="{DynamicResource Brush.AppShell}">
 
   <Window.Resources>
     <views:StatToBrushConverter x:Key="StatToBrush"/>
@@ -109,7 +109,7 @@
     </Style>
   </Window.Resources>
 
-  <Grid Background="{DynamicResource Brush.Bg}" Margin="12">
+  <Grid Background="{DynamicResource Brush.AppShell}" Margin="12">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -117,10 +117,7 @@
       <RowDefinition Height="1.1*"/>
     </Grid.RowDefinitions>
 
-    <Border Background="{DynamicResource Brush.Card}"
-            BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="1"
-            CornerRadius="8"
+    <Border Style="{StaticResource ProjectPanelBorder}"
             Padding="10"
             Margin="0,0,0,12">
       <Grid>
@@ -191,10 +188,7 @@
     </Border>
 
     <Border Grid.Row="1"
-            Background="{DynamicResource Brush.Card}"
-            BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="1"
-            CornerRadius="8"
+            Style="{StaticResource ProjectPanelBorder}"
             Padding="6"
             Margin="0,0,0,10">
       <UniformGrid Columns="10" Rows="1">
@@ -308,10 +302,7 @@
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0"
-              Background="{DynamicResource Brush.Card}"
-              BorderBrush="{DynamicResource Brush.Border}"
-              BorderThickness="1"
-              CornerRadius="8"
+              Style="{StaticResource ProjectPanelBorder}"
               Padding="10"
               Margin="0,0,12,0">
         <Grid>
@@ -393,10 +384,7 @@
       </Border>
 
       <Border Grid.Column="1"
-              Background="{DynamicResource Brush.Card}"
-              BorderBrush="{DynamicResource Brush.Border}"
-              BorderThickness="1"
-              CornerRadius="8"
+              Style="{StaticResource ProjectPanelBorder}"
               Padding="10">
         <Grid>
           <Grid.RowDefinitions>
@@ -420,10 +408,7 @@
     </Grid>
 
     <Border Grid.Row="3"
-            Background="{DynamicResource Brush.Card}"
-            BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="1"
-            CornerRadius="8"
+            Style="{StaticResource ProjectPanelBorder}"
             Padding="10">
       <Grid>
         <Grid.RowDefinitions>

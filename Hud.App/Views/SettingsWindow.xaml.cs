@@ -24,7 +24,6 @@ namespace Hud.App.Views
             foreach (var p in previews) p.IsSelected = p.Key == _settings.Palette;
             PalettePreviewList.ItemsSource = previews;
 
-            PokerStarsFolderText.Text = _settings.PokerStarsHandHistoryFolder ?? "";
             ReportsFolderText.Text = string.IsNullOrWhiteSpace(_settings.ReportsFolder)
                 ? ReportSessionIndexService.DefaultReportsFolder
                 : _settings.ReportsFolder;
@@ -47,23 +46,6 @@ namespace Hud.App.Views
         }
 
         public AppSettings SavedSettings => _settings;
-
-        private void BtnPickPokerStarsFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFolderDialog
-            {
-                Title = LocalizationManager.Text("Common.SelectPokerStarsFolderTitle")
-            };
-
-            if (!string.IsNullOrWhiteSpace(PokerStarsFolderText.Text) &&
-                Directory.Exists(PokerStarsFolderText.Text))
-            {
-                dlg.InitialDirectory = PokerStarsFolderText.Text;
-            }
-
-            if (dlg.ShowDialog(this) == true)
-                PokerStarsFolderText.Text = dlg.FolderName;
-        }
 
         private void BtnPickReportsFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -212,9 +194,6 @@ namespace Hud.App.Views
 
         private void SyncSettingsFromControls()
         {
-            _settings.PokerStarsHandHistoryFolder = string.IsNullOrWhiteSpace(PokerStarsFolderText.Text)
-                ? null
-                : PokerStarsFolderText.Text.Trim();
             _settings.ReportsFolder = string.IsNullOrWhiteSpace(ReportsFolderText.Text)
                 ? null
                 : ReportsFolderText.Text.Trim();

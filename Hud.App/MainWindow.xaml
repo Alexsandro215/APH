@@ -3,41 +3,217 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Hud.App.Views"
         Title="{DynamicResource App.Title}"
-        Height="720" Width="1100"
+        Height="880" Width="1250"
+        MinHeight="800" MinWidth="1150"
         WindowStartupLocation="CenterScreen">
 
   <Window.Resources>
     <views:StatToBrushConverter x:Key="StatToBrush"/>
     <views:StatTextBrushConverter x:Key="StatTextBrush"/>
+    <views:BoolToModeConverter x:Key="BoolToModeConverter"/>
+    
+    <Style x:Key="ChartToolTipStyle" TargetType="ToolTip">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Placement" Value="Top"/>
+      <Setter Property="VerticalOffset" Value="-8"/>
+      <Setter Property="HasDropShadow" Value="False"/>
+    </Style>
+
+    <Style x:Key="ModernSwitch" TargetType="CheckBox">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <StackPanel Orientation="Horizontal">
+              <Grid x:Name="SwitchRoot" Width="36" Height="18" Margin="0,0,8,0">
+                <Border x:Name="Background" CornerRadius="9" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"/>
+                <Border x:Name="Thumb" HorizontalAlignment="Left" Width="14" Height="14" Margin="2" CornerRadius="7" Background="{DynamicResource Brush.TextDim}"/>
+              </Grid>
+              <ContentPresenter VerticalAlignment="Center"/>
+            </StackPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Background" Property="Background" Value="{DynamicResource Brush.AccentSoft}"/>
+                <Setter TargetName="Background" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <Style TargetType="TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
   </Window.Resources>
 
-  <!-- Fondo con patr?n tenue de palos -->
-  <Window.Background>
-    <VisualBrush TileMode="Tile" Viewport="0,0,80,80" ViewportUnits="Absolute"
-                 Viewbox="0,0,80,80" ViewboxUnits="Absolute" Opacity="0.04">
-      <VisualBrush.Visual>
-        <Grid>
-          <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"/>
-          <TextBlock Text="&#x2665;" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"/>
-          <TextBlock Text="&#x2663;" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8"/>
-          <TextBlock Text="&#x2666;" FontFamily="Segoe UI Symbol" Foreground="#FFFFFF" FontSize="28" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="8"/>
-        </Grid>
-      </VisualBrush.Visual>
-    </VisualBrush>
-  </Window.Background>
-
-  <Grid>
+  <Grid Background="{DynamicResource Brush.AppShell}">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="72"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
+    <Border Grid.RowSpan="2" Grid.Column="0" Style="{StaticResource CockpitRail}">
+      <Grid Margin="12,18">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource Brush.AccentSoft}" BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1">
+          <Viewbox Stretch="Uniform" Margin="10">
+            <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="{DynamicResource Brush.Accent}" FontWeight="Bold"/>
+          </Viewbox>
+        </Border>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,28,0,0">
+          <Button Style="{StaticResource RailIconButton}" Click="BtnHeroProfile_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Perfil del heroe" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Stats, tags y lectura completa del jugador." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnRT_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Tiempo real" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Abre el analizador RT de mesas activas." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnAll_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Analisis por mesas" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Ganancias y KPIs separados por mesa." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnGain_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Ganancia" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Curva acumulada y cortes por calle, posicion, accion y bluff." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnOne_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Mis tablas" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Mapa de acciones por mano inicial." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnBestWorst_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Data villains" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Rivales recientes, perfiles y bb contra ellos." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnLeakFinder_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Detector de leaks" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Encuentra patrones donde pierdes bb." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnSessions_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Sesiones" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Informes guardados y comparativa futura." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
+          <Button x:Name="LiteModeButton"
+                  Style="{StaticResource RailIconButton}"
+                  Click="BtnLiteMode_Click"
+                  Height="54">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Modo lite" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Alterna entre dashboard pro y vista clasica." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <StackPanel>
+              <TextBlock x:Name="LiteModePrimaryText" Text="LITE" FontSize="10" FontWeight="Bold" TextAlignment="Center" Foreground="{DynamicResource Brush.Accent}"/>
+              <TextBlock x:Name="LiteModeSecondaryText" Text="MODE" FontSize="9" FontWeight="Bold" TextAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+            </StackPanel>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnPickFolder_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Rutas de salas" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Configura carpetas por sala y carga el dashboard." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnSettings_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Configuracion" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Carpetas, idioma, tema y preferencias." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
 
     <!-- HERO -->
-    <Border Style="{StaticResource HeroCard}" Margin="24,24,24,6">
+    <Border Grid.Column="1" Style="{StaticResource HeroCard}" Margin="18,24,24,6">
       <Grid>
         <DockPanel HorizontalAlignment="Left">
           <Border Width="52" Height="52" CornerRadius="12" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Margin="0,0,14,0">
@@ -48,42 +224,31 @@
           <StackPanel VerticalAlignment="Center">
             <TextBlock Text="{DynamicResource App.Title}" FontSize="26" FontWeight="Bold"/>
             <TextBlock Text="{DynamicResource Main.Subtitle}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
+            <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{DynamicResource Brush.Accent}" FontSize="12" Margin="0,5,0,0" Visibility="Collapsed"/>
           </StackPanel>
         </DockPanel>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-          <Button Style="{StaticResource Btn.Primary}"
-                  Click="BtnHeroProfile_Click"
-                  Width="44"
-                  Height="44"
-                  Padding="0"
-                  Margin="0,0,8,0"
-                  ToolTip="{DynamicResource Main.HeroProfileTip}">
-            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Button>
-          <Button Style="{StaticResource Btn.Primary}"
-                  Click="BtnPickFolder_Click"
-                  Width="44"
-                  Height="44"
-                  Padding="0"
-                  Margin="0,0,8,0"
-                  ToolTip="{DynamicResource Main.PickFolderTip}">
-            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Button>
-          <Button Style="{StaticResource Btn.Primary}"
-                  Click="BtnSettings_Click"
-                  Width="44"
-                  Height="44"
-                  Padding="0"
-                  ToolTip="{DynamicResource Main.SettingsTip}">
-            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Button>
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0">
+          <TextBlock x:Name="LastSessionText" Text="Última sesión: -" FontSize="13" FontWeight="SemiBold" Foreground="White" TextAlignment="Right"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <TextBlock Text="Sala activa"
+                       Foreground="{DynamicResource Brush.TextDim}"
+                       FontSize="11"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"/>
+            <ComboBox x:Name="PokerRoomCombo"
+                      Width="148"
+                      Height="30"
+                      SelectionChanged="PokerRoomCombo_SelectionChanged"/>
+          </StackPanel>
         </StackPanel>
       </Grid>
     </Border>
 
     <!-- Acciones -->
     <ScrollViewer Grid.Row="1"
+                  Grid.Column="1"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
                   PanningMode="VerticalOnly">
@@ -96,21 +261,124 @@
       </Grid.RowDefinitions>
 
       <!-- Dashboard -->
-      <Border Grid.Row="0" Background="{DynamicResource Brush.Card}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="6,10,6,16">
+      <Grid Grid.Row="0" Style="{StaticResource GlowPanelShell}">
+      <Border Style="{StaticResource PanelBackGlow}"/>
+      <Border Style="{StaticResource PanelCard}" Margin="0">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
 
-          <Grid Margin="0,4,0,10">
+          <Grid x:Name="GlobalStatsProHeader" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+              <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Accent}" Margin="0,0,10,0"/>
+              <StackPanel>
+                <TextBlock Text="PLAYER INTEL" Style="{StaticResource SectionEyebrow}"/>
+                <TextBlock Text="{DynamicResource Main.GlobalStats}" Style="{StaticResource SectionHeading}"/>
+              </StackPanel>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding HeroTags}" HorizontalAlignment="Right" VerticalAlignment="Center" MaxWidth="650">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel HorizontalAlignment="Right"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="{Binding Background}"
+                          BorderBrush="{Binding Border}"
+                          BorderThickness="1"
+                          CornerRadius="6"
+                          Padding="8,4"
+                          Margin="4"
+                          ToolTip="{Binding Description}">
+                    <TextBlock Text="{Binding Text}"
+                               Foreground="{Binding Foreground}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               TextWrapping="NoWrap"/>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+          <Grid x:Name="GlobalStatsLiteHeader" Margin="0,4,0,10" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
               <TextBlock Text="{DynamicResource Main.GlobalStats}" FontSize="20" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"/>
             </StackPanel>
           </Grid>
 
-          <Grid Grid.Row="1" Margin="0,0,0,0" Height="26">
+          <UniformGrid x:Name="DashboardMetricsPanel" Grid.Row="1" Columns="4" Margin="0,0,0,14">
+            <Border Style="{StaticResource DashboardMetricCard}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="MANOS" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{Binding TotalHandsCount, TargetNullValue=0}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource DashboardMetricCard}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Club}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="TOTAL MESAS" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{Binding TotalTablesCount}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource DashboardMetricCard}">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Warning}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="GANANCIA TOTAL" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{Binding TotalEarningsLabel}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
+                </StackPanel>
+                <CheckBox x:Name="GameModeSwitch"
+                          Grid.Row="1" Grid.Column="1" 
+                          Style="{StaticResource ModernSwitch}" 
+                          IsChecked="{Binding IsCashMode}" 
+                          Margin="0,4,0,0">
+                  <TextBlock Text="{Binding IsCashMode, Converter={StaticResource BoolToModeConverter}, ConverterParameter='CASH|PLAY'}" FontSize="10" FontWeight="Bold" Opacity="0.8"/>
+                </CheckBox>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource DashboardMetricCard}" Margin="0">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="WINRATE" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{Binding WinrateLabel}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </UniformGrid>
+
+          <Grid Grid.Row="2" Margin="0,0,0,0" Height="26">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="2.4*"/>
               <ColumnDefinition Width="1*"/>
@@ -126,22 +394,22 @@
               <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Player}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Hands}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="2" Text="VPIP%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="3" Text="PFR%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="4" Text="3Bet%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="5" Text="AF" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="6" Text="AFq%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="7" Text="CBet%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="8" Text="FvCBet%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="9" Text="WTSD%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="10" Text="W$SD%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
-            <TextBlock Grid.Column="11" Text="WWSF%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="4"/>
+            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Player}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Hands}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="2" Text="VPIP%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="3" Text="PFR%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="4" Text="3Bet%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="5" Text="AF" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="6" Text="AFq%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="7" Text="CBet%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="8" Text="FvCBet%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="9" Text="WTSD%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="10" Text="W$SD%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="11" Text="WWSF%" Style="{StaticResource GridHeaderText}"/>
           </Grid>
 
           <DataGrid x:Name="DashboardGrid"
-                    Grid.Row="2"
+                    Grid.Row="3"
                     ItemsSource="{Binding DashboardPlayers}"
                     AutoGenerateColumns="False"
                     CanUserAddRows="False"
@@ -153,7 +421,7 @@
                     IsReadOnly="True"
                     HeadersVisibility="None"
                     RowHeaderWidth="0"
-                    RowHeight="28"
+                    RowHeight="30"
                     MaxHeight="32"
                     VerticalScrollBarVisibility="Disabled"
                     GridLinesVisibility="None"
@@ -176,7 +444,7 @@
               <DataGridTemplateColumn Header="VPIP%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="VPIPPct"/>
@@ -193,7 +461,7 @@
               <DataGridTemplateColumn Header="PFR%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="PFRPct"/>
@@ -210,7 +478,7 @@
               <DataGridTemplateColumn Header="3Bet%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="ThreeBetPct"/>
@@ -227,7 +495,7 @@
               <DataGridTemplateColumn Header="AF" Width="0.85*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AF"/>
@@ -244,7 +512,7 @@
               <DataGridTemplateColumn Header="AFq%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AFqPct"/>
@@ -261,7 +529,7 @@
               <DataGridTemplateColumn Header="CBet%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="CBetFlopPct"/>
@@ -278,7 +546,7 @@
               <DataGridTemplateColumn Header="FvCBet%" Width="1.15*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="FoldVsCBetFlopPct"/>
@@ -295,7 +563,7 @@
               <DataGridTemplateColumn Header="WTSD%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WTSDPct"/>
@@ -312,7 +580,7 @@
               <DataGridTemplateColumn Header="W$SD%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WSDPct"/>
@@ -329,7 +597,7 @@
               <DataGridTemplateColumn Header="WWSF%" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="2" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WWSFPct"/>
@@ -344,11 +612,94 @@
               </DataGridTemplateColumn>
             </DataGrid.Columns>
           </DataGrid>
+
+          <Grid x:Name="PerformanceSummaryPanel" Grid.Row="4" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="1.45*"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Background="{DynamicResource Brush.Inset}"
+                    BorderBrush="{DynamicResource Brush.HeaderBorder}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="12"
+                    Margin="0,0,10,0">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="105"/>
+                </Grid.RowDefinitions>
+                <Border Grid.RowSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
+                <DockPanel Margin="0,0,0,8">
+                  <TextBlock Text="GANANCIAS ACUMULADAS" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
+                  <TextBlock x:Name="PerformanceTotalText" Text="0 bb" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" HorizontalAlignment="Right"/>
+                </DockPanel>
+                <Canvas x:Name="PerformanceChart"
+                        Grid.Row="1"
+                        ClipToBounds="True"
+                        Background="#05090D"
+                        SizeChanged="PerformanceChart_SizeChanged"/>
+              </Grid>
+            </Border>
+
+            <Grid Grid.Column="1">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="*"/>
+              </Grid.RowDefinitions>
+
+              <Border Background="{DynamicResource Brush.Inset}"
+                      BorderBrush="{DynamicResource Brush.HeaderBorder}"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="12">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
+                  <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="MEJOR MESA ULTIMAS 10" Style="{StaticResource SectionEyebrow}"/>
+                    <TextBlock Text="{Binding BestRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
+                    <TextBlock Text="{Binding BestRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+
+              <Border Grid.Row="2"
+                      Background="{DynamicResource Brush.Inset}"
+                      BorderBrush="{DynamicResource Brush.HeaderBorder}"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="12">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
+                  <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Negative}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="PEOR MESA ULTIMAS 10" Style="{StaticResource SectionEyebrow}"/>
+                    <TextBlock Text="{Binding WorstRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
+                    <TextBlock Text="{Binding WorstRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Grid>
+          </Grid>
         </Grid>
       </Border>
+      </Grid>
 
       <!-- Mesas recientes -->
-      <Border Grid.Row="1" Background="{DynamicResource Brush.Card}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"                                                                                         CornerRadius="8" Padding="12" Margin="6,0,6,16">
+      <Grid Grid.Row="1" Style="{StaticResource GlowPanelShell}" Margin="6,0,6,16">
+      <Border Style="{StaticResource PanelBackGlow}"/>
+      <Border Style="{StaticResource PanelCard}" Margin="0">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -356,42 +707,61 @@
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
 
-          <TextBlock Text="{DynamicResource Main.RecentTables}" FontSize="18" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+          <Grid x:Name="RecentTablesProHeader" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+              <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Club}" Margin="0,0,10,0"/>
+              <StackPanel>
+                <TextBlock Text="SESSION FLOW" Style="{StaticResource SectionEyebrow}"/>
+                <TextBlock Text="{DynamicResource Main.RecentTables}" Style="{StaticResource SectionHeading}"/>
+              </StackPanel>
+            </StackPanel>
+            <Border HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource HeroMetricPill}" Margin="0">
+              <TextBlock Text="BB TRACKER" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" FontWeight="SemiBold"/>
+            </Border>
+          </Grid>
+          <TextBlock x:Name="RecentTablesLiteHeader"
+                     Text="{DynamicResource Main.RecentTables}"
+                     FontSize="18"
+                     FontWeight="Bold"
+                     TextAlignment="Center"
+                     HorizontalAlignment="Center"
+                     Margin="0,0,0,8"
+                     Visibility="Collapsed"/>
 
           <Grid Grid.Row="1" Height="26" Margin="0,0,18,0">
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="1.9*"/>
-              <ColumnDefinition Width="0.85*"/>
+              <ColumnDefinition Width="2.2*"/>
               <ColumnDefinition Width="0.9*"/>
-              <ColumnDefinition Width="0.65*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.58*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.72*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.66*"/>
-              <ColumnDefinition Width="0.66*"/>
+              <ColumnDefinition Width="1.1*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.7*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
               <ColumnDefinition Width="0.85*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="0.75*"/>
+              <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Table}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Format}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="2" Text="{DynamicResource Grid.Date}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="3" Text="{DynamicResource Grid.Hands}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="4" Text="VPIP%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="5" Text="PFR%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="6" Text="3Bet%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="7" Text="AF" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="8" Text="AFq%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="9" Text="CBet%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="10" Text="FvCB%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="11" Text="WTSD%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="12" Text="W$SD%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="13" Text="WWSF%" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
-            <TextBlock Grid.Column="14" Text="{DynamicResource Grid.FinalBb}" Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.SurfaceText}" FontWeight="SemiBold" TextAlignment="Center" Padding="2"/>
+            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Table}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Format}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="2" Text="{DynamicResource Grid.Date}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="3" Text="{DynamicResource Grid.Hands}" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="4" Text="VPIP%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="5" Text="PFR%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="6" Text="3Bet%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="7" Text="AF" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="8" Text="AFq%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="9" Text="CBet%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="10" Text="FvCB%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="11" Text="WTSD%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="12" Text="W$SD%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="13" Text="WWSF%" Style="{StaticResource GridHeaderText}"/>
+            <TextBlock Grid.Column="14" Text="{DynamicResource Grid.FinalBb}" Style="{StaticResource GridHeaderText}"/>
           </Grid>
 
           <DataGrid Grid.Row="2"
@@ -406,7 +776,7 @@
                     IsReadOnly="True"
                     HeadersVisibility="None"
                     RowHeaderWidth="0"
-                    RowHeight="28"
+                    RowHeight="30"
                     MinHeight="305"
                     VerticalScrollBarVisibility="Disabled"
                     GridLinesVisibility="None"
@@ -416,10 +786,10 @@
                     BorderBrush="{DynamicResource Brush.Border}"
                     Foreground="{DynamicResource Brush.Text}">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="1.9*"/>
-              <DataGridTextColumn Header="{DynamicResource Grid.Format}" Binding="{Binding GameFormat}" Width="0.85*"/>
-              <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding PlayedDate}" Width="0.9*"/>
-              <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="0.65*">
+              <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="2.2*"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Format}" Binding="{Binding GameFormat}" Width="0.9*"/>
+              <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding PlayedDate}" Width="1.1*"/>
+              <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="0.75*">
                 <DataGridTextColumn.ElementStyle>
                   <Style TargetType="TextBlock">
                     <Setter Property="TextAlignment" Value="Center"/>
@@ -428,10 +798,10 @@
                 </DataGridTextColumn.ElementStyle>
               </DataGridTextColumn>
 
-              <DataGridTemplateColumn Header="VPIP%" Width="0.66*">
+              <DataGridTemplateColumn Header="VPIP%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="VPIPPct"/>
@@ -445,10 +815,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="PFR%" Width="0.66*">
+              <DataGridTemplateColumn Header="PFR%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="PFRPct"/>
@@ -462,10 +832,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="3Bet%" Width="0.66*">
+              <DataGridTemplateColumn Header="3Bet%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="ThreeBetPct"/>
@@ -479,10 +849,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="AF" Width="0.58*">
+              <DataGridTemplateColumn Header="AF" Width="0.7*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AF"/>
@@ -496,10 +866,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="AFq%" Width="0.66*">
+              <DataGridTemplateColumn Header="AFq%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="AFqPct"/>
@@ -513,10 +883,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="CBet%" Width="0.66*">
+              <DataGridTemplateColumn Header="CBet%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="CBetFlopPct"/>
@@ -530,10 +900,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="FvCBet%" Width="0.72*">
+              <DataGridTemplateColumn Header="FvCBet%" Width="0.85*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="FoldVsCBetFlopPct"/>
@@ -547,10 +917,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="WTSD%" Width="0.66*">
+              <DataGridTemplateColumn Header="WTSD%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WTSDPct"/>
@@ -564,10 +934,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="W$SD%" Width="0.66*">
+              <DataGridTemplateColumn Header="W$SD%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WSDPct"/>
@@ -581,10 +951,10 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="WWSF%" Width="0.66*">
+              <DataGridTemplateColumn Header="WWSF%" Width="0.75*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
+                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
                       <TextBlock.Background>
                         <MultiBinding Converter="{StaticResource StatToBrush}">
                           <Binding Path="WWSFPct"/>
@@ -598,7 +968,7 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
 
-              <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="0.85*">
+              <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="1*">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -623,59 +993,8 @@
           </DataGrid>
         </Grid>
       </Border>
+      </Grid>
 
-      <!-- Tiempo real -->
-      <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,18">
-        <TextBlock Text="{DynamicResource Main.RealTime}" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
-        <Button Style="{StaticResource CardButton.Secondary}" Margin="6" Click="BtnRT_Click" ToolTip="{DynamicResource Main.OpenRT}">
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" FontSize="18"/>
-            <TextBlock Text="{DynamicResource Main.OpenRT}" FontSize="18" FontWeight="SemiBold"/>
-          </StackPanel>
-        </Button>
-        <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{DynamicResource Brush.Accent}" Margin="12,8,0,0"/>
-      </StackPanel>
-
-      <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,0">
-        <TextBlock Text="{DynamicResource Main.HistoryAnalysis}" FontSize="18" FontWeight="SemiBold" Margin="4,0,0,10"/>
-
-        <UniformGrid Columns="5" Rows="1" Margin="0,0,0,6" HorizontalAlignment="Stretch">
-          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnAll_Click">
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Main.TablesAnalysis}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.TablesAnalysisDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
-            </StackPanel>
-          </Button>
-
-          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnOne_Click">
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Main.MyTables}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.MyTablesDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
-            </StackPanel>
-          </Button>
-
-          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnBestWorst_Click">
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Main.DataVillains}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.DataVillainsDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
-            </StackPanel>
-          </Button>
-
-          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnLeakFinder_Click">
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Main.LeakFinder}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.LeakFinderDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
-            </StackPanel>
-          </Button>
-
-          <Button Style="{StaticResource CardButton}" Margin="6" Click="BtnSessions_Click">
-            <StackPanel>
-              <TextBlock Text="{DynamicResource Main.Sessions}" FontFamily="Segoe UI, Segoe MDL2 Assets" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{DynamicResource Main.SessionsDesc}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,6,0,0"/>
-            </StackPanel>
-          </Button>
-        </UniformGrid>
-      </StackPanel>
     </Grid>
     </ScrollViewer>
    </Grid>
