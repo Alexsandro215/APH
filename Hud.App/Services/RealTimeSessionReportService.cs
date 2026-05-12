@@ -32,20 +32,14 @@ namespace Hud.App.Services
 
     public static class RealTimeSessionReportService
     {
-        private static readonly Regex WonRx =
-            new(@"^(?<name>.+?)\s+(?:collected|cobro|cobra)\s+(?<amount>\$?[\d,.]+)\s+from pot", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex UncalledRx =
-            new(@"Uncalled bet \(\$?(?<amount>[\d,.]+)\) returned to (?<name>.+)$|(?<name2>.+?)\s+recupera apuesta no pagada\s+\$?(?<amount2>[\d,.]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex PayRx =
-            new(@"^(?<name>.+?):\s+(?:posts small blind|posts big blind|posts the ante|calls|bets|raises|pone ciega chica|pone ciega grande|pone ante|iguala|paga|apuesta|sube)\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
         private static readonly Regex BlindsRx =
             new(@"\((?:\$)?(?<small>[\d,.]+)\s*/\s*(?:\$)?(?<big>[\d,.]+)\)", RegexOptions.Compiled);
 
         private static readonly Regex HeaderBlindsRx =
             new(@"(?:\(|\s)(?:\$)?(?<small>[\d,.]+)\s*/\s*(?:\$)?(?<big>[\d,.]+)(?:\)|\s)", RegexOptions.Compiled);
+
+        private static readonly Regex CurrencyAmountRx =
+            new(@"(?:[$€]\s*\d|\d[\d,.]*\s*(?:USD|EUR))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static string SavePdf(IReadOnlyList<RealTimeTableReportRow> tables)
         {
@@ -496,31 +490,12 @@ namespace Hud.App.Services
                 return (0, false);
             }
 
-            var net = 0.0;
-            var isCash = false;
-            foreach (var raw in File.ReadLines(sourcePath))
-            {
-                var line = raw.Trim();
-                if (line.Contains('$', StringComparison.Ordinal))
-                    isCash = true;
-
-                var won = WonRx.Match(line);
-                if (won.Success && SamePlayer(won.Groups["name"].Value, heroName) && PokerAmountParser.TryParse(won.Groups["amount"].Value, out var wonAmount))
-                    net += wonAmount;
-
-                var returned = UncalledRx.Match(line);
-                if (returned.Success)
-                {
-                    var name = returned.Groups["name"].Success ? returned.Groups["name"].Value : returned.Groups["name2"].Value;
-                    var amount = returned.Groups["amount"].Success ? returned.Groups["amount"].Value : returned.Groups["amount2"].Value;
-                    if (SamePlayer(name, heroName) && PokerAmountParser.TryParse(amount, out var returnedAmount))
-                        net += returnedAmount;
-                }
-
-                var paid = PayRx.Match(line);
-                if (paid.Success && SamePlayer(paid.Groups["name"].Value, heroName) && PokerAmountParser.TryParse(paid.Groups["amount"].Value, out var paidAmount))
-                    net -= paidAmount;
-            }
+            var lines = File.ReadLines(sourcePath).ToList();
+            var isCash = lines.Any(line => CurrencyAmountRx.IsMatch(line));
+            var net = PokerStarsHandHistory
+                .SplitHands(lines)
+                .Where(hand => PokerStarsHandHistory.HandHasPlayerActivity(hand, heroName))
+                .Sum(hand => PokerStarsHandHistory.EstimateNetForPlayer(hand, heroName));
 
             return (net, isCash);
         }
