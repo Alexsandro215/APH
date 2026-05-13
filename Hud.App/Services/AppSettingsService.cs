@@ -15,6 +15,9 @@ namespace Hud.App.Services
         public string? ReportPasswordSalt { get; set; }
         public string? ReportPasswordHash { get; set; }
         public string? EncryptedReportPassword { get; set; }
+        public string? LocalAppPasswordSalt { get; set; }
+        public string? LocalAppPasswordHash { get; set; }
+        public string? GoogleAccountEmail { get; set; }
         public bool CloudSyncEnabled { get; set; }
         public bool GoogleSyncEnabled { get; set; }
         public bool EmailSyncEnabled { get; set; }

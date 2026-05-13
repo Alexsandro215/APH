@@ -15,6 +15,7 @@ namespace Hud.App.Views
 {
     public partial class GainAnalysisWindow : Window
     {
+        private readonly IReadOnlyList<MainWindow.TableSessionStats> _tables;
         private readonly IReadOnlyList<GainHand> _hands;
         private IReadOnlyList<GainGroup> _groups = Array.Empty<GainGroup>();
         private string _mode = "Street";
@@ -25,7 +26,12 @@ namespace Hud.App.Views
             FitToWorkArea();
             Loaded += GainAnalysisWindow_Loaded;
 
-            _hands = BuildHands(tables).ToList();
+            _tables = tables
+                .Where(table => table.HandsReceived > 0)
+                .OrderBy(table => table.LastPlayedAt)
+                .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _hands = BuildHands(_tables).ToList();
             SummaryText.Text = $"{_hands.Count} manos analizadas";
             RefreshMode();
             DrawCurve();
@@ -75,6 +81,9 @@ namespace Hud.App.Views
                 "Position" => "GANANCIA POR POSICION",
                 "Action" => "GANANCIA POR ACCION",
                 "Bluff" => "GANANCIA POR BLUFF",
+                "Table" => "GANANCIA POR MESA",
+                "Format" => "GANANCIA POR FORMATO",
+                "Blinds" => "GANANCIA POR CIEGAS",
                 _ => "GANANCIA POR CALLE"
             };
             ModeDescriptionText.Text = _mode switch
@@ -82,6 +91,9 @@ namespace Hud.App.Views
                 "Position" => "Agrupa la ganancia por asiento del heroe para detectar donde imprime bb y donde se fuga valor.",
                 "Action" => "Agrupa por la ultima accion importante del heroe en la mano: fold, check, call, bet, raise o all-in.",
                 "Bluff" => "Separa agresion sin showdown, agresion con mano debil y manos no agresivas para leer la calidad del bluff.",
+                "Table" => "Cada barra es una mesa completa. Este corte sirve para ubicar exactamente donde ganaste o perdiste mas fichas.",
+                "Format" => "Agrupa por formato detectado: 6-max, 3-max u otros formatos.",
+                "Blinds" => "Agrupa por ciegas, por ejemplo 100/200 o 250/500, para detectar donde rinde mejor tu juego.",
                 _ => "Agrupa por la ultima calle donde el heroe tomo una decision: preflop, flop, turn o river."
             };
 
@@ -89,6 +101,9 @@ namespace Hud.App.Views
             SetModeButton(PositionModeButton, _mode == "Position");
             SetModeButton(ActionModeButton, _mode == "Action");
             SetModeButton(BluffModeButton, _mode == "Bluff");
+            SetModeButton(TableModeButton, _mode == "Table");
+            SetModeButton(FormatModeButton, _mode == "Format");
+            SetModeButton(BlindsModeButton, _mode == "Blinds");
             UpdateSummaryCards();
             UpdateInsightPanel();
             DrawBars();
@@ -109,20 +124,20 @@ namespace Hud.App.Views
 
         private void UpdateSummaryCards()
         {
-            var total = _hands.Sum(hand => hand.NetBb);
+            var total = _tables.Sum(table => table.NetAmount);
             var average = _hands.Count == 0 ? 0 : total / _hands.Count;
-            var best = _groups.OrderByDescending(group => group.TotalBb).FirstOrDefault();
-            var worst = _groups.OrderBy(group => group.TotalBb).FirstOrDefault();
+            var best = _groups.OrderByDescending(group => group.TotalAmount).FirstOrDefault();
+            var worst = _groups.OrderBy(group => group.TotalAmount).FirstOrDefault();
 
-            TotalText.Text = $"{total:+0.#;-0.#;0} bb";
+            TotalText.Text = FormatChips(total);
             TotalText.Foreground = TrendBrush(total);
-            AverageText.Text = $"{average:+0.##;-0.##;0} bb/hand";
+            AverageText.Text = $"{FormatChips(average)}/mano";
             AverageText.Foreground = TrendBrush(average);
-            BestText.Text = best is null ? "-" : $"{best.Label} {best.TotalBb:+0.#;-0.#;0} bb";
-            BestText.Foreground = best is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(best.TotalBb);
-            WorstText.Text = worst is null ? "-" : $"{worst.Label} {worst.TotalBb:+0.#;-0.#;0} bb";
-            WorstText.Foreground = worst is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(worst.TotalBb);
-            CurveTotalText.Text = $"{total:+0.#;-0.#;0} bb";
+            BestText.Text = best is null ? "-" : $"{best.Label} {FormatChips(best.TotalAmount)}";
+            BestText.Foreground = best is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(best.TotalAmount);
+            WorstText.Text = worst is null ? "-" : $"{worst.Label} {FormatChips(worst.TotalAmount)}";
+            WorstText.Foreground = worst is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(worst.TotalAmount);
+            CurveTotalText.Text = FormatChips(total);
             CurveTotalText.Foreground = TrendBrush(total);
         }
 
@@ -133,6 +148,9 @@ namespace Hud.App.Views
                 "Position" => "LECTURA POR POSICION",
                 "Action" => "QUE HACE CADA ACCION",
                 "Bluff" => "LECTURA DE BLUFF",
+                "Table" => "LECTURA POR MESA",
+                "Format" => "LECTURA POR FORMATO",
+                "Blinds" => "LECTURA POR CIEGAS",
                 _ => "LECTURA POR CALLE"
             };
 
@@ -141,17 +159,20 @@ namespace Hud.App.Views
                 "Position" => "Sirve para encontrar si la ganancia viene de robar, defender, jugar ciegas o de posiciones tardias.",
                 "Action" => "La accion es la ultima decision fuerte detectada en la mano. Te dice cuanto estas ganando o perdiendo cuando terminas foldeando, pagando, apostando o resubiendo.",
                 "Bluff" => "Es una lectura aproximada desde el historial: no reemplaza revision manual, pero ayuda a separar presion rentable de agresion que cuesta bb.",
+                "Table" => "Este corte muestra mesas concretas. Si una barra domina, esa mesa explica buena parte del resultado.",
+                "Format" => "Este corte compara formatos de mesa para encontrar donde se adapta mejor tu juego.",
+                "Blinds" => "Este corte compara niveles de ciegas para detectar donde el resultado real acompana mejor.",
                 _ => "La calle indica donde se decidio la mano para el heroe. Si una calle sale muy negativa, ahi conviene revisar botes grandes y decisiones repetidas."
             };
 
             InsightList.ItemsSource = _groups
-                .OrderByDescending(group => Math.Abs(group.TotalBb))
+                .OrderByDescending(group => Math.Abs(group.TotalAmount))
                 .Select(group => new InsightItem(
                     group.Label,
-                    $"{group.TotalBb:+0.#;-0.#;0} bb",
-                    $"{group.Hands} manos | media {group.AverageBb:+0.##;-0.##;0} bb/mano",
+                    FormatChips(group.TotalAmount),
+                    $"{group.Hands} manos | media {FormatChips(group.AverageAmount)}/mano",
                     BuildGroupExplanation(_mode, group),
-                    TrendBrush(group.TotalBb)))
+                    TrendBrush(group.TotalAmount)))
                 .ToList();
         }
 
@@ -160,7 +181,7 @@ namespace Hud.App.Views
             var sample = group.Hands < 25
                 ? "Muestra chica: tomalo como pista, no como sentencia."
                 : "Muestra suficiente para empezar a revisar patrones.";
-            var trend = group.TotalBb >= 0
+            var trend = group.TotalAmount >= 0
                 ? "Hasta ahora aporta ganancia."
                 : "Hasta ahora esta drenando bb.";
 
@@ -169,6 +190,9 @@ namespace Hud.App.Views
                 "Position" => PositionExplanation(group.Label),
                 "Action" => ActionExplanation(group.Label),
                 "Bluff" => BluffExplanation(group.Label),
+                "Table" => "Mesa especifica: permite revisar donde se concentro la ganancia o perdida real.",
+                "Format" => "Formato de mesa detectado desde el historial.",
+                "Blinds" => "Nivel de ciegas detectado desde la mesa, como 100/200.",
                 _ => StreetExplanation(group.Label)
             };
 
@@ -219,6 +243,13 @@ namespace Hud.App.Views
 
         private IEnumerable<GainGroup> BuildGroups(string mode)
         {
+            if (mode is "Table" or "Format" or "Blinds")
+            {
+                foreach (var group in BuildTableGroups(mode))
+                    yield return group;
+                yield break;
+            }
+
             IEnumerable<IGrouping<string, GainHand>> groups = mode switch
             {
                 "Position" => _hands.GroupBy(hand => hand.Position),
@@ -238,12 +269,51 @@ namespace Hud.App.Views
             foreach (var group in ordered)
             {
                 var hands = group.ToList();
-                var total = hands.Sum(hand => hand.NetBb);
+                var totalAmount = hands.Sum(hand => hand.NetAmount);
+                var totalBb = hands.Sum(hand => hand.NetBb);
                 yield return new GainGroup(
                     group.Key,
+                    group.Key,
                     hands.Count,
-                    total,
-                    hands.Count == 0 ? 0 : total / hands.Count);
+                    totalAmount,
+                    hands.Count == 0 ? 0 : totalAmount / hands.Count,
+                    totalBb,
+                    hands.Count == 0 ? 0 : totalBb / hands.Count);
+            }
+        }
+
+        private IEnumerable<GainGroup> BuildTableGroups(string mode)
+        {
+            var groups = mode switch
+            {
+                "Format" => _tables.GroupBy(table => string.IsNullOrWhiteSpace(table.GameFormat) ? "Sin formato" : table.GameFormat),
+                "Blinds" => _tables.GroupBy(BlindsLabel),
+                _ => _tables.GroupBy(table => table.TableName)
+            };
+
+            var ordered = mode switch
+            {
+                "Table" => groups.OrderBy(group => group.Min(table => table.LastPlayedAt)),
+                _ => groups.OrderByDescending(group => Math.Abs(group.Sum(table => table.NetAmount)))
+            };
+
+            foreach (var group in ordered)
+            {
+                var tables = group.ToList();
+                var hands = tables.Sum(table => table.HandsReceived);
+                var totalAmount = tables.Sum(table => table.NetAmount);
+                var totalBb = tables.Sum(table => table.NetBb);
+                var axisLabel = mode == "Table"
+                    ? tables.OrderBy(table => table.LastPlayedAt).First().LastPlayedAt.ToString("MM-dd", CultureInfo.InvariantCulture)
+                    : group.Key;
+                yield return new GainGroup(
+                    group.Key,
+                    axisLabel,
+                    hands,
+                    totalAmount,
+                    hands == 0 ? 0 : totalAmount / hands,
+                    totalBb,
+                    hands == 0 ? 0 : totalBb / hands);
             }
         }
 
@@ -281,6 +351,9 @@ namespace Hud.App.Views
                         position,
                         action,
                         bluffType,
+                        netAmount,
+                        table.GameFormat,
+                        $"{table.BigBlind:0.##} BB",
                         netBb);
                 }
             }
@@ -365,7 +438,10 @@ namespace Hud.App.Views
                 return;
 
             CurveCanvas.Children.Clear();
-            var ordered = _hands.OrderBy(hand => hand.PlayedAt).ThenBy(hand => hand.TableName).ThenBy(hand => hand.HandNumber).ToList();
+            var ordered = _tables
+                .OrderBy(table => table.LastPlayedAt)
+                .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             if (ordered.Count == 0)
             {
                 AddCanvasLabel(CurveCanvas, "Sin datos", CurveCanvas.ActualWidth / 2 - 24, CurveCanvas.ActualHeight / 2 - 8, GetThemeBrush("Brush.Text", Brushes.White));
@@ -374,15 +450,18 @@ namespace Hud.App.Views
 
             var cumulative = new List<double>();
             var running = 0d;
-            foreach (var hand in ordered)
+            foreach (var table in ordered)
             {
-                running += hand.NetBb;
+                running += table.NetAmount;
                 cumulative.Add(running);
             }
 
             var geometry = BuildPlot(CurveCanvas.ActualWidth, CurveCanvas.ActualHeight, cumulative, out var points, out var zeroY, out var min, out var max);
+            var average = cumulative.Average();
+            var averageY = ValueToY(average, min, max, geometry.Top, geometry.Bottom);
             DrawGrid(CurveCanvas, geometry.Left, geometry.Top, geometry.Right, geometry.Bottom);
             DrawZeroLine(CurveCanvas, geometry.Left, geometry.Right, zeroY);
+            DrawAverageLine(CurveCanvas, geometry.Left, geometry.Right, averageY, average);
 
             var chartColor = running >= 0
                 ? GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139))
@@ -405,11 +484,20 @@ namespace Hud.App.Views
                 line.Points.Add(point);
             CurveCanvas.Children.Add(line);
 
-            for (var i = 0; i < points.Count; i += Math.Max(1, points.Count / 80))
-                AddDot(CurveCanvas, points[i].X, points[i].Y, chartColor, $"{ordered[i].TableName}\n{ordered[i].NetBb:+0.#;-0.#;0} bb");
+            for (var i = 0; i < points.Count; i += Math.Max(1, points.Count / 70))
+            {
+                var table = ordered[i];
+                AddDot(
+                    CurveCanvas,
+                    points[i].X,
+                    points[i].Y,
+                    chartColor,
+                    BuildGainChartToolTip(table, cumulative[i], chartColor));
+            }
 
-            AddCanvasLabel(CurveCanvas, $"{max:0.#}", 4, geometry.Top - 2, GetThemeBrush("Brush.TextDim", Brushes.White));
-            AddCanvasLabel(CurveCanvas, $"{min:0.#}", 4, geometry.Bottom - 12, GetThemeBrush("Brush.TextDim", Brushes.White));
+            AddCanvasLabel(CurveCanvas, $"{max:0.#} fichas", 4, geometry.Top - 2, GetThemeBrush("Brush.TextDim", Brushes.White));
+            AddCanvasLabel(CurveCanvas, $"{min:0.#} fichas", 4, geometry.Bottom - 12, GetThemeBrush("Brush.TextDim", Brushes.White));
+            AddXAxisDateLabels(CurveCanvas, ordered, points, geometry.Bottom);
         }
 
         private void DrawBars()
@@ -434,7 +522,7 @@ namespace Hud.App.Views
             var plotRight = Math.Max(plotLeft + 1, width - padRight);
             var plotTop = padTop;
             var plotBottom = Math.Max(plotTop + 1, height - padBottom);
-            var maxAbs = Math.Max(1, _groups.Max(group => Math.Abs(group.TotalBb)));
+            var maxAbs = Math.Max(1, _groups.Max(group => Math.Abs(group.TotalAmount)));
             var zeroY = plotTop + (plotBottom - plotTop) / 2;
             var slot = (plotRight - plotLeft) / _groups.Count;
             var barWidth = Math.Max(22, Math.Min(82, slot * 0.58));
@@ -446,9 +534,9 @@ namespace Hud.App.Views
             {
                 var group = _groups[i];
                 var x = plotLeft + slot * i + (slot - barWidth) / 2;
-                var barHeight = Math.Abs(group.TotalBb) / maxAbs * ((plotBottom - plotTop) / 2 - 8);
-                var y = group.TotalBb >= 0 ? zeroY - barHeight : zeroY;
-                var color = group.TotalBb >= 0
+                var barHeight = Math.Abs(group.TotalAmount) / maxAbs * ((plotBottom - plotTop) / 2 - 8);
+                var y = group.TotalAmount >= 0 ? zeroY - barHeight : zeroY;
+                var color = group.TotalAmount >= 0
                     ? GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139))
                     : GetThemeColor("Brush.Negative", Color.FromRgb(240, 93, 108));
 
@@ -460,14 +548,17 @@ namespace Hud.App.Views
                     Background = new SolidColorBrush(Color.FromArgb(210, color.R, color.G, color.B)),
                     BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255)),
                     BorderThickness = new Thickness(1),
-                    ToolTip = $"{group.Label}\nTotal: {group.TotalBb:+0.#;-0.#;0} bb\nMedia: {group.AverageBb:+0.##;-0.##;0} bb\nManos: {group.Hands}"
+                    ToolTip = BuildGainBarToolTip(group, color)
                 };
+                ToolTipService.SetInitialShowDelay(rect, 0);
+                ToolTipService.SetBetweenShowDelay(rect, 0);
+                ToolTipService.SetShowDuration(rect, 12000);
                 Canvas.SetLeft(rect, x);
                 Canvas.SetTop(rect, y);
                 BarsCanvas.Children.Add(rect);
 
-                AddCanvasLabel(BarsCanvas, $"{group.TotalBb:+0.#;-0.#;0}", x - 8, group.TotalBb >= 0 ? y - 18 : y + barHeight + 3, TrendBrush(group.TotalBb));
-                AddCanvasLabel(BarsCanvas, ShortLabel(group.Label), x - 6, plotBottom + 10, GetThemeBrush("Brush.TextDim", Brushes.White));
+                AddCanvasLabel(BarsCanvas, FormatCompactChips(group.TotalAmount), x - 8, group.TotalAmount >= 0 ? y - 18 : y + barHeight + 3, TrendBrush(group.TotalAmount));
+                AddCanvasLabel(BarsCanvas, ShortLabel(group.AxisLabel), x - 6, plotBottom + 10, GetThemeBrush("Brush.TextDim", Brushes.White));
             }
         }
 
@@ -530,21 +621,286 @@ namespace Hud.App.Views
             });
         }
 
-        private static void AddDot(Canvas canvas, double x, double y, Color color, string tip)
+        private static void DrawAverageLine(Canvas canvas, double left, double right, double y, double average)
         {
-            var dot = new Ellipse
+            var brush = new SolidColorBrush(Color.FromArgb(170, 255, 215, 86));
+            canvas.Children.Add(new Line
             {
-                Width = 7,
-                Height = 7,
-                Fill = Brushes.White,
-                Stroke = new SolidColorBrush(color),
-                StrokeThickness = 2,
+                X1 = left,
+                X2 = right,
+                Y1 = y,
+                Y2 = y,
+                Stroke = brush,
+                StrokeThickness = 1.4,
+                StrokeDashArray = new DoubleCollection { 6, 4 }
+            });
+            AddCanvasLabel(canvas, $"Media {FormatCompactChips(average)}", right - 112, y - 18, brush);
+        }
+
+        private static double ValueToY(double value, double min, double max, double top, double bottom) =>
+            bottom - (value - min) / (max - min) * (bottom - top);
+
+        private static void AddXAxisDateLabels(
+            Canvas canvas,
+            IReadOnlyList<MainWindow.TableSessionStats> tables,
+            IReadOnlyList<Point> points,
+            double bottom)
+        {
+            if (tables.Count == 0 || points.Count == 0)
+                return;
+
+            var indexes = new SortedSet<int> { 0, tables.Count - 1 };
+            if (tables.Count > 2)
+            {
+                indexes.Add(tables.Count / 3);
+                indexes.Add(tables.Count * 2 / 3);
+            }
+
+            foreach (var index in indexes)
+            {
+                var label = tables[index].LastPlayedAt.ToString("MM-dd", CultureInfo.InvariantCulture);
+                AddCanvasLabel(canvas, label, points[index].X - 14, bottom + 7, GetThemeBrush("Brush.TextDim", Brushes.White));
+            }
+        }
+
+        private static void AddDot(Canvas canvas, double x, double y, Color color, object tip)
+        {
+            const double hitSize = 24;
+            var hitArea = new Ellipse
+            {
+                Width = hitSize,
+                Height = hitSize,
+                Fill = Brushes.Transparent,
                 Cursor = Cursors.Hand,
                 ToolTip = tip
             };
-            Canvas.SetLeft(dot, x - 3.5);
-            Canvas.SetTop(dot, y - 3.5);
+            ToolTipService.SetInitialShowDelay(hitArea, 0);
+            ToolTipService.SetBetweenShowDelay(hitArea, 0);
+            ToolTipService.SetShowDuration(hitArea, 12000);
+            Canvas.SetLeft(hitArea, x - hitSize / 2);
+            Canvas.SetTop(hitArea, y - hitSize / 2);
+            canvas.Children.Add(hitArea);
+
+            var dot = new Ellipse
+            {
+                Width = 10,
+                Height = 10,
+                Fill = Brushes.White,
+                Stroke = new SolidColorBrush(color),
+                StrokeThickness = 3,
+                Cursor = Cursors.Hand,
+                IsHitTestVisible = false,
+                ToolTip = tip
+            };
+            Canvas.SetLeft(dot, x - 5);
+            Canvas.SetTop(dot, y - 5);
             canvas.Children.Add(dot);
+        }
+
+        private static FrameworkElement BuildGainBarToolTip(GainGroup group, Color chartColor)
+        {
+            var isWin = group.TotalAmount >= 0;
+            var resultColor = isWin
+                ? GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139))
+                : GetThemeColor("Brush.Negative", Color.FromRgb(240, 93, 108));
+            var textBrush = GetThemeBrush("Brush.Text", Brushes.White);
+            var dimBrush = GetThemeBrush("Brush.TextDim", new SolidColorBrush(Color.FromRgb(164, 184, 203)));
+            var borderBrush = new SolidColorBrush(resultColor);
+
+            var card = new Border
+            {
+                MinWidth = 230,
+                Padding = new Thickness(12),
+                CornerRadius = new CornerRadius(8),
+                BorderBrush = borderBrush,
+                BorderThickness = new Thickness(1),
+                Background = new LinearGradientBrush(
+                    Color.FromArgb(248, 18, 24, 34),
+                    Color.FromArgb(248, 8, 11, 16),
+                    new Point(0, 0),
+                    new Point(1, 1)),
+                Effect = new DropShadowEffect
+                {
+                    BlurRadius = 16,
+                    ShadowDepth = 0,
+                    Opacity = 0.45,
+                    Color = Color.FromRgb(0, 0, 0)
+                }
+            };
+
+            var root = new StackPanel();
+            var titleRow = new DockPanel { LastChildFill = true };
+            var icon = new TextBlock
+            {
+                Text = isWin ? "\u25B2" : "\u25BC",
+                Foreground = borderBrush,
+                FontSize = 13,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 8, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            DockPanel.SetDock(icon, Dock.Left);
+            titleRow.Children.Add(icon);
+            titleRow.Children.Add(new TextBlock
+            {
+                Text = group.Label,
+                Foreground = textBrush,
+                FontSize = 13,
+                FontWeight = FontWeights.Bold,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxWidth = 190
+            });
+            root.Children.Add(titleRow);
+
+            root.Children.Add(new TextBlock
+            {
+                Text = $"{group.Hands} manos",
+                Foreground = dimBrush,
+                FontSize = 11,
+                Margin = new Thickness(21, 2, 0, 10)
+            });
+
+            var metrics = new Grid();
+            metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var result = BuildTooltipMetric("Resultado", FormatChips(group.TotalAmount), borderBrush);
+            var average = BuildTooltipMetric("Media", $"{FormatChips(group.AverageAmount)}/mano", new SolidColorBrush(chartColor));
+            Grid.SetColumn(average, 1);
+            metrics.Children.Add(result);
+            metrics.Children.Add(average);
+            root.Children.Add(metrics);
+
+            root.Children.Add(new TextBlock
+            {
+                Text = $"BB aprox: {group.TotalBb:+0.#;-0.#;0} bb",
+                Foreground = dimBrush,
+                FontSize = 11,
+                Margin = new Thickness(0, 10, 0, 0)
+            });
+
+            card.Child = root;
+            return card;
+        }
+
+        private static FrameworkElement BuildGainChartToolTip(
+            MainWindow.TableSessionStats table,
+            double cumulativeAmount,
+            Color chartColor)
+        {
+            var isWin = table.NetAmount >= 0;
+            var resultColor = isWin
+                ? GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139))
+                : GetThemeColor("Brush.Negative", Color.FromRgb(240, 93, 108));
+            var textBrush = GetThemeBrush("Brush.Text", Brushes.White);
+            var dimBrush = GetThemeBrush("Brush.TextDim", new SolidColorBrush(Color.FromRgb(164, 184, 203)));
+            var borderBrush = new SolidColorBrush(resultColor);
+
+            var card = new Border
+            {
+                MinWidth = 240,
+                Padding = new Thickness(12),
+                CornerRadius = new CornerRadius(8),
+                BorderBrush = borderBrush,
+                BorderThickness = new Thickness(1),
+                Background = new LinearGradientBrush(
+                    Color.FromArgb(248, 18, 24, 34),
+                    Color.FromArgb(248, 8, 11, 16),
+                    new Point(0, 0),
+                    new Point(1, 1)),
+                Effect = new DropShadowEffect
+                {
+                    BlurRadius = 16,
+                    ShadowDepth = 0,
+                    Opacity = 0.45,
+                    Color = Color.FromRgb(0, 0, 0)
+                }
+            };
+
+            var root = new StackPanel();
+            var titleRow = new DockPanel { LastChildFill = true };
+            var icon = new TextBlock
+            {
+                Text = isWin ? "\u25B2" : "\u25BC",
+                Foreground = borderBrush,
+                FontSize = 13,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 8, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            DockPanel.SetDock(icon, Dock.Left);
+            titleRow.Children.Add(icon);
+            titleRow.Children.Add(new TextBlock
+            {
+                Text = table.TableName,
+                Foreground = textBrush,
+                FontSize = 13,
+                FontWeight = FontWeights.Bold,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxWidth = 190
+            });
+            root.Children.Add(titleRow);
+
+            root.Children.Add(new TextBlock
+            {
+                Text = $"{table.GameFormat} - {table.PlayedDate}",
+                Foreground = dimBrush,
+                FontSize = 11,
+                Margin = new Thickness(21, 2, 0, 10)
+            });
+
+            var metrics = new Grid();
+            metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var result = BuildTooltipMetric("Resultado", FormatChips(table.NetAmount), borderBrush);
+            var total = BuildTooltipMetric("Acumulado", FormatChips(cumulativeAmount), new SolidColorBrush(chartColor));
+            Grid.SetColumn(total, 1);
+            metrics.Children.Add(result);
+            metrics.Children.Add(total);
+            root.Children.Add(metrics);
+
+            root.Children.Add(new TextBlock
+            {
+                Text = $"{table.HandsReceived} manos | {table.NetBb:+0.#;-0.#;0} bb | {table.NetAmountLabel}",
+                Foreground = dimBrush,
+                FontSize = 11,
+                Margin = new Thickness(0, 10, 0, 0)
+            });
+
+            card.Child = root;
+            return card;
+        }
+
+        private static Border BuildTooltipMetric(string label, string value, Brush accentBrush)
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(new TextBlock
+            {
+                Text = label.ToUpperInvariant(),
+                Foreground = accentBrush,
+                FontSize = 10,
+                FontWeight = FontWeights.Bold
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = value,
+                Foreground = Brushes.White,
+                FontSize = 16,
+                FontWeight = FontWeights.Black,
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+
+            return new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(35, 255, 255, 255)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 6, 8, 6),
+                Margin = new Thickness(0, 0, 8, 0),
+                Child = panel
+            };
         }
 
         private static void AddCanvasLabel(Canvas canvas, string text, double left, double top, Brush foreground)
@@ -566,6 +922,34 @@ namespace Hud.App.Views
             value >= 0
                 ? GetThemeBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(48, 217, 139)))
                 : GetThemeBrush("Brush.Negative", new SolidColorBrush(Color.FromRgb(240, 93, 108)));
+
+        private static string FormatChips(double value) =>
+            $"{value:+0.#;-0.#;0} fichas";
+
+        private static string FormatCompactChips(double value)
+        {
+            var abs = Math.Abs(value);
+            if (abs >= 1_000_000)
+                return $"{value / 1_000_000:+0.#;-0.#;0}M";
+            if (abs >= 1_000)
+                return $"{value / 1_000:+0.#;-0.#;0}K";
+            return $"{value:+0.#;-0.#;0}";
+        }
+
+        private static string BlindsLabel(MainWindow.TableSessionStats table)
+        {
+            var big = table.BigBlind;
+            if (big <= 0)
+                return "Sin ciegas";
+
+            var small = big / 2d;
+            return $"{FormatBlind(small)}/{FormatBlind(big)}";
+        }
+
+        private static string FormatBlind(double value) =>
+            Math.Abs(value % 1) < 0.001
+                ? value.ToString("0", CultureInfo.InvariantCulture)
+                : value.ToString("0.##", CultureInfo.InvariantCulture);
 
         private static Color GetThemeColor(string key, Color fallback)
         {
@@ -633,9 +1017,19 @@ namespace Hud.App.Views
             string Position,
             string Action,
             string BluffType,
+            double NetAmount,
+            string GameFormat,
+            string StakeLabel,
             double NetBb);
 
-        private sealed record GainGroup(string Label, int Hands, double TotalBb, double AverageBb);
+        private sealed record GainGroup(
+            string Label,
+            string AxisLabel,
+            int Hands,
+            double TotalAmount,
+            double AverageAmount,
+            double TotalBb,
+            double AverageBb);
 
         private sealed record InsightItem(
             string Label,

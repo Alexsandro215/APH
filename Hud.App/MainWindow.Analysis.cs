@@ -49,6 +49,12 @@ namespace Hud.App
                 .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            files.AddRange(AphBackupDatabaseService.MaterializeMissingBackups(pokerRoom));
+            files = files
+                .Where(File.Exists)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             var agg = new StatsAggregator();
             var parser = new PokerStarsParser(agg);
             var stakeVotes = new Dictionary<StakeProfile, int>();
@@ -70,14 +76,22 @@ namespace Hud.App
 
             var hero = players.FirstOrDefault();
 
-            var tables = hero is null
-                ? new List<TableSessionStats>()
-                : files.Select(file => AnalyzeTableFile(file, hero.Name, pokerRoom))
-                    .Where(table => table is not null)
-                    .Cast<TableSessionStats>()
-                    .OrderByDescending(table => table.LastPlayedAt)
-                    .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
+            var tables = new List<TableSessionStats>();
+            foreach (var file in files)
+            {
+                var table = hero is null
+                    ? null
+                    : AnalyzeTableFile(file, hero.Name, pokerRoom);
+
+                AphBackupDatabaseService.BackupHandHistoryFile(file, pokerRoom, hero?.Name, table);
+                if (table is not null)
+                    tables.Add(table);
+            }
+
+            tables = tables
+                .OrderByDescending(table => table.LastPlayedAt)
+                .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             return new DashboardResult(files.Count, stake, hero, tables);
         }

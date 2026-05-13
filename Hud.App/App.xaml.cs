@@ -10,6 +10,7 @@ namespace Hud.App
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             var settings = AppSettingsService.Load();
             ThemePaletteManager.Apply(settings.Palette);
@@ -21,10 +22,23 @@ namespace Hud.App
             // Dejarlo accesible globalmente
             this.Resources["HandReaderService"] = hand;
 
+            Window accessWindow = GoogleDriveBackupService.HasStoredToken &&
+                                  LocalAppLockService.HasPassword(settings)
+                ? new UnlockWindow()
+                : new LoginWindow();
+
+            if (accessWindow.ShowDialog() != true)
+            {
+                Shutdown();
+                return;
+            }
+
             // MOSTRAR MENÚ PRINCIPAL
             var menu = new MainWindow();                 // <— tu ventana de menú
             // si usas VM, pásale el servicio a la VM:
             // menu.DataContext = new MainViewModel(hand);
+            MainWindow = menu;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
             menu.Show();
         }
 

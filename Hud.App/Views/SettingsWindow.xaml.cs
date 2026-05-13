@@ -1,4 +1,6 @@
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using Hud.App.Services;
@@ -31,6 +33,12 @@ namespace Hud.App.Views
             ReportPasswordStatus.Text = ReportSecurityService.HasPassword(_settings)
                 ? "Contrasena de reportes configurada."
                 : "Sin contrasena de reportes configurada.";
+            GoogleAccountText.Text = string.IsNullOrWhiteSpace(_settings.GoogleAccountEmail)
+                ? "Sin cuenta detectada"
+                : _settings.GoogleAccountEmail;
+            GoogleDriveStatus.Text = GoogleDriveBackupService.HasCredentialsFile
+                ? "Drive listo. Subir respaldo guarda aph.db en la cuenta conectada."
+                : $"Falta google_client_secret.json en {GoogleDriveBackupService.CredentialsFolder}.";
 
             LanguageCombo.SelectionChanged += (_, _) =>
             {
@@ -46,6 +54,65 @@ namespace Hud.App.Views
         }
 
         public AppSettings SavedSettings => _settings;
+
+        private async void BtnGoogleUpload_Click(object sender, RoutedEventArgs e)
+        {
+            await RunGoogleDriveActionAsync("Subiendo aph.db a Google Drive...", GoogleDriveBackupService.UploadDatabaseAsync);
+        }
+
+        private async void BtnGoogleRestore_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                this,
+                "Esto reemplazara la aph.db local con la copia de Google Drive. Se guardara un .bak antes de reemplazar. ¿Continuar?",
+                "Restaurar respaldo",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            await RunGoogleDriveActionAsync("Restaurando aph.db desde Google Drive...", GoogleDriveBackupService.RestoreDatabaseAsync);
+        }
+
+        private async Task RunGoogleDriveActionAsync(
+            string pendingMessage,
+            Func<CancellationToken, Task<GoogleDriveBackupResult>> action)
+        {
+            SetGoogleDriveButtonsEnabled(false);
+            GoogleDriveStatus.Text = pendingMessage;
+
+            try
+            {
+                var result = await action(CancellationToken.None);
+                if (!string.IsNullOrWhiteSpace(result.AccountEmail))
+                {
+                    _settings.GoogleAccountEmail = result.AccountEmail;
+                    GoogleAccountText.Text = result.AccountEmail;
+                    AppSettingsService.Save(_settings);
+                }
+
+                GoogleDriveStatus.Text = result.Message;
+            }
+            catch (FileNotFoundException ex)
+            {
+                GoogleDriveStatus.Text = $"{ex.Message}. Crea OAuth Desktop en Google Cloud y guarda el JSON ahi.";
+            }
+            catch (Exception ex)
+            {
+                GoogleDriveStatus.Text = $"Google Drive fallo: {ex.Message}";
+            }
+            finally
+            {
+                SetGoogleDriveButtonsEnabled(true);
+            }
+        }
+
+        private void SetGoogleDriveButtonsEnabled(bool isEnabled)
+        {
+            BtnGoogleUpload.IsEnabled = isEnabled;
+            BtnGoogleRestore.IsEnabled = isEnabled;
+        }
 
         private void BtnPickReportsFolder_Click(object sender, RoutedEventArgs e)
         {

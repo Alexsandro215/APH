@@ -258,35 +258,64 @@
             <TextBlock Text="{DynamicResource Settings.SyncDesc}"
                        Foreground="{DynamicResource Brush.TextDim}"
                        Margin="0,4,0,14"/>
-            <UniformGrid Columns="3">
-              <Button Style="{StaticResource GhostButton}" Height="58" Margin="0,0,10,0" IsEnabled="False">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+              </Grid.ColumnDefinitions>
+              <Border Grid.Column="0"
+                      Background="{DynamicResource Brush.Inset}"
+                      BorderBrush="{DynamicResource Brush.Border}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      Height="62"
+                      Margin="0,0,10,0"
+                      Padding="14,9">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                  <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
+                  <TextBlock Text="G" FontWeight="Black" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
                   <StackPanel>
-                    <TextBlock Text="{DynamicResource Settings.Cloud}" FontWeight="Bold"/>
-                    <TextBlock Text="{DynamicResource Settings.Soon}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                    <TextBlock Text="Cuenta conectada" FontWeight="Bold"/>
+                    <TextBlock x:Name="GoogleAccountText"
+                               Text="Sin cuenta detectada"
+                               Foreground="{DynamicResource Brush.TextDim}"
+                               FontSize="12"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="190"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Button x:Name="BtnGoogleUpload"
+                      Grid.Column="1"
+                      Style="{StaticResource GhostButton}"
+                      Height="62"
+                      Margin="0,0,10,0"
+                      Click="BtnGoogleUpload_Click">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
+                  <StackPanel>
+                    <TextBlock Text="Subir respaldo" FontWeight="Bold"/>
+                    <TextBlock Text="Guarda aph.db en Drive" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
                 </StackPanel>
               </Button>
-              <Button Style="{StaticResource GhostButton}" Height="58" Margin="0,0,10,0" IsEnabled="False">
+              <Button x:Name="BtnGoogleRestore"
+                      Grid.Column="2"
+                      Style="{StaticResource GhostButton}"
+                      Height="62"
+                      Click="BtnGoogleRestore_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                  <TextBlock Text="G" FontWeight="Black" FontSize="20" Margin="0,0,8,0"/>
+                  <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
                   <StackPanel>
-                    <TextBlock Text="{DynamicResource Settings.Google}" FontWeight="Bold"/>
-                    <TextBlock Text="{DynamicResource Settings.Soon}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                    <TextBlock Text="Restaurar Drive" FontWeight="Bold"/>
+                    <TextBlock Text="Trae la DB a esta PC" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
                 </StackPanel>
               </Button>
-              <Button Style="{StaticResource GhostButton}" Height="58" IsEnabled="False">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                  <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
-                  <StackPanel>
-                    <TextBlock Text="{DynamicResource Settings.Email}" FontWeight="Bold"/>
-                    <TextBlock Text="{DynamicResource Settings.Soon}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
-                  </StackPanel>
-                </StackPanel>
-              </Button>
-            </UniformGrid>
+            </Grid>
+            <TextBlock x:Name="GoogleDriveStatus"
+                       Foreground="{DynamicResource Brush.TextDim}"
+                       Margin="0,14,0,0"/>
           </StackPanel>
         </Border>
       </StackPanel>

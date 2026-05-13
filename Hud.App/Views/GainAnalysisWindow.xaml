@@ -19,7 +19,10 @@
       <Setter Property="MinWidth" Value="128"/>
       <Setter Property="Height" Value="34"/>
       <Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="Padding" Value="10,4"/>
+      <Setter Property="FontSize" Value="12"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="ToolTipService.ShowDuration" Value="12000"/>
     </Style>
 
     <Style x:Key="GainMetricCard" TargetType="Border">
@@ -94,9 +97,9 @@
           <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,8">
-          <TextBlock Text="EVOLUCION ACUMULADA EN BB" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
+          <TextBlock Text="EVOLUCION POR MESAS" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <TextBlock Text="Linea acumulada mano por mano  " Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+            <TextBlock Text="Fecha (X) · Fichas (Y) · linea media incluida  " Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
             <TextBlock x:Name="CurveTotalText" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold"/>
           </StackPanel>
         </DockPanel>
@@ -111,12 +114,22 @@
 
     <Border Grid.Row="3" Style="{StaticResource ProjectPanelBorder}" Padding="10" Margin="0,0,0,12">
       <DockPanel LastChildFill="False">
-        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-          <Button x:Name="StreetModeButton" Content="Por calle" Tag="Street" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"/>
-          <Button x:Name="PositionModeButton" Content="Por posicion" Tag="Position" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"/>
-          <Button x:Name="ActionModeButton" Content="Por accion" Tag="Action" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"/>
-          <Button x:Name="BluffModeButton" Content="Por bluff" Tag="Bluff" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"/>
-        </StackPanel>
+        <WrapPanel DockPanel.Dock="Left">
+          <Button x:Name="StreetModeButton" Content="Calle" Tag="Street" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Agrupa por la ultima calle donde el heroe tomo una decision: preflop, flop, turn o river."/>
+          <Button x:Name="PositionModeButton" Content="Posicion" Tag="Position" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Muestra en que asiento estas ganando o perdiendo mas fichas."/>
+          <Button x:Name="ActionModeButton" Content="Accion" Tag="Action" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Agrupa por la ultima accion fuerte del heroe: fold, check, call, bet, raise o all-in."/>
+          <Button x:Name="BluffModeButton" Content="Bluff" Tag="Bluff" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Separa agresion sin showdown, bluffs perdidos, valor/agresion y manos no agresivas."/>
+          <Button x:Name="TableModeButton" Content="Mesa" Tag="Table" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Una barra por mesa para ubicar exactamente donde ganaste o perdiste mas."/>
+          <Button x:Name="FormatModeButton" Content="Formato" Tag="Format" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Compara formatos como H-6Max, H-3Max u otros detectados."/>
+          <Button x:Name="BlindsModeButton" Content="Ciegas" Tag="Blinds" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="Agrupa por nivel de ciegas, por ejemplo 100/200 o 250/500."/>
+        </WrapPanel>
         <TextBlock x:Name="ModeDescriptionText"
                    DockPanel.Dock="Right"
                    Foreground="{DynamicResource Brush.TextDim}"

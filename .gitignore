@@ -25,6 +25,15 @@ TestResults/
 Muestras/
 *.session.json
 *.pdf
+*.db
+*.db-wal
+*.db-shm
+
+# Local OAuth / cloud credentials
+google_client_secret.json
+client_secret*.json
+credentials*.json
+token*.json
 
 # Archives / backups
 *.zip

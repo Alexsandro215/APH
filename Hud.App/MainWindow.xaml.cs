@@ -31,6 +31,7 @@ namespace Hud.App
         private string _worstRecentTableDetail = "Sin datos";
         private bool _isInitializingPokerRoomCombo;
         private string _activePokerRoom = "PokerStars";
+        private bool _isClosingAfterSync;
 
         public ObservableCollection<PlayerStats> DashboardPlayers { get; } = new();
         public ObservableCollection<TableSessionStats> RecentTables { get; } = new();
@@ -130,6 +131,7 @@ namespace Hud.App
             FitHeightToScreen();
             InitializePokerRoomSelector();
             Loaded += MainWindow_Loaded;
+            Closing += MainWindow_Closing;
             ThemePaletteManager.PaletteApplied += ThemePaletteManager_PaletteApplied;
         }
 
@@ -178,7 +180,72 @@ namespace Hud.App
                 await AnalyzeAndLoadFolderAsync(startupFolder, _activePokerRoom, LocalizationManager.Text("Common.DefaultFolderLoaded"));
             }
 
+            _ = Task.Run(BackupConfiguredHandHistoryFolders);
             UpdateLastSessionFromReports();
+        }
+
+        private async void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (_isClosingAfterSync)
+                return;
+
+            var settings = AppSettingsService.Load();
+            if (!settings.GoogleSyncEnabled)
+            {
+                BackupConfiguredHandHistoryFolders();
+                return;
+            }
+
+            e.Cancel = true;
+            IsEnabled = false;
+
+            try
+            {
+                await Task.Run(BackupConfiguredHandHistoryFolders);
+
+                if (GoogleDriveBackupService.HasCredentialsFile &&
+                    GoogleDriveBackupService.HasStoredToken &&
+                    File.Exists(AphBackupDatabaseService.DatabasePath))
+                {
+                    await GoogleDriveBackupService.UploadDatabaseAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"APH close sync failed: {ex.Message}");
+            }
+            finally
+            {
+                _isClosingAfterSync = true;
+                Close();
+            }
+        }
+
+        private void BackupConfiguredHandHistoryFolders()
+        {
+            try
+            {
+                var settings = AppSettingsService.Load();
+                var folders = GetConfiguredPokerRoomFolders(settings);
+                if (folders.Count == 0)
+                    return;
+
+                var knownTables = _allTables
+                    .Where(table => !string.IsNullOrWhiteSpace(table.SourcePath))
+                    .GroupBy(table => table.SourcePath, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.OrderByDescending(table => table.LastPlayedAt).First(),
+                        StringComparer.OrdinalIgnoreCase);
+                var heroName = DashboardPlayers.FirstOrDefault()?.Name;
+
+                foreach (var (room, folder) in folders)
+                    AphBackupDatabaseService.BackupFolder(folder, room, heroName, knownTables);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"APH automatic backup failed: {ex.Message}");
+            }
         }
 
         private void UpdateLastSessionFromReports()
@@ -425,6 +492,43 @@ namespace Hud.App
             }
         }
 
+        private void BtnLogout_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                this,
+                "Al desconectarte se borraran los datos locales de APH en esta PC, incluyendo la DB local, el token de Google y la contrasena local. Podras recuperar tu informacion iniciando sesion nuevamente con Google y restaurando el respaldo de Drive. ¿Estas seguro?",
+                "Log out de APH",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                _isClosingAfterSync = true;
+                AphBackupDatabaseService.DeleteLocalDatabase();
+                GoogleDriveBackupService.ClearStoredToken();
+
+                var settings = AppSettingsService.Load();
+                LocalAppLockService.ClearPassword(settings);
+                settings.GoogleSyncEnabled = false;
+                AppSettingsService.Save(settings);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    $"No se pudo completar el log out: {ex.Message}",
+                    "APH",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            Application.Current.Shutdown();
+        }
+
         private static string? GetSelectedPokerRoomFolder(AppSettings settings)
         {
             if (settings.PokerRoomFolders.TryGetValue(settings.SelectedPokerRoom, out var selectedFolder) &&
@@ -436,6 +540,29 @@ namespace Hud.App
             return string.Equals(settings.SelectedPokerRoom, "PokerStars", StringComparison.OrdinalIgnoreCase)
                 ? settings.PokerStarsHandHistoryFolder
                 : null;
+        }
+
+        private static Dictionary<string, string> GetConfiguredPokerRoomFolders(AppSettings settings)
+        {
+            var folders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (room, folder) in settings.PokerRoomFolders)
+            {
+                if (!string.IsNullOrWhiteSpace(room) &&
+                    !string.IsNullOrWhiteSpace(folder) &&
+                    Directory.Exists(folder))
+                {
+                    folders[room] = folder;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(settings.PokerStarsHandHistoryFolder) &&
+                Directory.Exists(settings.PokerStarsHandHistoryFolder))
+            {
+                folders.TryAdd("PokerStars", settings.PokerStarsHandHistoryFolder);
+            }
+
+            return folders;
         }
 
         private void BtnLiteMode_Click(object sender, RoutedEventArgs e)

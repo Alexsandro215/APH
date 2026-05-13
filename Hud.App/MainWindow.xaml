@@ -208,6 +208,17 @@
             </Button.ToolTip>
             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
           </Button>
+          <Button Style="{StaticResource RailIconButton}" Click="BtnLogout_Click">
+            <Button.ToolTip>
+              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
+                <StackPanel>
+                  <TextBlock Text="Log out" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="Cierra sesion y borra la base local de APH." Style="{StaticResource FunctionTipDetail}"/>
+                </StackPanel>
+              </ToolTip>
+            </Button.ToolTip>
+            <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
