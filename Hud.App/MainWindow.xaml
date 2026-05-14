@@ -82,8 +82,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Perfil del heroe" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Stats, tags y lectura completa del jugador." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailHeroProfile}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailHeroProfileDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -93,8 +93,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Tiempo real" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Abre el analizador RT de mesas activas." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailRealTime}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailRealTimeDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -104,8 +104,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Analisis por mesas" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Ganancias y KPIs separados por mesa." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailTables}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailTablesDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -115,8 +115,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Ganancia" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Curva acumulada y cortes por calle, posicion, accion y bluff." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailGain}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailGainDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -126,8 +126,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Mis tablas" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Mapa de acciones por mano inicial." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailMyTables}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailMyTablesDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -137,8 +137,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Data villains" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Rivales recientes, perfiles y bb contra ellos." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailVillains}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailVillainsDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -148,8 +148,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Detector de leaks" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Encuentra patrones donde pierdes bb." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLeaks}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLeaksDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -159,8 +159,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Sesiones" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Informes guardados y comparativa futura." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailSessions}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailSessionsDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -176,8 +176,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Modo lite" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Alterna entre dashboard pro y vista clasica." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLiteMode}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLiteModeDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -190,8 +190,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Rutas de salas" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Configura carpetas por sala y carga el dashboard." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailRooms}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailRoomsDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -201,8 +201,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Configuracion" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Carpetas, idioma, tema y preferencias." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.SettingsTip}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Settings.Subtitle}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -212,8 +212,8 @@
             <Button.ToolTip>
               <ToolTip Style="{StaticResource FunctionToolTipStyle}">
                 <StackPanel>
-                  <TextBlock Text="Log out" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="Cierra sesion y borra la base local de APH." Style="{StaticResource FunctionTipDetail}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLogout}" Style="{StaticResource FunctionTipTitle}"/>
+                  <TextBlock Text="{DynamicResource Main.RailLogoutDesc}" Style="{StaticResource FunctionTipDetail}"/>
                 </StackPanel>
               </ToolTip>
             </Button.ToolTip>
@@ -240,9 +240,10 @@
         </DockPanel>
 
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0">
-          <TextBlock x:Name="LastSessionText" Text="Última sesión: -" FontSize="13" FontWeight="SemiBold" Foreground="White" TextAlignment="Right"/>
+          <TextBlock x:Name="LastSessionText" Text="{DynamicResource Main.LastSession}" FontSize="13" FontWeight="SemiBold" Foreground="White" TextAlignment="Right"/>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <TextBlock Text="Sala activa"
+            <TextBlock x:Name="ActiveRoomLabel"
+                       Text="{DynamicResource Main.ActiveRoom}"
                        Foreground="{DynamicResource Brush.TextDim}"
                        FontSize="11"
                        FontWeight="Bold"
@@ -288,7 +289,7 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
               <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Accent}" Margin="0,0,10,0"/>
               <StackPanel>
-                <TextBlock Text="PLAYER INTEL" Style="{StaticResource SectionEyebrow}"/>
+                <TextBlock Text="{DynamicResource Main.PlayerIntel}" Style="{StaticResource SectionEyebrow}"/>
                 <TextBlock Text="{DynamicResource Main.GlobalStats}" Style="{StaticResource SectionHeading}"/>
               </StackPanel>
             </StackPanel>
@@ -332,7 +333,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1">
-                  <TextBlock Text="MANOS" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{DynamicResource Grid.Hands}" Style="{StaticResource SectionEyebrow}"/>
                   <TextBlock Text="{Binding TotalHandsCount, TargetNullValue=0}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
                 </StackPanel>
               </Grid>
@@ -345,7 +346,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Club}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1">
-                  <TextBlock Text="TOTAL MESAS" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{DynamicResource Main.TotalTables}" Style="{StaticResource SectionEyebrow}"/>
                   <TextBlock Text="{Binding TotalTablesCount}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
                 </StackPanel>
               </Grid>
@@ -362,7 +363,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Warning}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1">
-                  <TextBlock Text="GANANCIA TOTAL" Style="{StaticResource SectionEyebrow}"/>
+                  <TextBlock Text="{DynamicResource Main.TotalGain}" Style="{StaticResource SectionEyebrow}"/>
                   <TextBlock Text="{Binding TotalEarningsLabel}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
                 </StackPanel>
                 <CheckBox x:Name="GameModeSwitch"
@@ -643,7 +644,7 @@
                 </Grid.RowDefinitions>
                 <Border Grid.RowSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
                 <DockPanel Margin="0,0,0,8">
-                  <TextBlock Text="GANANCIAS ACUMULADAS" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
+                  <TextBlock Text="{DynamicResource Main.AccumulatedGain}" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
                   <TextBlock x:Name="PerformanceTotalText" Text="0 bb" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" HorizontalAlignment="Right"/>
                 </DockPanel>
                 <Canvas x:Name="PerformanceChart"
@@ -674,7 +675,7 @@
                   <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
                   <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
                   <StackPanel Grid.Column="1">
-                    <TextBlock Text="MEJOR MESA ULTIMAS 10" Style="{StaticResource SectionEyebrow}"/>
+                    <TextBlock Text="{DynamicResource Main.BestRecentTen}" Style="{StaticResource SectionEyebrow}"/>
                     <TextBlock Text="{Binding BestRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
                     <TextBlock Text="{Binding BestRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
@@ -695,7 +696,7 @@
                   <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
                   <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Negative}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
                   <StackPanel Grid.Column="1">
-                    <TextBlock Text="PEOR MESA ULTIMAS 10" Style="{StaticResource SectionEyebrow}"/>
+                    <TextBlock Text="{DynamicResource Main.WorstRecentTen}" Style="{StaticResource SectionEyebrow}"/>
                     <TextBlock Text="{Binding WorstRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
                     <TextBlock Text="{Binding WorstRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
@@ -722,12 +723,12 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
               <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Club}" Margin="0,0,10,0"/>
               <StackPanel>
-                <TextBlock Text="SESSION FLOW" Style="{StaticResource SectionEyebrow}"/>
+                <TextBlock Text="{DynamicResource Main.SessionFlow}" Style="{StaticResource SectionEyebrow}"/>
                 <TextBlock Text="{DynamicResource Main.RecentTables}" Style="{StaticResource SectionHeading}"/>
               </StackPanel>
             </StackPanel>
             <Border HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource HeroMetricPill}" Margin="0">
-              <TextBlock Text="BB TRACKER" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" FontWeight="SemiBold"/>
+              <TextBlock Text="{DynamicResource Main.BbTracker}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" FontWeight="SemiBold"/>
             </Border>
           </Grid>
           <TextBlock x:Name="RecentTablesLiteHeader"

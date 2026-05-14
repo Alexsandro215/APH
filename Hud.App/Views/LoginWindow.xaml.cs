@@ -18,20 +18,24 @@ namespace Hud.App.Views
             _hasLocalPassword = LocalAppLockService.HasPassword(_settings);
 
             ConfirmPasswordPanel.Visibility = _hasLocalPassword ? Visibility.Collapsed : Visibility.Visible;
-            ContinueButton.Content = _hasLocalPassword ? "APH" : "Crear contrasena y entrar";
-            PasswordTitleText.Text = _hasLocalPassword ? "2. Desbloquea esta PC" : "2. Crea bloqueo local";
+            ContinueButton.Content = _hasLocalPassword
+                ? LocalizationManager.Text("Login.Enter")
+                : LocalizationManager.Text("Login.CreatePasswordEnter");
+            PasswordTitleText.Text = _hasLocalPassword
+                ? LocalizationManager.Text("Login.UnlockStep")
+                : LocalizationManager.Text("Login.CreateLockStep");
             PasswordHelpText.Text = _hasLocalPassword
-                ? "Google ya queda validado; escribe la contrasena local de esta PC."
-                : "Esta contrasena protege APH si alguien abre tu computadora.";
+                ? LocalizationManager.Text("Login.GoogleValidatedHelp")
+                : LocalizationManager.Text("Login.LocalPasswordHelp");
             GoogleStatusText.Text = GoogleDriveBackupService.HasCredentialsFile
-                ? "Listo para conectar con Google."
-                : $"Falta google_client_secret.json en {GoogleDriveBackupService.CredentialsFolder}.";
+                ? LocalizationManager.Text("Login.GoogleReady")
+                : string.Format(LocalizationManager.Text("Login.MissingClientSecret"), GoogleDriveBackupService.CredentialsFolder);
         }
 
         private async void GoogleButton_Click(object sender, RoutedEventArgs e)
         {
             GoogleButton.IsEnabled = false;
-            GoogleStatusText.Text = "Abriendo autorizacion de Google...";
+            GoogleStatusText.Text = LocalizationManager.Text("Login.OpeningGoogle");
 
             try
             {
@@ -48,7 +52,7 @@ namespace Hud.App.Views
             }
             catch (Exception ex)
             {
-                GoogleStatusText.Text = $"Google fallo: {ex.Message}";
+                GoogleStatusText.Text = string.Format(LocalizationManager.Text("Login.GoogleFailed"), ex.Message);
                 GoogleButton.IsEnabled = true;
             }
         }
@@ -65,7 +69,7 @@ namespace Hud.App.Views
         {
             if (!_googleReady)
             {
-                PasswordStatusText.Text = "Primero inicia sesion con Google.";
+                PasswordStatusText.Text = LocalizationManager.Text("Login.MustSignInGoogle");
                 return;
             }
 
@@ -73,7 +77,7 @@ namespace Hud.App.Views
             {
                 if (!LocalAppLockService.VerifyPassword(_settings, PasswordBox.Password))
                 {
-                    PasswordStatusText.Text = "Contrasena local incorrecta.";
+                    PasswordStatusText.Text = LocalizationManager.Text("Login.BadLocalPassword");
                     PasswordBox.SelectAll();
                     PasswordBox.Focus();
                     return;
@@ -85,13 +89,13 @@ namespace Hud.App.Views
 
             if (PasswordBox.Password.Length < 8)
             {
-                PasswordStatusText.Text = "Usa minimo 8 caracteres.";
+                PasswordStatusText.Text = LocalizationManager.Text("Login.MinPassword");
                 return;
             }
 
             if (PasswordBox.Password != ConfirmPasswordBox.Password)
             {
-                PasswordStatusText.Text = "La confirmacion no coincide.";
+                PasswordStatusText.Text = LocalizationManager.Text("Login.ConfirmMismatch");
                 return;
             }
 
@@ -111,7 +115,7 @@ namespace Hud.App.Views
                 !string.Equals(previousEmail, result.AccountEmail, StringComparison.OrdinalIgnoreCase))
             {
                 AphBackupDatabaseService.DeleteLocalDatabase();
-                GoogleStatusText.Text = $"Cuenta Google cambiada de {previousEmail} a {result.AccountEmail}. DB local anterior borrada.";
+                GoogleStatusText.Text = string.Format(LocalizationManager.Text("Login.AccountChanged"), previousEmail, result.AccountEmail);
             }
 
             _settings.GoogleAccountEmail = result.AccountEmail;

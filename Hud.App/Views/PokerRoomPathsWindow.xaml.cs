@@ -33,12 +33,12 @@ namespace Hud.App.Views
             room switch
             {
                 "PokerStars" => "Historias de manos de PokerStars.",
-                "GGPoker" => "Carpeta local de historiales o exportaciones.",
-                "888poker" => "Carpeta local de historiales.",
+                "GGPoker" => LocalizationManager.Text("Rooms.LocalExports"),
+                "888poker" => LocalizationManager.Text("Rooms.LocalHistories"),
                 "WPN" => "Winning Poker Network / Americas Cardroom.",
-                "PartyPoker" => "Carpeta local de historiales.",
+                "PartyPoker" => LocalizationManager.Text("Rooms.LocalHistories"),
                 "iPoker" => "Red iPoker y skins compatibles.",
-                _ => "Carpeta local de historiales."
+                _ => LocalizationManager.Text("Rooms.LocalHistories")
             };
 
         private void AddRoom(string name, string description)
@@ -57,7 +57,7 @@ namespace Hud.App.Views
 
             var dlg = new OpenFolderDialog
             {
-                Title = $"Selecciona carpeta de {row.Name}"
+                Title = string.Format(LocalizationManager.Text("Rooms.SelectFolderFor"), row.Name)
             };
 
             if (!string.IsNullOrWhiteSpace(row.Folder) && Directory.Exists(row.Folder))
@@ -67,7 +67,7 @@ namespace Hud.App.Views
             {
                 row.Folder = dlg.FolderName;
                 SaveRows(row.Name);
-                StatusText.Text = $"Ruta de {row.Name} guardada.";
+                StatusText.Text = string.Format(LocalizationManager.Text("Rooms.SavedFor"), row.Name);
             }
         }
 
@@ -78,7 +78,7 @@ namespace Hud.App.Views
 
             if (string.IsNullOrWhiteSpace(row.Folder) || !Directory.Exists(row.Folder))
             {
-                StatusText.Text = $"Selecciona una carpeta valida para {row.Name}.";
+                StatusText.Text = string.Format(LocalizationManager.Text("Rooms.SelectValidFolder"), row.Name);
                 return;
             }
 

@@ -39,14 +39,14 @@ namespace Hud.App.Views
         {
             _rows.Clear();
             var folder = ReportSessionIndexService.GetReportsFolder();
-            FolderText.Text = $"Carpeta: {folder}";
+            FolderText.Text = $"{LocalizationManager.Text("Common.Folder")}: {folder}";
             var sessions = ReportSessionIndexService.LoadSessions();
             foreach (var session in sessions)
                 _rows.Add(SessionRow.FromRecord(session));
 
             StatusText.Text = sessions.Count == 0
-                ? "No hay informes guardados todavia."
-                : $"{sessions.Count} informes encontrados. Doble click para abrir un PDF.";
+                ? LocalizationManager.Text("Sessions.NoReports")
+                : string.Format(LocalizationManager.Text("Sessions.ReportsFound"), sessions.Count);
         }
 
         private sealed class SessionRow

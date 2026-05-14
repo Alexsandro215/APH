@@ -66,8 +66,8 @@ namespace Hud.App.Services
             return new GoogleDriveBackupResult(
                 true,
                 string.IsNullOrWhiteSpace(session.AccountEmail)
-                    ? $"Google Drive conectado. Respaldo oculto en appDataFolder: {BackupFileName}"
-                    : $"Google Drive conectado como {session.AccountEmail}. Respaldo oculto: {BackupFileName}",
+                    ? string.Format(LocalizationManager.Text("Drive.Connected"), BackupFileName)
+                    : string.Format(LocalizationManager.Text("Drive.ConnectedAs"), session.AccountEmail, BackupFileName),
                 DateTimeOffset.Now,
                 session.AccountEmail);
         }
@@ -75,7 +75,7 @@ namespace Hud.App.Services
         public static async Task<GoogleDriveBackupResult> UploadDatabaseAsync(CancellationToken cancellationToken = default)
         {
             if (!File.Exists(AphBackupDatabaseService.DatabasePath))
-                return new GoogleDriveBackupResult(false, "Aun no existe aph.db. Carga o analiza manos primero para crear el respaldo local.");
+                return new GoogleDriveBackupResult(false, LocalizationManager.Text("Drive.NoLocalDb"));
 
             var session = await CreateDriveSessionAsync(cancellationToken);
             var service = session.Service;
@@ -110,9 +110,9 @@ namespace Hud.App.Services
                 }
 
                 if (uploadProgress.Status == UploadStatus.Failed)
-                    return new GoogleDriveBackupResult(false, $"No se pudo subir a Drive: {uploadProgress.Exception?.Message}");
+                    return new GoogleDriveBackupResult(false, string.Format(LocalizationManager.Text("Drive.UploadFailed"), uploadProgress.Exception?.Message));
 
-                return new GoogleDriveBackupResult(true, "Respaldo aph.db subido a Google Drive.", DateTimeOffset.Now, session.AccountEmail);
+                return new GoogleDriveBackupResult(true, LocalizationManager.Text("Drive.Uploaded"), DateTimeOffset.Now, session.AccountEmail);
             }
             finally
             {
@@ -126,7 +126,7 @@ namespace Hud.App.Services
             var service = session.Service;
             var existing = await FindBackupFileAsync(service, cancellationToken);
             if (existing is null)
-                return new GoogleDriveBackupResult(false, "No encontre aph.db en el Drive de APH.", AccountEmail: session.AccountEmail);
+                return new GoogleDriveBackupResult(false, LocalizationManager.Text("Drive.NotFound"), AccountEmail: session.AccountEmail);
 
             Directory.CreateDirectory(Path.GetDirectoryName(AphBackupDatabaseService.DatabasePath)!);
             var tempPath = Path.Combine(Path.GetTempPath(), $"aph_drive_restore_{Guid.NewGuid():N}.db");
@@ -137,7 +137,7 @@ namespace Hud.App.Services
                 {
                     var download = await service.Files.Get(existing.Id).DownloadAsync(stream, cancellationToken);
                     if (download.Status != Google.Apis.Download.DownloadStatus.Completed)
-                        return new GoogleDriveBackupResult(false, $"No se pudo descargar de Drive: {download.Exception?.Message}");
+                        return new GoogleDriveBackupResult(false, string.Format(LocalizationManager.Text("Drive.DownloadFailed"), download.Exception?.Message));
                 }
 
                 if (File.Exists(AphBackupDatabaseService.DatabasePath))
@@ -149,7 +149,7 @@ namespace Hud.App.Services
                 }
 
                 File.Copy(tempPath, AphBackupDatabaseService.DatabasePath, overwrite: true);
-                return new GoogleDriveBackupResult(true, "Base aph.db restaurada desde Google Drive. Reinicia APH para recargar todo limpio.", DateTimeOffset.Now, session.AccountEmail);
+                return new GoogleDriveBackupResult(true, LocalizationManager.Text("Drive.Restored"), DateTimeOffset.Now, session.AccountEmail);
             }
             finally
             {
@@ -163,7 +163,7 @@ namespace Hud.App.Services
             if (credentialsPath is null)
             {
                 Directory.CreateDirectory(CredentialsFolder);
-                throw new FileNotFoundException($"Falta google_client_secret.json en {CredentialsFolder}");
+                throw new FileNotFoundException(string.Format(LocalizationManager.Text("Login.MissingClientSecret"), CredentialsFolder));
             }
 
             await using var stream = File.OpenRead(credentialsPath);

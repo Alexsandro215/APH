@@ -1,7 +1,7 @@
 <Window x:Class="Hud.App.Views.PokerRoomPathsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH - Rutas de salas"
+        Title="{DynamicResource Rooms.Title}"
         Height="620"
         Width="920"
         MinHeight="520"
@@ -51,10 +51,10 @@
                      VerticalAlignment="Center"/>
         </Border>
         <StackPanel VerticalAlignment="Center">
-          <TextBlock Text="Rutas de salas de poker"
+          <TextBlock Text="{DynamicResource Rooms.Header}"
                      FontSize="26"
                      FontWeight="Black"/>
-          <TextBlock Text="Elige donde guarda historiales cada sala. Usa Cargar para actualizar el dashboard con esa ruta."
+          <TextBlock Text="{DynamicResource Rooms.Subtitle}"
                      Foreground="{DynamicResource Brush.TextDim}"
                      Margin="0,4,0,0"/>
         </StackPanel>
@@ -103,7 +103,7 @@
                         Click="BtnBrowse_Click">
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
-                    <TextBlock Text="Buscar"/>
+                    <TextBlock Text="{DynamicResource Rooms.Browse}"/>
                   </StackPanel>
                 </Button>
 
@@ -115,7 +115,7 @@
                         Click="BtnLoad_Click">
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
-                    <TextBlock Text="Cargar"/>
+                    <TextBlock Text="{DynamicResource Rooms.Load}"/>
                   </StackPanel>
                 </Button>
               </Grid>
@@ -132,11 +132,11 @@
             Padding="18">
       <DockPanel>
         <TextBlock x:Name="StatusText"
-                   Text="Las rutas se guardan localmente en la configuracion de APH."
+                   Text="{DynamicResource Rooms.SavedLocally}"
                    Foreground="{DynamicResource Brush.TextDim}"
                    VerticalAlignment="Center"/>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-          <Button Content="Cerrar"
+          <Button Content="{DynamicResource Rooms.Close}"
                   Style="{StaticResource Btn.Primary}"
                   Width="110"
                   Click="BtnClose_Click"/>

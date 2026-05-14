@@ -1,7 +1,7 @@
 <Window x:Class="Hud.App.Views.GainAnalysisWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH - Ganancia"
+        Title="{DynamicResource Gain.Title}"
         Height="720"
         Width="1380"
         MinHeight="560"
@@ -55,7 +55,7 @@
 
     <Border Style="{StaticResource ProjectPanelBorder}" Padding="16" Margin="0,0,0,12">
       <StackPanel HorizontalAlignment="Center">
-        <TextBlock Text="GANANCIA" FontSize="25" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <TextBlock Text="{DynamicResource Gain.Header}" FontSize="25" FontWeight="Bold" HorizontalAlignment="Center"/>
         <TextBlock x:Name="SummaryText" Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0" HorizontalAlignment="Center"/>
       </StackPanel>
     </Border>
@@ -63,25 +63,25 @@
     <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,12">
       <Border Style="{StaticResource GainMetricCard}">
         <StackPanel>
-          <TextBlock Text="GANANCIA TOTAL" Style="{StaticResource SectionEyebrow}"/>
+          <TextBlock Text="{DynamicResource Gain.TotalGain}" Style="{StaticResource SectionEyebrow}"/>
           <TextBlock x:Name="TotalText" FontSize="20" FontWeight="Bold"/>
         </StackPanel>
       </Border>
       <Border Style="{StaticResource GainMetricCard}">
         <StackPanel>
-          <TextBlock Text="MEDIA POR MANO" Style="{StaticResource SectionEyebrow}"/>
+          <TextBlock Text="{DynamicResource Gain.AveragePerHand}" Style="{StaticResource SectionEyebrow}"/>
           <TextBlock x:Name="AverageText" FontSize="20" FontWeight="Bold"/>
         </StackPanel>
       </Border>
       <Border Style="{StaticResource GainMetricCard}">
         <StackPanel>
-          <TextBlock Text="MEJOR CORTE" Style="{StaticResource SectionEyebrow}"/>
+          <TextBlock Text="{DynamicResource Gain.BestCut}" Style="{StaticResource SectionEyebrow}"/>
           <TextBlock x:Name="BestText" FontSize="18" FontWeight="Bold"/>
         </StackPanel>
       </Border>
       <Border Style="{StaticResource GainMetricCard}" Margin="0">
         <StackPanel>
-          <TextBlock Text="PEOR CORTE" Style="{StaticResource SectionEyebrow}"/>
+          <TextBlock Text="{DynamicResource Gain.WorstCut}" Style="{StaticResource SectionEyebrow}"/>
           <TextBlock x:Name="WorstText" FontSize="18" FontWeight="Bold"/>
         </StackPanel>
       </Border>
@@ -97,9 +97,9 @@
           <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,8">
-          <TextBlock Text="EVOLUCION POR MESAS" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
+          <TextBlock Text="{DynamicResource Gain.EvolutionByTables}" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <TextBlock Text="Fecha (X) · Fichas (Y) · linea media incluida  " Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+            <TextBlock Text="{DynamicResource Gain.AxisHint}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
             <TextBlock x:Name="CurveTotalText" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold"/>
           </StackPanel>
         </DockPanel>
@@ -115,20 +115,20 @@
     <Border Grid.Row="3" Style="{StaticResource ProjectPanelBorder}" Padding="10" Margin="0,0,0,12">
       <DockPanel LastChildFill="False">
         <WrapPanel DockPanel.Dock="Left">
-          <Button x:Name="StreetModeButton" Content="Calle" Tag="Street" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Agrupa por la ultima calle donde el heroe tomo una decision: preflop, flop, turn o river."/>
-          <Button x:Name="PositionModeButton" Content="Posicion" Tag="Position" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Muestra en que asiento estas ganando o perdiendo mas fichas."/>
-          <Button x:Name="ActionModeButton" Content="Accion" Tag="Action" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Agrupa por la ultima accion fuerte del heroe: fold, check, call, bet, raise o all-in."/>
-          <Button x:Name="BluffModeButton" Content="Bluff" Tag="Bluff" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Separa agresion sin showdown, bluffs perdidos, valor/agresion y manos no agresivas."/>
-          <Button x:Name="TableModeButton" Content="Mesa" Tag="Table" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Una barra por mesa para ubicar exactamente donde ganaste o perdiste mas."/>
-          <Button x:Name="FormatModeButton" Content="Formato" Tag="Format" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Compara formatos como H-6Max, H-3Max u otros detectados."/>
-          <Button x:Name="BlindsModeButton" Content="Ciegas" Tag="Blinds" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
-                  ToolTip="Agrupa por nivel de ciegas, por ejemplo 100/200 o 250/500."/>
+          <Button x:Name="StreetModeButton" Content="{DynamicResource Gain.Street}" Tag="Street" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.StreetModeDesc}"/>
+          <Button x:Name="PositionModeButton" Content="{DynamicResource Gain.Position}" Tag="Position" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.PositionModeDesc}"/>
+          <Button x:Name="ActionModeButton" Content="{DynamicResource Gain.Action}" Tag="Action" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.ActionModeDesc}"/>
+          <Button x:Name="BluffModeButton" Content="{DynamicResource Gain.Bluff}" Tag="Bluff" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.BluffModeDesc}"/>
+          <Button x:Name="TableModeButton" Content="{DynamicResource Gain.Table}" Tag="Table" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.TableModeDesc}"/>
+          <Button x:Name="FormatModeButton" Content="{DynamicResource Gain.Format}" Tag="Format" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.FormatModeDesc}"/>
+          <Button x:Name="BlindsModeButton" Content="{DynamicResource Gain.Blinds}" Tag="Blinds" Style="{StaticResource GainModeButton}" Click="ModeButton_Click"
+                  ToolTip="{DynamicResource Gain.BlindsModeDesc}"/>
         </WrapPanel>
         <TextBlock x:Name="ModeDescriptionText"
                    DockPanel.Dock="Right"
@@ -152,8 +152,8 @@
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <DockPanel Margin="0,0,0,8">
-            <TextBlock x:Name="BarsTitleText" Text="GANANCIA POR CALLE" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
-            <TextBlock Text="Cada barra muestra total; pasa el mouse para media y manos" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" HorizontalAlignment="Right"/>
+            <TextBlock x:Name="BarsTitleText" Text="{DynamicResource Gain.ByStreet}" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
+            <TextBlock Text="{DynamicResource Gain.BarHint}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" HorizontalAlignment="Right"/>
           </DockPanel>
           <Canvas x:Name="BarsCanvas"
                   Grid.Row="1"
@@ -175,7 +175,7 @@
               <RowDefinition Height="Auto"/>
               <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock x:Name="InsightTitleText" Text="LECTURA" Style="{StaticResource SectionEyebrow}"/>
+            <TextBlock x:Name="InsightTitleText" Text="{DynamicResource Gain.Reading}" Style="{StaticResource SectionEyebrow}"/>
             <TextBlock x:Name="InsightBodyText"
                        Grid.Row="1"
                        Foreground="{DynamicResource Brush.TextDim}"

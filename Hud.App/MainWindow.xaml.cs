@@ -26,9 +26,9 @@ namespace Hud.App
         private StakeProfile _dashboardStake = StakeProfile.Low;
         private bool _isLiteMode;
         private string _bestRecentTableSummary = "-";
-        private string _bestRecentTableDetail = "Sin datos";
+        private string _bestRecentTableDetail = LocalizationManager.Text("Main.NoData");
         private string _worstRecentTableSummary = "-";
-        private string _worstRecentTableDetail = "Sin datos";
+        private string _worstRecentTableDetail = LocalizationManager.Text("Main.NoData");
         private bool _isInitializingPokerRoomCombo;
         private string _activePokerRoom = "PokerStars";
         private bool _isClosingAfterSync;
@@ -133,6 +133,7 @@ namespace Hud.App
             Loaded += MainWindow_Loaded;
             Closing += MainWindow_Closing;
             ThemePaletteManager.PaletteApplied += ThemePaletteManager_PaletteApplied;
+            LocalizationManager.LanguageChanged += LocalizationManager_LanguageChanged;
         }
 
         private void FitHeightToScreen()
@@ -164,6 +165,21 @@ namespace Hud.App
             Dispatcher.BeginInvoke(DrawPerformanceChart);
         }
 
+        private void LocalizationManager_LanguageChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(RefreshLocalizedDashboardText);
+        }
+
+        private void RefreshLocalizedDashboardText()
+        {
+            Title = LocalizationManager.Text("App.Title");
+            ActiveRoomLabel.Text = LocalizationManager.Text("Main.ActiveRoom");
+            UpdateLastSessionFromReports();
+            UpdatePlayerTags();
+            UpdatePerformanceSummary();
+            ApplyMainViewMode();
+        }
+
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= MainWindow_Loaded;
@@ -186,6 +202,8 @@ namespace Hud.App
 
         private async void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
+            LocalizationManager.LanguageChanged -= LocalizationManager_LanguageChanged;
+
             if (_isClosingAfterSync)
                 return;
 
@@ -255,11 +273,11 @@ namespace Hud.App
             {
                 var last = sessions[0];
                 var date = last.StartedAt ?? last.CreatedAt;
-                LastSessionText.Text = $"Última sesión: {date:dd/MM/yyyy HH:mm}";
+                LastSessionText.Text = $"{LocalizationManager.Text("Main.LastSession")} {date:dd/MM/yyyy HH:mm}";
             }
             else
             {
-                LastSessionText.Text = "Última sesión: Sin informes";
+                LastSessionText.Text = $"{LocalizationManager.Text("Main.LastSession")} {LocalizationManager.Text("Main.NoData")}";
             }
         }
 
@@ -303,7 +321,7 @@ namespace Hud.App
         {
             if (RecentTables.Count == 0)
             {
-                InfoText.Text = "Selecciona una carpeta primero para cargar Ganancia.";
+                InfoText.Text = LocalizationManager.Text("Main.GainFolderRequired");
                 BtnPickFolder_Click(sender, e);
                 return;
             }
@@ -314,7 +332,7 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Analisis de ganancia abierto.";
+            InfoText.Text = LocalizationManager.Text("Main.RailGain");
         }
 
         private void BtnBestWorst_Click(object sender, RoutedEventArgs e)
@@ -364,7 +382,7 @@ namespace Hud.App
             };
 
             window.Show();
-            InfoText.Text = "Sesiones guardadas abiertas.";
+            InfoText.Text = LocalizationManager.Text("Main.SessionsOpened");
         }
 
         private void BtnHeroProfile_Click(object sender, RoutedEventArgs e)
@@ -474,7 +492,7 @@ namespace Hud.App
             DashboardStake = StakeProfile.Low;
             UpdatePerformanceSummary();
             UpdatePlayerTags();
-            InfoText.Text = $"Sin datos cargados para {room}.";
+            InfoText.Text = string.Format(LocalizationManager.Text("Main.NoDataForRoom"), room);
         }
 
         private async void BtnSettings_Click(object sender, RoutedEventArgs e)
@@ -487,8 +505,12 @@ namespace Hud.App
 
             if (window.ShowDialog() == true)
             {
-                Title = LocalizationManager.Text("App.Title");
+                RefreshLocalizedDashboardText();
                 InfoText.Text = LocalizationManager.Text("Common.SettingsSaved");
+            }
+            else
+            {
+                RefreshLocalizedDashboardText();
             }
         }
 
@@ -496,8 +518,8 @@ namespace Hud.App
         {
             var result = MessageBox.Show(
                 this,
-                "Al desconectarte se borraran los datos locales de APH en esta PC, incluyendo la DB local, el token de Google y la contrasena local. Podras recuperar tu informacion iniciando sesion nuevamente con Google y restaurando el respaldo de Drive. ¿Estas seguro?",
-                "Log out de APH",
+                LocalizationManager.Text("Main.LogoutConfirm"),
+                LocalizationManager.Text("Main.LogoutTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -620,7 +642,7 @@ namespace Hud.App
 
                 InfoText.Text = result.Tables.Count > 0
                     ? successMessage
-                    : $"No encontre manos compatibles de {pokerRoom} en esa ruta.";
+                    : string.Format(LocalizationManager.Text("Common.NoHandsDetected"), pokerRoom);
             }
             catch (Exception ex)
             {
@@ -640,9 +662,9 @@ namespace Hud.App
             if (recent.Count == 0)
             {
                 BestRecentTableSummary = "-";
-                BestRecentTableDetail = "Sin datos";
+                BestRecentTableDetail = LocalizationManager.Text("Main.NoData");
                 WorstRecentTableSummary = "-";
-                WorstRecentTableDetail = "Sin datos";
+                WorstRecentTableDetail = LocalizationManager.Text("Main.NoData");
                 PerformanceTotalText.Text = "0 bb";
                 OnPropertyChanged(nameof(TotalEarningsLabel));
                 OnPropertyChanged(nameof(WinrateLabel));
@@ -675,7 +697,7 @@ namespace Hud.App
             var hero = DashboardPlayers.FirstOrDefault();
             if (hero is null || hero.HandsReceived == 0)
             {
-                HeroTags.Add(BuildTag("Sin datos", "Carga manos para generar los tags del perfil.", Neutral()));
+                HeroTags.Add(BuildTag(LocalizationManager.Text("Main.NoData"), LocalizationManager.Text("Main.LoadHandsForTags"), Neutral()));
                 return;
             }
 
@@ -789,7 +811,7 @@ namespace Hud.App
 
             if (orderedTables.Count == 0)
             {
-                AddChartLabel("Sin datos", PerformanceChart.ActualWidth / 2 - 24, PerformanceChart.ActualHeight / 2 - 8, Brushes.White);
+                AddChartLabel(LocalizationManager.Text("Main.NoData"), PerformanceChart.ActualWidth / 2 - 24, PerformanceChart.ActualHeight / 2 - 8, Brushes.White);
                 return;
             }
 
@@ -1011,8 +1033,8 @@ namespace Hud.App
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var result = BuildTooltipMetric("Resultado", $"{(table.NetBb >= 0 ? "+" : "")}{table.NetBb:0.#} bb", borderBrush);
-            var total = BuildTooltipMetric("Acumulado", $"{cumulativeBb:0.#} bb", new SolidColorBrush(chartColor));
+            var result = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipResult"), $"{(table.NetBb >= 0 ? "+" : "")}{table.NetBb:0.#} bb", borderBrush);
+            var total = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipTotal"), $"{cumulativeBb:0.#} bb", new SolidColorBrush(chartColor));
             Grid.SetColumn(total, 1);
             metrics.Children.Add(result);
             metrics.Children.Add(total);
@@ -1020,7 +1042,7 @@ namespace Hud.App
 
             var hands = new TextBlock
             {
-                Text = $"{table.HandsReceived} manos",
+                Text = string.Format(LocalizationManager.Text("Gain.TooltipHands"), table.HandsReceived),
                 Foreground = dimBrush,
                 FontSize = 11,
                 Margin = new Thickness(0, 10, 0, 0)

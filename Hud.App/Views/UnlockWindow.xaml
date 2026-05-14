@@ -1,7 +1,7 @@
 <Window x:Class="Hud.App.Views.UnlockWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH"
+        Title="{DynamicResource Unlock.Title}"
         Height="390"
         Width="520"
         MinHeight="370"
@@ -42,16 +42,16 @@
                      VerticalAlignment="Center"/>
         </Border>
 
-        <TextBlock Text="APH"
+        <TextBlock Text="{DynamicResource Unlock.Title}"
                    FontSize="28"
                    FontWeight="Black"
                    TextAlignment="Center"/>
-        <TextBlock Text="Sesion Google guardada. Escribe tu contrasena local para entrar."
+        <TextBlock Text="{DynamicResource Unlock.Help}"
                    Foreground="{DynamicResource Brush.TextDim}"
                    TextAlignment="Center"
                    Margin="0,6,0,24"/>
 
-        <TextBlock Text="Contrasena"
+        <TextBlock Text="{DynamicResource Login.Password}"
                    Foreground="{DynamicResource Brush.TextDim}"
                    Margin="0,0,0,6"/>
         <PasswordBox x:Name="PasswordInput"
@@ -59,7 +59,7 @@
                      KeyDown="PasswordInput_KeyDown"
                      Margin="0,0,0,14"/>
 
-        <Button Content="Entrar"
+        <Button Content="{DynamicResource Unlock.Enter}"
                 Style="{StaticResource Btn.Primary}"
                 Height="46"
                 Click="UnlockButton_Click"/>

@@ -1,7 +1,7 @@
 <Window x:Class="Hud.App.Views.SessionsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="APH - Sesiones"
+        Title="{DynamicResource Main.Sessions}"
         Height="620"
         Width="980"
         MinHeight="480"
@@ -60,7 +60,7 @@
             Margin="0,0,0,14">
       <DockPanel>
         <StackPanel>
-          <TextBlock Text="Sesiones"
+          <TextBlock Text="{DynamicResource Main.Sessions}"
                      FontSize="28"
                      FontWeight="Black"/>
           <TextBlock x:Name="FolderText"
@@ -70,12 +70,12 @@
         <StackPanel DockPanel.Dock="Right"
                     Orientation="Horizontal"
                     VerticalAlignment="Center">
-          <Button Content="Abrir carpeta"
+          <Button Content="{DynamicResource Common.OpenFolder}"
                   Style="{StaticResource Btn.Primary}"
                   Width="120"
                   Margin="0,0,8,0"
                   Click="BtnOpenFolder_Click"/>
-          <Button Content="Actualizar"
+          <Button Content="{DynamicResource Common.Refresh}"
                   Style="{StaticResource Btn.Primary}"
                   Width="110"
                   Click="BtnRefresh_Click"/>
@@ -92,13 +92,13 @@
               x:Name="SessionsGrid"
               MouseDoubleClick="SessionsGrid_MouseDoubleClick">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="No. sesion" Binding="{Binding SessionNumber}" Width="90"/>
-        <DataGridTextColumn Header="Inicio" Binding="{Binding StartLabel}" Width="160"/>
-        <DataGridTextColumn Header="Cierre" Binding="{Binding CloseLabel}" Width="160"/>
-        <DataGridTextColumn Header="Mesas" Binding="{Binding TableCount}" Width="70"/>
-        <DataGridTextColumn Header="Duracion" Binding="{Binding DurationLabel}" Width="100"/>
-        <DataGridTextColumn Header="Heroe" Binding="{Binding Hero}" Width="130"/>
-        <DataGridTextColumn Header="Archivo" Binding="{Binding FileName}" Width="*"/>
+        <DataGridTextColumn Header="{DynamicResource Common.SessionNumber}" Binding="{Binding SessionNumber}" Width="90"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Start}" Binding="{Binding StartLabel}" Width="160"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Close}" Binding="{Binding CloseLabel}" Width="160"/>
+        <DataGridTextColumn Header="{DynamicResource Main.TotalTables}" Binding="{Binding TableCount}" Width="70"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Duration}" Binding="{Binding DurationLabel}" Width="100"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Hero}" Binding="{Binding Hero}" Width="130"/>
+        <DataGridTextColumn Header="{DynamicResource Common.File}" Binding="{Binding FileName}" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>
   </Grid>

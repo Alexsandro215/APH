@@ -31,14 +31,14 @@ namespace Hud.App.Views
                 : _settings.ReportsFolder;
             ProtectReportsCheck.IsChecked = _settings.ProtectReportsWithPassword;
             ReportPasswordStatus.Text = ReportSecurityService.HasPassword(_settings)
-                ? "Contrasena de reportes configurada."
-                : "Sin contrasena de reportes configurada.";
+                ? LocalizationManager.Text("Settings.ReportPasswordConfigured")
+                : LocalizationManager.Text("Settings.ReportPasswordMissing");
             GoogleAccountText.Text = string.IsNullOrWhiteSpace(_settings.GoogleAccountEmail)
-                ? "Sin cuenta detectada"
+                ? LocalizationManager.Text("Settings.NoAccountDetected")
                 : _settings.GoogleAccountEmail;
             GoogleDriveStatus.Text = GoogleDriveBackupService.HasCredentialsFile
-                ? "Drive listo. Subir respaldo guarda aph.db en la cuenta conectada."
-                : $"Falta google_client_secret.json en {GoogleDriveBackupService.CredentialsFolder}.";
+                ? LocalizationManager.Text("Settings.DriveReady")
+                : string.Format(LocalizationManager.Text("Login.MissingClientSecret"), GoogleDriveBackupService.CredentialsFolder);
 
             LanguageCombo.SelectionChanged += (_, _) =>
             {
@@ -57,22 +57,22 @@ namespace Hud.App.Views
 
         private async void BtnGoogleUpload_Click(object sender, RoutedEventArgs e)
         {
-            await RunGoogleDriveActionAsync("Subiendo aph.db a Google Drive...", GoogleDriveBackupService.UploadDatabaseAsync);
+            await RunGoogleDriveActionAsync(LocalizationManager.Text("Settings.UploadingDrive"), GoogleDriveBackupService.UploadDatabaseAsync);
         }
 
         private async void BtnGoogleRestore_Click(object sender, RoutedEventArgs e)
         {
             var confirm = MessageBox.Show(
                 this,
-                "Esto reemplazara la aph.db local con la copia de Google Drive. Se guardara un .bak antes de reemplazar. ¿Continuar?",
-                "Restaurar respaldo",
+                LocalizationManager.Text("Settings.RestoreConfirm"),
+                LocalizationManager.Text("Settings.RestoreTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes)
                 return;
 
-            await RunGoogleDriveActionAsync("Restaurando aph.db desde Google Drive...", GoogleDriveBackupService.RestoreDatabaseAsync);
+            await RunGoogleDriveActionAsync(LocalizationManager.Text("Settings.RestoringDrive"), GoogleDriveBackupService.RestoreDatabaseAsync);
         }
 
         private async Task RunGoogleDriveActionAsync(
@@ -96,11 +96,11 @@ namespace Hud.App.Views
             }
             catch (FileNotFoundException ex)
             {
-                GoogleDriveStatus.Text = $"{ex.Message}. Crea OAuth Desktop en Google Cloud y guarda el JSON ahi.";
+                GoogleDriveStatus.Text = string.Format(LocalizationManager.Text("Settings.GoogleOAuthHint"), ex.Message);
             }
             catch (Exception ex)
             {
-                GoogleDriveStatus.Text = $"Google Drive fallo: {ex.Message}";
+                GoogleDriveStatus.Text = string.Format(LocalizationManager.Text("Settings.GoogleDriveFailed"), ex.Message);
             }
             finally
             {
@@ -118,7 +118,7 @@ namespace Hud.App.Views
         {
             var dlg = new OpenFolderDialog
             {
-                Title = "Selecciona carpeta de reportes"
+                Title = LocalizationManager.Text("Settings.SelectReportsFolder")
             };
 
             if (!string.IsNullOrWhiteSpace(ReportsFolderText.Text) &&
@@ -132,7 +132,7 @@ namespace Hud.App.Views
                 ReportsFolderText.Text = dlg.FolderName;
                 SyncSettingsFromControls();
                 AppSettingsService.Save(_settings);
-                StatusText.Text = "Carpeta de reportes guardada.";
+                StatusText.Text = LocalizationManager.Text("Settings.ReportsFolderSaved");
             }
         }
 
@@ -147,14 +147,14 @@ namespace Hud.App.Views
             if (!ReportSecurityService.HasPassword(_settings))
             {
                 ProtectReportsCheck.IsChecked = false;
-                ReportPasswordStatus.Text = "Primero guarda una contrasena nueva para reportes.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Settings.SavePasswordFirst");
                 return;
             }
 
             if (!AskCurrentReportPassword())
             {
                 ProtectReportsCheck.IsChecked = currentState;
-                ReportPasswordStatus.Text = "Cambio cancelado o contrasena incorrecta.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Settings.ChangeCanceled");
                 return;
             }
 
@@ -162,8 +162,8 @@ namespace Hud.App.Views
             AppSettingsService.Save(_settings);
             ProtectReportsCheck.IsChecked = requestedState;
             ReportPasswordStatus.Text = requestedState
-                ? "Proteccion de reportes habilitada."
-                : "Proteccion de reportes deshabilitada.";
+                ? LocalizationManager.Text("Settings.ReportsEnabled")
+                : LocalizationManager.Text("Settings.ReportsDisabled");
         }
 
         private void BtnSaveReportPassword_Click(object sender, RoutedEventArgs e)
@@ -171,7 +171,7 @@ namespace Hud.App.Views
             var hasPassword = ReportSecurityService.HasPassword(_settings);
             if (hasPassword && !ReportSecurityService.VerifyPassword(_settings, OldPasswordBox.Password))
             {
-                ReportPasswordStatus.Text = "La contrasena actual no coincide.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Settings.CurrentPasswordMismatch");
                 return;
             }
 
@@ -179,26 +179,26 @@ namespace Hud.App.Views
             {
                 if (ProtectReportsCheck.IsChecked == true)
                 {
-                    ReportPasswordStatus.Text = "Escribe una nueva contrasena.";
+                    ReportPasswordStatus.Text = LocalizationManager.Text("Settings.WriteNewPassword");
                     return;
                 }
 
                 ReportSecurityService.ClearPassword(_settings);
                 SyncSettingsFromControls();
                 AppSettingsService.Save(_settings);
-                ReportPasswordStatus.Text = "Proteccion de reportes desactivada.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Settings.ReportProtectionOff");
                 return;
             }
 
             if (NewPasswordBox.Password.Length < 8)
             {
-                ReportPasswordStatus.Text = "Usa minimo 8 caracteres.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Login.MinPassword");
                 return;
             }
 
             if (NewPasswordBox.Password != ConfirmPasswordBox.Password)
             {
-                ReportPasswordStatus.Text = "La confirmacion no coincide.";
+                ReportPasswordStatus.Text = LocalizationManager.Text("Login.ConfirmMismatch");
                 return;
             }
 
@@ -210,7 +210,7 @@ namespace Hud.App.Views
             NewPasswordBox.Clear();
             ConfirmPasswordBox.Clear();
             ProtectReportsCheck.IsChecked = true;
-            ReportPasswordStatus.Text = "Contrasena de reportes guardada de forma codificada.";
+            ReportPasswordStatus.Text = LocalizationManager.Text("Settings.ReportPasswordSaved");
         }
 
         private bool AskCurrentReportPassword()

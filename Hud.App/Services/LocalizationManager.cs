@@ -8,7 +8,7 @@ namespace Hud.App.Services
 
         private static readonly string[] SupportedLanguages =
         {
-            "Espanol", "English", "Francais", "Portugues", "Deutsch"
+            "Espanol", "English", "Francais", "Portugues", "Deutsch", "Русский", "日本語"
         };
 
         private static readonly Dictionary<string, Dictionary<string, string>> Dictionaries = BuildDictionaries();
@@ -16,6 +16,8 @@ namespace Hud.App.Services
         public static string CurrentLanguage { get; private set; } = DefaultLanguage;
 
         public static IReadOnlyList<string> Languages => SupportedLanguages;
+
+        public static event EventHandler? LanguageChanged;
 
         public static void Apply(string? language)
         {
@@ -26,6 +28,8 @@ namespace Hud.App.Services
 
             foreach (var key in Dictionaries[DefaultLanguage].Keys)
                 resources[key] = Text(key);
+
+            LanguageChanged?.Invoke(null, EventArgs.Empty);
         }
 
         public static string Text(string key)
@@ -53,6 +57,10 @@ namespace Hud.App.Services
                 return "Deutsch";
             if (lower.Contains("engl") || lower.Contains("ingl"))
                 return "English";
+            if (lower.Contains("ruso") || lower.Contains("rus") || lower.Contains("рус"))
+                return "Русский";
+            if (lower.Contains("japon") || lower.Contains("jap") || lower.Contains("nihon") || lower.Contains("日本"))
+                return "日本語";
 
             return lower switch
             {
@@ -61,6 +69,8 @@ namespace Hud.App.Services
                 "francais" or "français" or "french" or "frances" or "francés" => "Francais",
                 "portugues" or "português" or "portuguese" => "Portugues",
                 "deutsch" or "german" or "aleman" or "alemán" => "Deutsch",
+                "russian" or "ruso" or "ru" or "русский" => "Русский",
+                "japanese" or "japones" or "japonés" or "ja" or "jp" or "日本語" => "日本語",
                 _ => SupportedLanguages.FirstOrDefault(x => string.Equals(x, clean, StringComparison.OrdinalIgnoreCase)) ?? DefaultLanguage
             };
         }
@@ -518,15 +528,35 @@ namespace Hud.App.Services
                 ["Common.Preflop"] = "PRE-FLOP"
             };
 
+            AddRecentUiTranslations(es, "Espanol");
+
             var en = Merge(es, English());
+            AddRecentUiTranslations(en, "English");
+
+            var fr = Merge(en, French());
+            AddRecentUiTranslations(fr, "Francais");
+
+            var pt = Merge(en, Portuguese());
+            AddRecentUiTranslations(pt, "Portugues");
+
+            var de = Merge(en, German());
+            AddRecentUiTranslations(de, "Deutsch");
+
+            var ru = Merge(en, Russian());
+            AddRecentUiTranslations(ru, "Русский");
+
+            var ja = Merge(en, Japanese());
+            AddRecentUiTranslations(ja, "日本語");
 
             return new(StringComparer.OrdinalIgnoreCase)
             {
                 ["Espanol"] = es,
                 ["English"] = en,
-                ["Francais"] = Merge(en, French()),
-                ["Portugues"] = Merge(en, Portuguese()),
-                ["Deutsch"] = Merge(en, German())
+                ["Francais"] = fr,
+                ["Portugues"] = pt,
+                ["Deutsch"] = de,
+                ["Русский"] = ru,
+                ["日本語"] = ja
             };
         }
 
@@ -537,6 +567,2332 @@ namespace Hud.App.Services
                 result[item.Key] = item.Value;
             return result;
         }
+
+        private static void AddRecentUiTranslations(Dictionary<string, string> dict, string language)
+        {
+            string[,] entries = language switch
+            {
+                "English" => new[,]
+                {
+                    { "Login.Title", "APH - Access" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Secure access with Google Drive and local lock" },
+                    { "Login.GoogleStep", "1. Sign in with Google" },
+                    { "Login.GoogleDesc", "APH uses your private Google Drive to save and restore aph.db." },
+                    { "Login.GoogleButton", "Sign in with Google" },
+                    { "Login.LocalLockStep", "2. Local lock" },
+                    { "Login.LocalLockDesc", "After Google, APH asks for a local password on this PC." },
+                    { "Login.Password", "Password" },
+                    { "Login.ConfirmPassword", "Confirm password" },
+                    { "Login.Enter", "Enter APH" },
+                    { "Login.CreatePasswordEnter", "Create password and enter" },
+                    { "Login.UnlockStep", "2. Unlock this PC" },
+                    { "Login.CreateLockStep", "2. Create local lock" },
+                    { "Login.GoogleValidatedHelp", "Google is already validated; enter this PC local password." },
+                    { "Login.LocalPasswordHelp", "This password protects APH if someone opens your computer." },
+                    { "Login.GoogleReady", "Ready to connect with Google." },
+                    { "Login.MissingClientSecret", "Missing google_client_secret.json in {0}." },
+                    { "Login.OpeningGoogle", "Opening Google authorization..." },
+                    { "Login.GoogleFailed", "Google failed: {0}" },
+                    { "Login.MustSignInGoogle", "Sign in with Google first." },
+                    { "Login.BadLocalPassword", "Incorrect local password." },
+                    { "Login.MinPassword", "Use at least 8 characters." },
+                    { "Login.ConfirmMismatch", "The confirmation does not match." },
+                    { "Login.AccountChanged", "Google account changed from {0} to {1}. Previous local DB was deleted." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Google session saved. Enter your local password to continue." },
+                    { "Unlock.Enter", "Enter" },
+                    { "Settings.ReportSecurity", "Report security" },
+                    { "Settings.ReportSecurityDesc", "Stores an encoded password to protect future reports." },
+                    { "Settings.ProtectReports", "Apply password to future reports" },
+                    { "Settings.CurrentPassword", "Current password" },
+                    { "Settings.NewPassword", "New password" },
+                    { "Settings.ConfirmNewPassword", "Confirm new password" },
+                    { "Settings.SavePassword", "Save password" },
+                    { "Settings.ReportsFolder", "Reports location" },
+                    { "Settings.ReportsFolderDesc", "The app saves and loads sessions from this folder." },
+                    { "Settings.ReportsFolderLabel", "Reports folder" },
+                    { "Settings.ConnectedAccount", "Connected account" },
+                    { "Settings.NoAccountDetected", "No account detected" },
+                    { "Settings.UploadBackup", "Upload backup" },
+                    { "Settings.UploadBackupDesc", "Saves aph.db to Drive" },
+                    { "Settings.RestoreDrive", "Restore Drive" },
+                    { "Settings.RestoreDriveDesc", "Brings the DB to this PC" },
+                    { "Settings.ReportPasswordConfigured", "Report password configured." },
+                    { "Settings.ReportPasswordMissing", "No report password configured." },
+                    { "Settings.DriveReady", "Drive ready. Upload backup saves aph.db in the connected account." },
+                    { "Settings.UploadingDrive", "Uploading aph.db to Google Drive..." },
+                    { "Settings.RestoringDrive", "Restoring aph.db from Google Drive..." },
+                    { "Settings.RestoreConfirm", "This will replace the local aph.db with the Google Drive copy. A .bak will be saved before replacing. Continue?" },
+                    { "Settings.RestoreTitle", "Restore backup" },
+                    { "Settings.GoogleOAuthHint", "{0}. Create OAuth Desktop in Google Cloud and save the JSON there." },
+                    { "Settings.GoogleDriveFailed", "Google Drive failed: {0}" },
+                    { "Settings.SelectReportsFolder", "Select reports folder" },
+                    { "Settings.ReportsFolderSaved", "Reports folder saved." },
+                    { "Settings.SavePasswordFirst", "Save a new report password first." },
+                    { "Settings.ChangeCanceled", "Change canceled or incorrect password." },
+                    { "Settings.ReportsEnabled", "Report protection enabled." },
+                    { "Settings.ReportsDisabled", "Report protection disabled." },
+                    { "Settings.CurrentPasswordMismatch", "The current password does not match." },
+                    { "Settings.WriteNewPassword", "Enter a new password." },
+                    { "Settings.ReportProtectionOff", "Report protection disabled." },
+                    { "Settings.ReportPasswordSaved", "Report password saved in encoded form." },
+                    { "Main.RailHeroProfile", "Hero profile" },
+                    { "Main.RailHeroProfileDesc", "Full stats and reading for the player." },
+                    { "Main.RailRealTime", "Real time" },
+                    { "Main.RailRealTimeDesc", "Live table tracking." },
+                    { "Main.RailTables", "Table analysis" },
+                    { "Main.RailTablesDesc", "Winnings and KPIs by table." },
+                    { "Main.RailGain", "Gain" },
+                    { "Main.RailGainDesc", "Detailed winnings and losses." },
+                    { "Main.RailMyTables", "My Tables" },
+                    { "Main.RailMyTablesDesc", "Action maps by starting hand." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Recent rivals and bb against them." },
+                    { "Main.RailLeaks", "Leak analysis" },
+                    { "Main.RailLeaksDesc", "Find repeated loss patterns." },
+                    { "Main.RailSessions", "Sessions" },
+                    { "Main.RailSessionsDesc", "Saved reports and comparisons." },
+                    { "Main.RailLiteMode", "Lite mode" },
+                    { "Main.RailLiteModeDesc", "Previous compact visual version." },
+                    { "Main.RailRooms", "Room paths" },
+                    { "Main.RailRoomsDesc", "Set hand folders by poker room." },
+                    { "Main.RailLogout", "Log out" },
+                    { "Main.RailLogoutDesc", "Clear this PC and return to login." },
+                    { "Main.LastSession", "Last session:" },
+                    { "Main.ActiveRoom", "Active room" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "TOTAL TABLES" },
+                    { "Main.TotalGain", "TOTAL GAIN" },
+                    { "Main.AccumulatedGain", "ACCUMULATED GAIN" },
+                    { "Main.BestRecentTen", "BEST TABLE LAST 10" },
+                    { "Main.WorstRecentTen", "WORST TABLE LAST 10" },
+                    { "Main.SessionFlow", "SESSION FLOW" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "No data" },
+                    { "Main.LoadHandsForTags", "Load hands to generate profile tags." },
+                    { "Main.GainFolderRequired", "Select a folder first to load Gain." },
+                    { "Main.SessionsOpened", "Saved sessions opened." },
+                    { "Main.NoDataForRoom", "No data loaded for {0}." },
+                    { "Main.LogoutTitle", "APH log out" },
+                    { "Main.LogoutConfirm", "Logging out will delete local APH data on this PC, including the local DB, Google token and local password. You can recover your information by signing in with Google again and restoring the Drive backup. Are you sure?" },
+                    { "Gain.Title", "APH - Gain" },
+                    { "Gain.Header", "GAIN" },
+                    { "Gain.TotalGain", "TOTAL GAIN" },
+                    { "Gain.AveragePerHand", "AVERAGE PER HAND" },
+                    { "Gain.BestCut", "BEST CUT" },
+                    { "Gain.WorstCut", "WORST CUT" },
+                    { "Gain.EvolutionByTables", "EVOLUTION BY TABLES" },
+                    { "Gain.AxisHint", "Date (X) - Chips (Y) - average line included  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "Position" },
+                    { "Gain.Action", "Action" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Table" },
+                    { "Gain.Format", "Format" },
+                    { "Gain.Blinds", "Blinds" },
+                    { "Gain.ByStreet", "GAIN BY STREET" },
+                    { "Gain.BarHint", "Each bar shows total; hover for average and hands" },
+                    { "Gain.Reading", "READING" },
+                    { "Gain.AnalyzedHands", "{0} hands analyzed" },
+                    { "Gain.NoData", "No data" },
+                    { "Gain.TooltipResult", "Result" },
+                    { "Gain.TooltipTotal", "Accumulated" },
+                    { "Gain.TooltipHands", "{0} hands" },
+                    { "Gain.TooltipApproxBb", "Approx BB: {0} bb" },
+                    { "Gain.ChipsUnit", "chips" },
+                    { "Gain.PerHandValue", "{0}/hand" },
+                    { "Gain.Average", "Average" },
+                    { "Gain.AverageLineLabel", "Average {0}" },
+                    { "Gain.PositiveTrend", "So far it contributes profit." },
+                    { "Gain.NegativeTrend", "So far it is draining bb." },
+                    { "Gain.FormatExplanation", "Table format detected from the history." },
+                    { "Gain.BlindsExplanation", "Blind level detected from the table, such as 100/200." },
+                    { "Gain.StreetPreflopExplanation", "Hands resolved, or where your last decision happened, before the flop." },
+                    { "Gain.StreetFlopExplanation", "Hands where your last decision was on flop; it measures early c-bets, calls and folds." },
+                    { "Gain.StreetTurnExplanation", "Hands where you continued to turn; it often reveals second barrels and expensive calls." },
+                    { "Gain.StreetRiverExplanation", "Hands decided on river; value bets, final bluffs and hero calls matter here." },
+                    { "Gain.StreetUnknownExplanation", "Street cut detected from the history." },
+                    { "Gain.PositionButtonExplanation", "Button: steal zone with maximum postflop information." },
+                    { "Gain.PositionSbExplanation", "Small blind: you play out of position and it is often a natural leak." },
+                    { "Gain.PositionBbExplanation", "Big blind: mixes mandatory defense, limped pots and wide calls." },
+                    { "Gain.PositionUtgExplanation", "UTG: early range; it should be stronger and more stable." },
+                    { "Gain.PositionMpExplanation", "MP: middle position; review opens and calls against early ranges." },
+                    { "Gain.PositionHjExplanation", "Hijack: steal pressure begins here, but players still act behind." },
+                    { "Gain.PositionCoExplanation", "Cutoff: strong steal position before the button." },
+                    { "Gain.PositionUnknownExplanation", "Position not reliably identified in the history." },
+                    { "Gain.ActionFoldExplanation", "Fold: you left the hand; if it loses too much, review previous calls or late folds." },
+                    { "Gain.ActionCheckExplanation", "Check: you passed without betting; helps see whether you control the pot or give up too much initiative." },
+                    { "Gain.ActionCallExplanation", "Call: you paid a bet; if negative, review bluff-catches and expensive draw calls." },
+                    { "Gain.ActionBetExplanation", "Bet: you bet first on the street; measures value, protection and bluffs started by you." },
+                    { "Gain.ActionRaiseExplanation", "Raise: you raised a bet; measures pressure, strong value and semi-bluffs." },
+                    { "Gain.ActionAllInExplanation", "All-in: you put all chips in; this is the highest variance cut." },
+                    { "Gain.ActionNoneExplanation", "No action: hand detected without a relevant hero action." },
+                    { "Gain.ActionUnknownExplanation", "Action normalized from the history." },
+                    { "Gain.BluffWonExplanation", "Won bluff: aggression that took the pot without showdown." },
+                    { "Gain.BluffLostExplanation", "Lost bluff: aggression with a weak hand or without a strong combination that ended negative." },
+                    { "Gain.ValueAggressionExplanation", "Value/aggression: bets or raises that do not look like pure bluff because of result or combination." },
+                    { "Gain.NonAggressiveExplanation", "Non-aggressive: hands where your last action was fold, check or call." },
+                    { "Gain.BluffUnknownExplanation", "Approximate aggression classification." },
+                    { "Gain.NoFormat", "No format" },
+                    { "Gain.NoBlinds", "No blinds" },
+                    { "Gain.Label.Preflop", "Preflop" },
+                    { "Gain.Label.Flop", "Flop" },
+                    { "Gain.Label.Turn", "Turn" },
+                    { "Gain.Label.River", "River" },
+                    { "Gain.Label.NoAction", "No action" },
+                    { "Gain.Label.BluffWon", "Won bluff" },
+                    { "Gain.Label.BluffLost", "Lost bluff" },
+                    { "Gain.Label.ValueAggression", "Value/aggression" },
+                    { "Gain.Label.NonAggressive", "Non-aggressive" },
+                    { "Drive.Connected", "Google Drive connected. Hidden backup in appDataFolder: {0}" },
+                    { "Drive.ConnectedAs", "Google Drive connected as {0}. Hidden backup: {1}" },
+                    { "Drive.NoLocalDb", "aph.db does not exist yet. Load or analyze hands first to create the local backup." },
+                    { "Drive.UploadFailed", "Could not upload to Drive: {0}" },
+                    { "Drive.Uploaded", "aph.db backup uploaded to Google Drive." },
+                    { "Drive.NotFound", "I did not find aph.db in APH Drive." },
+                    { "Drive.DownloadFailed", "Could not download from Drive: {0}" },
+                    { "Drive.Restored", "aph.db restored from Google Drive. Restart APH to reload cleanly." }
+                },
+                "Francais" => new[,]
+                {
+                    { "Login.Title", "APH - Acces" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Acces securise avec Google Drive et verrouillage local" },
+                    { "Login.GoogleStep", "1. Se connecter avec Google" },
+                    { "Login.GoogleDesc", "APH utilise votre Google Drive prive pour sauvegarder et restaurer aph.db." },
+                    { "Login.GoogleButton", "Se connecter avec Google" },
+                    { "Login.LocalLockStep", "2. Verrouillage local" },
+                    { "Login.LocalLockDesc", "Apres Google, APH demande un mot de passe local sur ce PC." },
+                    { "Login.Password", "Mot de passe" },
+                    { "Login.ConfirmPassword", "Confirmer le mot de passe" },
+                    { "Login.Enter", "Entrer dans APH" },
+                    { "Login.CreatePasswordEnter", "Creer le mot de passe et entrer" },
+                    { "Login.UnlockStep", "2. Deverrouiller ce PC" },
+                    { "Login.CreateLockStep", "2. Creer le verrouillage local" },
+                    { "Login.GoogleValidatedHelp", "Google est deja valide; entrez le mot de passe local de ce PC." },
+                    { "Login.LocalPasswordHelp", "Ce mot de passe protege APH si quelqu'un ouvre votre ordinateur." },
+                    { "Login.GoogleReady", "Pret a se connecter a Google." },
+                    { "Login.MissingClientSecret", "google_client_secret.json manque dans {0}." },
+                    { "Login.OpeningGoogle", "Ouverture de l'autorisation Google..." },
+                    { "Login.GoogleFailed", "Google a echoue : {0}" },
+                    { "Login.MustSignInGoogle", "Connectez-vous d'abord avec Google." },
+                    { "Login.BadLocalPassword", "Mot de passe local incorrect." },
+                    { "Login.MinPassword", "Utilisez au moins 8 caracteres." },
+                    { "Login.ConfirmMismatch", "La confirmation ne correspond pas." },
+                    { "Login.AccountChanged", "Compte Google change de {0} a {1}. La base locale precedente a ete supprimee." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Session Google enregistree. Entrez votre mot de passe local pour continuer." },
+                    { "Unlock.Enter", "Entrer" },
+                    { "Settings.ReportSecurity", "Securite des rapports" },
+                    { "Settings.ReportSecurityDesc", "Stocke un mot de passe encode pour proteger les futurs rapports." },
+                    { "Settings.ProtectReports", "Appliquer un mot de passe aux futurs rapports" },
+                    { "Settings.CurrentPassword", "Mot de passe actuel" },
+                    { "Settings.NewPassword", "Nouveau mot de passe" },
+                    { "Settings.ConfirmNewPassword", "Confirmer le nouveau mot de passe" },
+                    { "Settings.SavePassword", "Enregistrer le mot de passe" },
+                    { "Settings.ReportsFolder", "Emplacement des rapports" },
+                    { "Settings.ReportsFolderDesc", "L'application enregistre et charge les sessions depuis ce dossier." },
+                    { "Settings.ReportsFolderLabel", "Dossier des rapports" },
+                    { "Settings.ConnectedAccount", "Compte connecte" },
+                    { "Settings.NoAccountDetected", "Aucun compte detecte" },
+                    { "Settings.UploadBackup", "Envoyer la sauvegarde" },
+                    { "Settings.UploadBackupDesc", "Enregistre aph.db dans Drive" },
+                    { "Settings.RestoreDrive", "Restaurer Drive" },
+                    { "Settings.RestoreDriveDesc", "Recupere la DB sur ce PC" },
+                    { "Settings.ReportPasswordConfigured", "Mot de passe des rapports configure." },
+                    { "Settings.ReportPasswordMissing", "Aucun mot de passe de rapports configure." },
+                    { "Settings.DriveReady", "Drive pret. Envoyer la sauvegarde enregistre aph.db dans le compte connecte." },
+                    { "Settings.UploadingDrive", "Envoi de aph.db vers Google Drive..." },
+                    { "Settings.RestoringDrive", "Restauration de aph.db depuis Google Drive..." },
+                    { "Settings.RestoreConfirm", "Cela remplacera aph.db local par la copie Google Drive. Un .bak sera cree avant le remplacement. Continuer ?" },
+                    { "Settings.RestoreTitle", "Restaurer la sauvegarde" },
+                    { "Settings.GoogleOAuthHint", "{0}. Creez OAuth Desktop dans Google Cloud et enregistrez le JSON ici." },
+                    { "Settings.GoogleDriveFailed", "Google Drive a echoue : {0}" },
+                    { "Settings.SelectReportsFolder", "Selectionner le dossier des rapports" },
+                    { "Settings.ReportsFolderSaved", "Dossier des rapports enregistre." },
+                    { "Settings.SavePasswordFirst", "Enregistrez d'abord un nouveau mot de passe de rapports." },
+                    { "Settings.ChangeCanceled", "Changement annule ou mot de passe incorrect." },
+                    { "Settings.ReportsEnabled", "Protection des rapports activee." },
+                    { "Settings.ReportsDisabled", "Protection des rapports desactivee." },
+                    { "Settings.CurrentPasswordMismatch", "Le mot de passe actuel ne correspond pas." },
+                    { "Settings.WriteNewPassword", "Entrez un nouveau mot de passe." },
+                    { "Settings.ReportProtectionOff", "Protection des rapports desactivee." },
+                    { "Settings.ReportPasswordSaved", "Mot de passe des rapports enregistre sous forme encodee." },
+                    { "Main.RailHeroProfile", "Profil du heros" },
+                    { "Main.RailHeroProfileDesc", "Stats et lecture completes du joueur." },
+                    { "Main.RailRealTime", "Temps reel" },
+                    { "Main.RailRealTimeDesc", "Suivi des tables en direct." },
+                    { "Main.RailTables", "Analyse par tables" },
+                    { "Main.RailTablesDesc", "Gains et KPIs par table." },
+                    { "Main.RailGain", "Gain" },
+                    { "Main.RailGainDesc", "Gains et pertes detailles." },
+                    { "Main.RailMyTables", "Mes Tables" },
+                    { "Main.RailMyTablesDesc", "Cartes d'actions par main initiale." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Rivaux recents et bb contre eux." },
+                    { "Main.RailLeaks", "Analyse des leaks" },
+                    { "Main.RailLeaksDesc", "Trouver les pertes repetees." },
+                    { "Main.RailSessions", "Sessions" },
+                    { "Main.RailSessionsDesc", "Rapports sauvegardes et comparaisons." },
+                    { "Main.RailLiteMode", "Mode lite" },
+                    { "Main.RailLiteModeDesc", "Version visuelle compacte precedente." },
+                    { "Main.RailRooms", "Chemins des rooms" },
+                    { "Main.RailRoomsDesc", "Definir les dossiers de mains par room." },
+                    { "Main.RailLogout", "Deconnexion" },
+                    { "Main.RailLogoutDesc", "Nettoyer ce PC et revenir a la connexion." },
+                    { "Main.LastSession", "Derniere session :" },
+                    { "Main.ActiveRoom", "Room active" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "TOTAL TABLES" },
+                    { "Main.TotalGain", "GAIN TOTAL" },
+                    { "Main.AccumulatedGain", "GAIN ACCUMULE" },
+                    { "Main.BestRecentTen", "MEILLEURE TABLE DERNIERES 10" },
+                    { "Main.WorstRecentTen", "PIRE TABLE DERNIERES 10" },
+                    { "Main.SessionFlow", "FLUX DE SESSION" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "Sans donnees" },
+                    { "Main.LoadHandsForTags", "Chargez des mains pour generer les tags du profil." },
+                    { "Main.GainFolderRequired", "Selectionnez d'abord un dossier pour charger Gain." },
+                    { "Main.SessionsOpened", "Sessions sauvegardees ouvertes." },
+                    { "Main.NoDataForRoom", "Aucune donnee chargee pour {0}." },
+                    { "Main.LogoutTitle", "Deconnexion APH" },
+                    { "Main.LogoutConfirm", "La deconnexion supprimera les donnees locales APH sur ce PC, y compris la DB locale, le token Google et le mot de passe local. Vous pourrez recuperer vos informations en vous reconnectant avec Google et en restaurant la sauvegarde Drive. Etes-vous sur ?" },
+                    { "Gain.Title", "APH - Gain" },
+                    { "Gain.Header", "GAIN" },
+                    { "Gain.TotalGain", "GAIN TOTAL" },
+                    { "Gain.AveragePerHand", "MOYENNE PAR MAIN" },
+                    { "Gain.BestCut", "MEILLEUR DECOUPAGE" },
+                    { "Gain.WorstCut", "PIRE DECOUPAGE" },
+                    { "Gain.EvolutionByTables", "EVOLUTION PAR TABLES" },
+                    { "Gain.AxisHint", "Date (X) - Jetons (Y) - ligne moyenne incluse  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "Position" },
+                    { "Gain.Action", "Action" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Table" },
+                    { "Gain.Format", "Format" },
+                    { "Gain.Blinds", "Blinds" },
+                    { "Gain.ByStreet", "GAIN PAR STREET" },
+                    { "Gain.BarHint", "Chaque barre montre le total; survolez pour moyenne et mains" },
+                    { "Gain.Reading", "LECTURE" },
+                    { "Gain.AnalyzedHands", "{0} mains analysees" },
+                    { "Gain.NoData", "Sans donnees" },
+                    { "Gain.TooltipResult", "Resultat" },
+                    { "Gain.TooltipTotal", "Cumule" },
+                    { "Gain.TooltipHands", "{0} mains" },
+                    { "Gain.TooltipApproxBb", "BB approx : {0} bb" },
+                    { "Drive.Connected", "Google Drive connecte. Sauvegarde cachee dans appDataFolder : {0}" },
+                    { "Drive.ConnectedAs", "Google Drive connecte comme {0}. Sauvegarde cachee : {1}" },
+                    { "Drive.NoLocalDb", "aph.db n'existe pas encore. Chargez ou analysez des mains pour creer la sauvegarde locale." },
+                    { "Drive.UploadFailed", "Impossible d'envoyer vers Drive : {0}" },
+                    { "Drive.Uploaded", "Sauvegarde aph.db envoyee vers Google Drive." },
+                    { "Drive.NotFound", "Je n'ai pas trouve aph.db dans le Drive APH." },
+                    { "Drive.DownloadFailed", "Impossible de telecharger depuis Drive : {0}" },
+                    { "Drive.Restored", "aph.db restauree depuis Google Drive. Redemarrez APH pour tout recharger proprement." }
+                },
+                "Portugues" => new[,]
+                {
+                    { "Login.Title", "APH - Acesso" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Acesso seguro com Google Drive e bloqueio local" },
+                    { "Login.GoogleStep", "1. Entrar com Google" },
+                    { "Login.GoogleDesc", "APH usa seu Google Drive privado para salvar e restaurar aph.db." },
+                    { "Login.GoogleButton", "Entrar com Google" },
+                    { "Login.LocalLockStep", "2. Bloqueio local" },
+                    { "Login.LocalLockDesc", "Depois do Google, APH pede uma senha local neste PC." },
+                    { "Login.Password", "Senha" },
+                    { "Login.ConfirmPassword", "Confirmar senha" },
+                    { "Login.Enter", "Entrar no APH" },
+                    { "Login.CreatePasswordEnter", "Criar senha e entrar" },
+                    { "Login.UnlockStep", "2. Desbloquear este PC" },
+                    { "Login.CreateLockStep", "2. Criar bloqueio local" },
+                    { "Login.GoogleValidatedHelp", "Google ja esta validado; digite a senha local deste PC." },
+                    { "Login.LocalPasswordHelp", "Esta senha protege o APH se alguem abrir seu computador." },
+                    { "Login.GoogleReady", "Pronto para conectar ao Google." },
+                    { "Login.MissingClientSecret", "Falta google_client_secret.json em {0}." },
+                    { "Login.OpeningGoogle", "Abrindo autorizacao do Google..." },
+                    { "Login.GoogleFailed", "Google falhou: {0}" },
+                    { "Login.MustSignInGoogle", "Primeiro entre com Google." },
+                    { "Login.BadLocalPassword", "Senha local incorreta." },
+                    { "Login.MinPassword", "Use pelo menos 8 caracteres." },
+                    { "Login.ConfirmMismatch", "A confirmacao nao coincide." },
+                    { "Login.AccountChanged", "Conta Google alterada de {0} para {1}. A DB local anterior foi apagada." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Sessao Google salva. Digite sua senha local para continuar." },
+                    { "Unlock.Enter", "Entrar" },
+                    { "Settings.ReportSecurity", "Seguranca dos relatorios" },
+                    { "Settings.ReportSecurityDesc", "Salva uma senha codificada para proteger relatorios futuros." },
+                    { "Settings.ProtectReports", "Aplicar senha a relatorios futuros" },
+                    { "Settings.CurrentPassword", "Senha atual" },
+                    { "Settings.NewPassword", "Nova senha" },
+                    { "Settings.ConfirmNewPassword", "Confirmar nova senha" },
+                    { "Settings.SavePassword", "Salvar senha" },
+                    { "Settings.ReportsFolder", "Local dos relatorios" },
+                    { "Settings.ReportsFolderDesc", "O app salva e carrega sessoes desta pasta." },
+                    { "Settings.ReportsFolderLabel", "Pasta de relatorios" },
+                    { "Settings.ConnectedAccount", "Conta conectada" },
+                    { "Settings.NoAccountDetected", "Nenhuma conta detectada" },
+                    { "Settings.UploadBackup", "Enviar backup" },
+                    { "Settings.UploadBackupDesc", "Salva aph.db no Drive" },
+                    { "Settings.RestoreDrive", "Restaurar Drive" },
+                    { "Settings.RestoreDriveDesc", "Traz a DB para este PC" },
+                    { "Settings.ReportPasswordConfigured", "Senha de relatorios configurada." },
+                    { "Settings.ReportPasswordMissing", "Nenhuma senha de relatorios configurada." },
+                    { "Settings.DriveReady", "Drive pronto. Enviar backup salva aph.db na conta conectada." },
+                    { "Settings.UploadingDrive", "Enviando aph.db ao Google Drive..." },
+                    { "Settings.RestoringDrive", "Restaurando aph.db do Google Drive..." },
+                    { "Settings.RestoreConfirm", "Isto substituira a aph.db local pela copia do Google Drive. Um .bak sera salvo antes da substituicao. Continuar?" },
+                    { "Settings.RestoreTitle", "Restaurar backup" },
+                    { "Settings.GoogleOAuthHint", "{0}. Crie OAuth Desktop no Google Cloud e salve o JSON ali." },
+                    { "Settings.GoogleDriveFailed", "Google Drive falhou: {0}" },
+                    { "Settings.SelectReportsFolder", "Selecione a pasta de relatorios" },
+                    { "Settings.ReportsFolderSaved", "Pasta de relatorios salva." },
+                    { "Settings.SavePasswordFirst", "Primeiro salve uma nova senha de relatorios." },
+                    { "Settings.ChangeCanceled", "Alteracao cancelada ou senha incorreta." },
+                    { "Settings.ReportsEnabled", "Protecao de relatorios ativada." },
+                    { "Settings.ReportsDisabled", "Protecao de relatorios desativada." },
+                    { "Settings.CurrentPasswordMismatch", "A senha atual nao coincide." },
+                    { "Settings.WriteNewPassword", "Digite uma nova senha." },
+                    { "Settings.ReportProtectionOff", "Protecao de relatorios desativada." },
+                    { "Settings.ReportPasswordSaved", "Senha de relatorios salva de forma codificada." },
+                    { "Main.RailHeroProfile", "Perfil do heroi" },
+                    { "Main.RailHeroProfileDesc", "Stats e leitura completa do jogador." },
+                    { "Main.RailRealTime", "Tempo real" },
+                    { "Main.RailRealTimeDesc", "Acompanhamento das mesas ao vivo." },
+                    { "Main.RailTables", "Analise por mesas" },
+                    { "Main.RailTablesDesc", "Ganhos e KPIs por mesa." },
+                    { "Main.RailGain", "Ganho" },
+                    { "Main.RailGainDesc", "Ganhos e perdas detalhados." },
+                    { "Main.RailMyTables", "Minhas Tabelas" },
+                    { "Main.RailMyTablesDesc", "Mapas de acoes por mao inicial." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Rivais recentes e bb contra eles." },
+                    { "Main.RailLeaks", "Analise de leaks" },
+                    { "Main.RailLeaksDesc", "Encontre padroes de perdas repetidas." },
+                    { "Main.RailSessions", "Sessoes" },
+                    { "Main.RailSessionsDesc", "Relatorios salvos e comparacoes." },
+                    { "Main.RailLiteMode", "Modo lite" },
+                    { "Main.RailLiteModeDesc", "Versao visual compacta anterior." },
+                    { "Main.RailRooms", "Rotas das salas" },
+                    { "Main.RailRoomsDesc", "Definir pastas de maos por sala." },
+                    { "Main.RailLogout", "Sair" },
+                    { "Main.RailLogoutDesc", "Limpar este PC e voltar ao login." },
+                    { "Main.LastSession", "Ultima sessao:" },
+                    { "Main.ActiveRoom", "Sala ativa" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "TOTAL MESAS" },
+                    { "Main.TotalGain", "GANHO TOTAL" },
+                    { "Main.AccumulatedGain", "GANHO ACUMULADO" },
+                    { "Main.BestRecentTen", "MELHOR MESA ULTIMAS 10" },
+                    { "Main.WorstRecentTen", "PIOR MESA ULTIMAS 10" },
+                    { "Main.SessionFlow", "FLUXO DA SESSAO" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "Sem dados" },
+                    { "Main.LoadHandsForTags", "Carregue maos para gerar os tags do perfil." },
+                    { "Main.GainFolderRequired", "Selecione uma pasta primeiro para carregar Ganho." },
+                    { "Main.SessionsOpened", "Sessoes salvas abertas." },
+                    { "Main.NoDataForRoom", "Sem dados carregados para {0}." },
+                    { "Main.LogoutTitle", "Sair do APH" },
+                    { "Main.LogoutConfirm", "Ao sair, os dados locais do APH neste PC serao apagados, incluindo a DB local, o token Google e a senha local. Voce podera recuperar suas informacoes entrando novamente com Google e restaurando o backup do Drive. Tem certeza?" },
+                    { "Gain.Title", "APH - Ganho" },
+                    { "Gain.Header", "GANHO" },
+                    { "Gain.TotalGain", "GANHO TOTAL" },
+                    { "Gain.AveragePerHand", "MEDIA POR MAO" },
+                    { "Gain.BestCut", "MELHOR CORTE" },
+                    { "Gain.WorstCut", "PIOR CORTE" },
+                    { "Gain.EvolutionByTables", "EVOLUCAO POR MESAS" },
+                    { "Gain.AxisHint", "Data (X) - Fichas (Y) - linha media incluida  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "Posicao" },
+                    { "Gain.Action", "Acao" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Mesa" },
+                    { "Gain.Format", "Formato" },
+                    { "Gain.Blinds", "Ciegas" },
+                    { "Gain.ByStreet", "GANHO POR STREET" },
+                    { "Gain.BarHint", "Cada barra mostra total; passe o mouse para media e maos" },
+                    { "Gain.Reading", "LEITURA" },
+                    { "Gain.AnalyzedHands", "{0} maos analisadas" },
+                    { "Gain.NoData", "Sem dados" },
+                    { "Gain.TooltipResult", "Resultado" },
+                    { "Gain.TooltipTotal", "Acumulado" },
+                    { "Gain.TooltipHands", "{0} maos" },
+                    { "Gain.TooltipApproxBb", "BB aprox: {0} bb" },
+                    { "Drive.Connected", "Google Drive conectado. Backup oculto em appDataFolder: {0}" },
+                    { "Drive.ConnectedAs", "Google Drive conectado como {0}. Backup oculto: {1}" },
+                    { "Drive.NoLocalDb", "aph.db ainda nao existe. Carregue ou analise maos primeiro para criar o backup local." },
+                    { "Drive.UploadFailed", "Nao foi possivel enviar ao Drive: {0}" },
+                    { "Drive.Uploaded", "Backup aph.db enviado ao Google Drive." },
+                    { "Drive.NotFound", "Nao encontrei aph.db no Drive do APH." },
+                    { "Drive.DownloadFailed", "Nao foi possivel baixar do Drive: {0}" },
+                    { "Drive.Restored", "aph.db restaurada do Google Drive. Reinicie o APH para recarregar tudo limpo." }
+                },
+                "Deutsch" => new[,]
+                {
+                    { "Login.Title", "APH - Zugang" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Sicherer Zugang mit Google Drive und lokaler Sperre" },
+                    { "Login.GoogleStep", "1. Mit Google anmelden" },
+                    { "Login.GoogleDesc", "APH nutzt dein privates Google Drive, um aph.db zu speichern und wiederherzustellen." },
+                    { "Login.GoogleButton", "Mit Google anmelden" },
+                    { "Login.LocalLockStep", "2. Lokale Sperre" },
+                    { "Login.LocalLockDesc", "Nach Google fragt APH auf diesem PC nach einem lokalen Passwort." },
+                    { "Login.Password", "Passwort" },
+                    { "Login.ConfirmPassword", "Passwort bestaetigen" },
+                    { "Login.Enter", "APH oeffnen" },
+                    { "Login.CreatePasswordEnter", "Passwort erstellen und oeffnen" },
+                    { "Login.UnlockStep", "2. Diesen PC entsperren" },
+                    { "Login.CreateLockStep", "2. Lokale Sperre erstellen" },
+                    { "Login.GoogleValidatedHelp", "Google ist bereits validiert; gib das lokale Passwort dieses PCs ein." },
+                    { "Login.LocalPasswordHelp", "Dieses Passwort schuetzt APH, falls jemand deinen Computer oeffnet." },
+                    { "Login.GoogleReady", "Bereit fuer die Verbindung mit Google." },
+                    { "Login.MissingClientSecret", "google_client_secret.json fehlt in {0}." },
+                    { "Login.OpeningGoogle", "Google-Autorisierung wird geoeffnet..." },
+                    { "Login.GoogleFailed", "Google fehlgeschlagen: {0}" },
+                    { "Login.MustSignInGoogle", "Melde dich zuerst mit Google an." },
+                    { "Login.BadLocalPassword", "Lokales Passwort ist falsch." },
+                    { "Login.MinPassword", "Nutze mindestens 8 Zeichen." },
+                    { "Login.ConfirmMismatch", "Die Bestaetigung stimmt nicht ueberein." },
+                    { "Login.AccountChanged", "Google-Konto von {0} zu {1} gewechselt. Vorherige lokale DB wurde geloescht." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Google-Sitzung gespeichert. Gib dein lokales Passwort ein, um fortzufahren." },
+                    { "Unlock.Enter", "Oeffnen" },
+                    { "Settings.ReportSecurity", "Berichtssicherheit" },
+                    { "Settings.ReportSecurityDesc", "Speichert ein codiertes Passwort zum Schutz kuenftiger Berichte." },
+                    { "Settings.ProtectReports", "Passwort auf kuenftige Berichte anwenden" },
+                    { "Settings.CurrentPassword", "Aktuelles Passwort" },
+                    { "Settings.NewPassword", "Neues Passwort" },
+                    { "Settings.ConfirmNewPassword", "Neues Passwort bestaetigen" },
+                    { "Settings.SavePassword", "Passwort speichern" },
+                    { "Settings.ReportsFolder", "Berichtsordner" },
+                    { "Settings.ReportsFolderDesc", "Die App speichert und laedt Sitzungen aus diesem Ordner." },
+                    { "Settings.ReportsFolderLabel", "Ordner fuer Berichte" },
+                    { "Settings.ConnectedAccount", "Verbundenes Konto" },
+                    { "Settings.NoAccountDetected", "Kein Konto erkannt" },
+                    { "Settings.UploadBackup", "Backup hochladen" },
+                    { "Settings.UploadBackupDesc", "Speichert aph.db in Drive" },
+                    { "Settings.RestoreDrive", "Drive wiederherstellen" },
+                    { "Settings.RestoreDriveDesc", "Bringt die DB auf diesen PC" },
+                    { "Settings.ReportPasswordConfigured", "Berichtspasswort konfiguriert." },
+                    { "Settings.ReportPasswordMissing", "Kein Berichtspasswort konfiguriert." },
+                    { "Settings.DriveReady", "Drive bereit. Backup hochladen speichert aph.db im verbundenen Konto." },
+                    { "Settings.UploadingDrive", "aph.db wird zu Google Drive hochgeladen..." },
+                    { "Settings.RestoringDrive", "aph.db wird aus Google Drive wiederhergestellt..." },
+                    { "Settings.RestoreConfirm", "Dies ersetzt die lokale aph.db durch die Google-Drive-Kopie. Vorher wird eine .bak gespeichert. Fortfahren?" },
+                    { "Settings.RestoreTitle", "Backup wiederherstellen" },
+                    { "Settings.GoogleOAuthHint", "{0}. Erstelle OAuth Desktop in Google Cloud und speichere die JSON dort." },
+                    { "Settings.GoogleDriveFailed", "Google Drive fehlgeschlagen: {0}" },
+                    { "Settings.SelectReportsFolder", "Berichtsordner auswaehlen" },
+                    { "Settings.ReportsFolderSaved", "Berichtsordner gespeichert." },
+                    { "Settings.SavePasswordFirst", "Speichere zuerst ein neues Berichtspasswort." },
+                    { "Settings.ChangeCanceled", "Aenderung abgebrochen oder Passwort falsch." },
+                    { "Settings.ReportsEnabled", "Berichtsschutz aktiviert." },
+                    { "Settings.ReportsDisabled", "Berichtsschutz deaktiviert." },
+                    { "Settings.CurrentPasswordMismatch", "Das aktuelle Passwort stimmt nicht." },
+                    { "Settings.WriteNewPassword", "Gib ein neues Passwort ein." },
+                    { "Settings.ReportProtectionOff", "Berichtsschutz deaktiviert." },
+                    { "Settings.ReportPasswordSaved", "Berichtspasswort codiert gespeichert." },
+                    { "Main.RailHeroProfile", "Hero-Profil" },
+                    { "Main.RailHeroProfileDesc", "Vollstaendige Stats und Lesart des Spielers." },
+                    { "Main.RailRealTime", "Echtzeit" },
+                    { "Main.RailRealTimeDesc", "Live-Tracking der Tische." },
+                    { "Main.RailTables", "Tischanalyse" },
+                    { "Main.RailTablesDesc", "Gewinne und KPIs pro Tisch." },
+                    { "Main.RailGain", "Gewinn" },
+                    { "Main.RailGainDesc", "Detaillierte Gewinne und Verluste." },
+                    { "Main.RailMyTables", "Meine Tabellen" },
+                    { "Main.RailMyTablesDesc", "Aktionskarten nach Starthand." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Aktuelle Gegner und bb gegen sie." },
+                    { "Main.RailLeaks", "Leak-Analyse" },
+                    { "Main.RailLeaksDesc", "Wiederkehrende Verlustmuster finden." },
+                    { "Main.RailSessions", "Sitzungen" },
+                    { "Main.RailSessionsDesc", "Gespeicherte Berichte und Vergleiche." },
+                    { "Main.RailLiteMode", "Lite-Modus" },
+                    { "Main.RailLiteModeDesc", "Vorherige kompakte visuelle Version." },
+                    { "Main.RailRooms", "Room-Pfade" },
+                    { "Main.RailRoomsDesc", "Hand-Ordner je Poker-Room festlegen." },
+                    { "Main.RailLogout", "Abmelden" },
+                    { "Main.RailLogoutDesc", "Diesen PC bereinigen und zum Login zurueckkehren." },
+                    { "Main.LastSession", "Letzte Sitzung:" },
+                    { "Main.ActiveRoom", "Aktiver Room" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "TISCHE GESAMT" },
+                    { "Main.TotalGain", "GEWINN GESAMT" },
+                    { "Main.AccumulatedGain", "AKKUMULIERTER GEWINN" },
+                    { "Main.BestRecentTen", "BESTER TISCH LETZTE 10" },
+                    { "Main.WorstRecentTen", "SCHLECHTESTER TISCH LETZTE 10" },
+                    { "Main.SessionFlow", "SITZUNGSVERLAUF" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "Keine Daten" },
+                    { "Main.LoadHandsForTags", "Haende laden, um Profil-Tags zu erzeugen." },
+                    { "Main.GainFolderRequired", "Waehle zuerst einen Ordner, um Gewinn zu laden." },
+                    { "Main.SessionsOpened", "Gespeicherte Sitzungen geoeffnet." },
+                    { "Main.NoDataForRoom", "Keine Daten fuer {0} geladen." },
+                    { "Main.LogoutTitle", "APH abmelden" },
+                    { "Main.LogoutConfirm", "Beim Abmelden werden lokale APH-Daten auf diesem PC geloescht, einschliesslich lokaler DB, Google-Token und lokalem Passwort. Du kannst die Informationen wiederherstellen, indem du dich erneut mit Google anmeldest und das Drive-Backup wiederherstellst. Bist du sicher?" },
+                    { "Gain.Title", "APH - Gewinn" },
+                    { "Gain.Header", "GEWINN" },
+                    { "Gain.TotalGain", "GEWINN GESAMT" },
+                    { "Gain.AveragePerHand", "DURCHSCHNITT PRO HAND" },
+                    { "Gain.BestCut", "BESTER SCHNITT" },
+                    { "Gain.WorstCut", "SCHLECHTESTER SCHNITT" },
+                    { "Gain.EvolutionByTables", "ENTWICKLUNG NACH TISCHEN" },
+                    { "Gain.AxisHint", "Datum (X) - Chips (Y) - Durchschnittslinie enthalten  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "Position" },
+                    { "Gain.Action", "Aktion" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Tisch" },
+                    { "Gain.Format", "Format" },
+                    { "Gain.Blinds", "Blinds" },
+                    { "Gain.ByStreet", "GEWINN NACH STREET" },
+                    { "Gain.BarHint", "Jeder Balken zeigt die Summe; Hover fuer Durchschnitt und Haende" },
+                    { "Gain.Reading", "LESART" },
+                    { "Gain.AnalyzedHands", "{0} Haende analysiert" },
+                    { "Gain.NoData", "Keine Daten" },
+                    { "Gain.TooltipResult", "Ergebnis" },
+                    { "Gain.TooltipTotal", "Kumuliert" },
+                    { "Gain.TooltipHands", "{0} Haende" },
+                    { "Gain.TooltipApproxBb", "BB ca.: {0} bb" },
+                    { "Drive.Connected", "Google Drive verbunden. Verstecktes Backup in appDataFolder: {0}" },
+                    { "Drive.ConnectedAs", "Google Drive verbunden als {0}. Verstecktes Backup: {1}" },
+                    { "Drive.NoLocalDb", "aph.db existiert noch nicht. Lade oder analysiere zuerst Haende, um das lokale Backup zu erstellen." },
+                    { "Drive.UploadFailed", "Konnte nicht zu Drive hochladen: {0}" },
+                    { "Drive.Uploaded", "aph.db-Backup zu Google Drive hochgeladen." },
+                    { "Drive.NotFound", "aph.db wurde im APH Drive nicht gefunden." },
+                    { "Drive.DownloadFailed", "Konnte nicht von Drive herunterladen: {0}" },
+                    { "Drive.Restored", "aph.db aus Google Drive wiederhergestellt. Starte APH neu, um sauber neu zu laden." }
+                },
+                "日本語" => new[,]
+                {
+                    { "Login.Title", "APH - アクセス" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Google Drive とローカルロックによる安全なアクセス" },
+                    { "Login.GoogleStep", "1. Google でログイン" },
+                    { "Login.GoogleDesc", "APH はあなたの非公開 Google Drive を使って aph.db を保存・復元します。" },
+                    { "Login.GoogleButton", "Google でログイン" },
+                    { "Login.LocalLockStep", "2. ローカルロック" },
+                    { "Login.LocalLockDesc", "Google 認証後、この PC のローカルパスワードを求めます。" },
+                    { "Login.Password", "パスワード" },
+                    { "Login.ConfirmPassword", "パスワード確認" },
+                    { "Login.Enter", "APH に入る" },
+                    { "Login.CreatePasswordEnter", "パスワードを作成して入る" },
+                    { "Login.UnlockStep", "2. この PC を解除" },
+                    { "Login.CreateLockStep", "2. ローカルロックを作成" },
+                    { "Login.GoogleValidatedHelp", "Google は確認済みです。この PC のローカルパスワードを入力してください。" },
+                    { "Login.LocalPasswordHelp", "このパスワードは、他人が PC を開いた場合に APH を保護します。" },
+                    { "Login.GoogleReady", "Google 接続の準備ができました。" },
+                    { "Login.MissingClientSecret", "{0} に google_client_secret.json がありません。" },
+                    { "Login.OpeningGoogle", "Google 認証を開いています..." },
+                    { "Login.GoogleFailed", "Google エラー: {0}" },
+                    { "Login.MustSignInGoogle", "先に Google でログインしてください。" },
+                    { "Login.BadLocalPassword", "ローカルパスワードが正しくありません。" },
+                    { "Login.MinPassword", "8 文字以上を使用してください。" },
+                    { "Login.ConfirmMismatch", "確認用パスワードが一致しません。" },
+                    { "Login.AccountChanged", "Google アカウントが {0} から {1} に変更されました。以前のローカル DB は削除されました。" },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Google セッションは保存済みです。続行するにはローカルパスワードを入力してください。" },
+                    { "Unlock.Enter", "入る" },
+                    { "Settings.ReportSecurity", "レポート保護" },
+                    { "Settings.ReportSecurityDesc", "今後のレポートを保護するため、エンコードされたパスワードを保存します。" },
+                    { "Settings.ProtectReports", "今後のレポートにパスワードを適用" },
+                    { "Settings.CurrentPassword", "現在のパスワード" },
+                    { "Settings.NewPassword", "新しいパスワード" },
+                    { "Settings.ConfirmNewPassword", "新しいパスワード確認" },
+                    { "Settings.SavePassword", "パスワードを保存" },
+                    { "Settings.ReportsFolder", "レポート保存先" },
+                    { "Settings.ReportsFolderDesc", "アプリはこのフォルダーからセッションを保存・読み込みします。" },
+                    { "Settings.ReportsFolderLabel", "レポートフォルダー" },
+                    { "Settings.ConnectedAccount", "接続中のアカウント" },
+                    { "Settings.NoAccountDetected", "アカウント未検出" },
+                    { "Settings.UploadBackup", "バックアップをアップロード" },
+                    { "Settings.UploadBackupDesc", "aph.db を Drive に保存" },
+                    { "Settings.RestoreDrive", "Drive から復元" },
+                    { "Settings.RestoreDriveDesc", "DB をこの PC に復元" },
+                    { "Settings.ReportPasswordConfigured", "レポートパスワードは設定済みです。" },
+                    { "Settings.ReportPasswordMissing", "レポートパスワードは未設定です。" },
+                    { "Settings.DriveReady", "Drive の準備ができました。バックアップをアップロードすると、接続中のアカウントに aph.db が保存されます。" },
+                    { "Settings.UploadingDrive", "aph.db を Google Drive にアップロードしています..." },
+                    { "Settings.RestoringDrive", "Google Drive から aph.db を復元しています..." },
+                    { "Settings.RestoreConfirm", "ローカルの aph.db を Google Drive のコピーで置き換えます。置換前に .bak が保存されます。続行しますか？" },
+                    { "Settings.RestoreTitle", "バックアップ復元" },
+                    { "Settings.GoogleOAuthHint", "{0}。Google Cloud で OAuth Desktop を作成し、JSON をそこに保存してください。" },
+                    { "Settings.GoogleDriveFailed", "Google Drive エラー: {0}" },
+                    { "Settings.SelectReportsFolder", "レポートフォルダーを選択" },
+                    { "Settings.ReportsFolderSaved", "レポートフォルダーを保存しました。" },
+                    { "Settings.SavePasswordFirst", "先に新しいレポートパスワードを保存してください。" },
+                    { "Settings.ChangeCanceled", "変更がキャンセルされたか、パスワードが正しくありません。" },
+                    { "Settings.ReportsEnabled", "レポート保護を有効にしました。" },
+                    { "Settings.ReportsDisabled", "レポート保護を無効にしました。" },
+                    { "Settings.CurrentPasswordMismatch", "現在のパスワードが一致しません。" },
+                    { "Settings.WriteNewPassword", "新しいパスワードを入力してください。" },
+                    { "Settings.ReportProtectionOff", "レポート保護は無効です。" },
+                    { "Settings.ReportPasswordSaved", "レポートパスワードをエンコード形式で保存しました。" },
+                    { "Main.RailHeroProfile", "ヒーロープロフィール" },
+                    { "Main.RailHeroProfileDesc", "プレイヤーの完全な stats と読み。" },
+                    { "Main.RailRealTime", "リアルタイム" },
+                    { "Main.RailRealTimeDesc", "ライブテーブル追跡。" },
+                    { "Main.RailTables", "テーブル分析" },
+                    { "Main.RailTablesDesc", "テーブル別の収益と KPI。" },
+                    { "Main.RailGain", "収益" },
+                    { "Main.RailGainDesc", "詳細な勝ち負け。" },
+                    { "Main.RailMyTables", "マイテーブル" },
+                    { "Main.RailMyTablesDesc", "スターティングハンド別のアクションマップ。" },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "直近の相手と対戦 bb。" },
+                    { "Main.RailLeaks", "Leak 分析" },
+                    { "Main.RailLeaksDesc", "繰り返す損失パターンを探します。" },
+                    { "Main.RailSessions", "セッション" },
+                    { "Main.RailSessionsDesc", "保存済みレポートと比較。" },
+                    { "Main.RailLiteMode", "Lite mode" },
+                    { "Main.RailLiteModeDesc", "以前のコンパクト表示。" },
+                    { "Main.RailRooms", "ルームパス" },
+                    { "Main.RailRoomsDesc", "ポーカールーム別にハンドフォルダーを設定。" },
+                    { "Main.RailLogout", "ログアウト" },
+                    { "Main.RailLogoutDesc", "この PC をクリアしてログインへ戻る。" },
+                    { "Main.LastSession", "最終セッション:" },
+                    { "Main.ActiveRoom", "アクティブルーム" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "総テーブル数" },
+                    { "Main.TotalGain", "総収益" },
+                    { "Main.AccumulatedGain", "累積収益" },
+                    { "Main.BestRecentTen", "直近10件のベストテーブル" },
+                    { "Main.WorstRecentTen", "直近10件のワーストテーブル" },
+                    { "Main.SessionFlow", "セッションフロー" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "データなし" },
+                    { "Main.LoadHandsForTags", "プロフィールタグを生成するにはハンドを読み込んでください。" },
+                    { "Main.GainFolderRequired", "収益を読み込むには先にフォルダーを選択してください。" },
+                    { "Main.SessionsOpened", "保存済みセッションを開きました。" },
+                    { "Main.NoDataForRoom", "{0} のデータは読み込まれていません。" },
+                    { "Main.LogoutTitle", "APH ログアウト" },
+                    { "Main.LogoutConfirm", "ログアウトすると、この PC のローカル APH データ、ローカル DB、Google トークン、ローカルパスワードが削除されます。Google で再ログインし Drive バックアップを復元すれば情報を回復できます。続行しますか？" },
+                    { "Gain.Title", "APH - 収益" },
+                    { "Gain.Header", "収益" },
+                    { "Gain.TotalGain", "総収益" },
+                    { "Gain.AveragePerHand", "1ハンド平均" },
+                    { "Gain.BestCut", "ベスト切り口" },
+                    { "Gain.WorstCut", "ワースト切り口" },
+                    { "Gain.EvolutionByTables", "テーブル別推移" },
+                    { "Gain.AxisHint", "日付 (X) - チップ (Y) - 平均ラインあり  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "ポジション" },
+                    { "Gain.Action", "アクション" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "テーブル" },
+                    { "Gain.Format", "フォーマット" },
+                    { "Gain.Blinds", "ブラインド" },
+                    { "Gain.ByStreet", "STREET 別収益" },
+                    { "Gain.BarHint", "各バーは合計を表示。ホバーで平均とハンド数を確認できます" },
+                    { "Gain.Reading", "読み" },
+                    { "Gain.AnalyzedHands", "{0} ハンド分析済み" },
+                    { "Gain.NoData", "データなし" },
+                    { "Gain.TooltipResult", "結果" },
+                    { "Gain.TooltipTotal", "累積" },
+                    { "Gain.TooltipHands", "{0} ハンド" },
+                    { "Gain.TooltipApproxBb", "概算 BB: {0} bb" },
+                    { "Gain.ChipsUnit", "チップ" },
+                    { "Gain.PerHandValue", "{0}/ハンド" },
+                    { "Gain.Average", "平均" },
+                    { "Gain.AverageLineLabel", "平均 {0}" },
+                    { "Gain.PositiveTrend", "現時点では利益に貢献しています。" },
+                    { "Gain.NegativeTrend", "現時点では bb を消耗しています。" },
+                    { "Gain.FormatExplanation", "履歴から検出されたテーブルフォーマットです。" },
+                    { "Gain.BlindsExplanation", "100/200 のように、テーブルから検出されたブラインドレベルです。" },
+                    { "Gain.StreetPreflopExplanation", "flop 前に解決した、または最後の判断が flop 前だったハンドです。" },
+                    { "Gain.StreetFlopExplanation", "最後の判断が flop だったハンドです。序盤の c-bet、call、fold を測ります。" },
+                    { "Gain.StreetTurnExplanation", "turn まで続いたハンドです。second barrel や高い call が見えやすい区分です。" },
+                    { "Gain.StreetRiverExplanation", "river で決まったハンドです。ここでは value bet、最後の bluff、hero call が重要です。" },
+                    { "Gain.StreetUnknownExplanation", "履歴から検出された street 区分です。" },
+                    { "Gain.PositionButtonExplanation", "Button: steal しやすく、postflop 情報が最も多いポジションです。" },
+                    { "Gain.PositionSbExplanation", "Small blind: ポジション外でプレイするため、自然な leak になりやすい場所です。" },
+                    { "Gain.PositionBbExplanation", "Big blind: 強制 defense、limped pot、広い call が混ざる場所です。" },
+                    { "Gain.PositionUtgExplanation", "UTG: early range です。より強く安定しているべき区分です。" },
+                    { "Gain.PositionMpExplanation", "MP: middle position です。early 相手の open と call を確認してください。" },
+                    { "Gain.PositionHjExplanation", "Hijack: steal 圧力が始まる位置ですが、後ろにまだ行動するプレイヤーがいます。" },
+                    { "Gain.PositionCoExplanation", "Cutoff: button の前にある強い steal ポジションです。" },
+                    { "Gain.PositionUnknownExplanation", "履歴から信頼できる形でポジションを特定できませんでした。" },
+                    { "Gain.ActionFoldExplanation", "Fold: ハンドを放棄しました。損失が大きい場合、直前の call や遅い fold を確認してください。" },
+                    { "Gain.ActionCheckExplanation", "Check: bet せずに回しました。pot control なのか、主導権を渡しすぎているのかを見ます。" },
+                    { "Gain.ActionCallExplanation", "Call: bet に支払いました。マイナスなら bluff-catch や高くついた draw call を確認してください。" },
+                    { "Gain.ActionBetExplanation", "Bet: その street で先に打ちました。value、protection、自分から始めた bluff を測ります。" },
+                    { "Gain.ActionRaiseExplanation", "Raise: 相手の bet に上乗せしました。pressure、強い value、semi-bluff を測ります。" },
+                    { "Gain.ActionAllInExplanation", "All-in: すべてのチップを入れました。最も分散が大きい区分です。" },
+                    { "Gain.ActionNoneExplanation", "アクションなし: ヒーローの重要なアクションが検出されなかったハンドです。" },
+                    { "Gain.ActionUnknownExplanation", "履歴から正規化されたアクションです。" },
+                    { "Gain.BluffWonExplanation", "成功した bluff: showdown なしで pot を獲得した攻撃です。" },
+                    { "Gain.BluffLostExplanation", "失敗した bluff: 弱い手、または強い組み合わせなしの攻撃がマイナスで終わったものです。" },
+                    { "Gain.ValueAggressionExplanation", "Value/aggression: 結果や役から見て純粋な bluff ではなさそうな bet や raise です。" },
+                    { "Gain.NonAggressiveExplanation", "非攻撃的: 最後のアクションが fold、check、call だったハンドです。" },
+                    { "Gain.BluffUnknownExplanation", "攻撃性の近似分類です。" },
+                    { "Gain.NoFormat", "フォーマットなし" },
+                    { "Gain.NoBlinds", "ブラインドなし" },
+                    { "Gain.Label.Preflop", "Preflop" },
+                    { "Gain.Label.Flop", "Flop" },
+                    { "Gain.Label.Turn", "Turn" },
+                    { "Gain.Label.River", "River" },
+                    { "Gain.Label.NoAction", "アクションなし" },
+                    { "Gain.Label.BluffWon", "成功した bluff" },
+                    { "Gain.Label.BluffLost", "失敗した bluff" },
+                    { "Gain.Label.ValueAggression", "Value/aggression" },
+                    { "Gain.Label.NonAggressive", "非攻撃的" },
+                    { "Drive.Connected", "Google Drive に接続しました。appDataFolder 内の非表示バックアップ: {0}" },
+                    { "Drive.ConnectedAs", "{0} として Google Drive に接続しました。非表示バックアップ: {1}" },
+                    { "Drive.NoLocalDb", "aph.db はまだ存在しません。先にハンドを読み込むか分析してローカルバックアップを作成してください。" },
+                    { "Drive.UploadFailed", "Drive にアップロードできませんでした: {0}" },
+                    { "Drive.Uploaded", "aph.db バックアップを Google Drive にアップロードしました。" },
+                    { "Drive.NotFound", "APH Drive に aph.db が見つかりませんでした。" },
+                    { "Drive.DownloadFailed", "Drive からダウンロードできませんでした: {0}" },
+                    { "Drive.Restored", "Google Drive から aph.db を復元しました。APH を再起動してきれいに読み込み直してください。" }
+                },
+                "Русский" => new[,]
+                {
+                    { "Login.Title", "APH - Доступ" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Безопасный доступ через Google Drive и локальную блокировку" },
+                    { "Login.GoogleStep", "1. Войдите через Google" },
+                    { "Login.GoogleDesc", "APH использует ваш личный Google Drive для сохранения и восстановления aph.db." },
+                    { "Login.GoogleButton", "Войти через Google" },
+                    { "Login.LocalLockStep", "2. Локальная блокировка" },
+                    { "Login.LocalLockDesc", "После Google APH запросит локальный пароль на этом ПК." },
+                    { "Login.Password", "Пароль" },
+                    { "Login.ConfirmPassword", "Подтвердите пароль" },
+                    { "Login.Enter", "Войти в APH" },
+                    { "Login.CreatePasswordEnter", "Создать пароль и войти" },
+                    { "Login.UnlockStep", "2. Разблокировать этот ПК" },
+                    { "Login.CreateLockStep", "2. Создать локальную блокировку" },
+                    { "Login.GoogleValidatedHelp", "Google уже подтвержден; введите локальный пароль этого ПК." },
+                    { "Login.LocalPasswordHelp", "Этот пароль защищает APH, если кто-то откроет ваш компьютер." },
+                    { "Login.GoogleReady", "Готово к подключению Google." },
+                    { "Login.MissingClientSecret", "Не найден google_client_secret.json в {0}." },
+                    { "Login.OpeningGoogle", "Открываю авторизацию Google..." },
+                    { "Login.GoogleFailed", "Ошибка Google: {0}" },
+                    { "Login.MustSignInGoogle", "Сначала войдите через Google." },
+                    { "Login.BadLocalPassword", "Неверный локальный пароль." },
+                    { "Login.MinPassword", "Используйте минимум 8 символов." },
+                    { "Login.ConfirmMismatch", "Подтверждение не совпадает." },
+                    { "Login.AccountChanged", "Аккаунт Google изменен с {0} на {1}. Предыдущая локальная DB удалена." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Сессия Google сохранена. Введите локальный пароль для входа." },
+                    { "Unlock.Enter", "Войти" },
+                    { "Settings.ReportSecurity", "Защита отчетов" },
+                    { "Settings.ReportSecurityDesc", "Сохраняет закодированный пароль для защиты будущих отчетов." },
+                    { "Settings.ProtectReports", "Применять пароль к будущим отчетам" },
+                    { "Settings.CurrentPassword", "Текущий пароль" },
+                    { "Settings.NewPassword", "Новый пароль" },
+                    { "Settings.ConfirmNewPassword", "Подтвердите новый пароль" },
+                    { "Settings.SavePassword", "Сохранить пароль" },
+                    { "Settings.ReportsFolder", "Папка отчетов" },
+                    { "Settings.ReportsFolderDesc", "Приложение сохраняет и загружает сессии из этой папки." },
+                    { "Settings.ReportsFolderLabel", "Папка отчетов" },
+                    { "Settings.ConnectedAccount", "Подключенный аккаунт" },
+                    { "Settings.NoAccountDetected", "Аккаунт не обнаружен" },
+                    { "Settings.UploadBackup", "Загрузить резервную копию" },
+                    { "Settings.UploadBackupDesc", "Сохраняет aph.db в Drive" },
+                    { "Settings.RestoreDrive", "Восстановить из Drive" },
+                    { "Settings.RestoreDriveDesc", "Переносит DB на этот ПК" },
+                    { "Settings.ReportPasswordConfigured", "Пароль отчетов настроен." },
+                    { "Settings.ReportPasswordMissing", "Пароль отчетов не настроен." },
+                    { "Settings.DriveReady", "Drive готов. Загрузка резервной копии сохраняет aph.db в подключенном аккаунте." },
+                    { "Settings.UploadingDrive", "Загружаю aph.db в Google Drive..." },
+                    { "Settings.RestoringDrive", "Восстанавливаю aph.db из Google Drive..." },
+                    { "Settings.RestoreConfirm", "Это заменит локальную aph.db копией из Google Drive. Перед заменой будет создан .bak. Продолжить?" },
+                    { "Settings.RestoreTitle", "Восстановить резервную копию" },
+                    { "Settings.GoogleOAuthHint", "{0}. Создайте OAuth Desktop в Google Cloud и сохраните JSON там." },
+                    { "Settings.GoogleDriveFailed", "Ошибка Google Drive: {0}" },
+                    { "Settings.SelectReportsFolder", "Выберите папку отчетов" },
+                    { "Settings.ReportsFolderSaved", "Папка отчетов сохранена." },
+                    { "Settings.SavePasswordFirst", "Сначала сохраните новый пароль отчетов." },
+                    { "Settings.ChangeCanceled", "Изменение отменено или пароль неверный." },
+                    { "Settings.ReportsEnabled", "Защита отчетов включена." },
+                    { "Settings.ReportsDisabled", "Защита отчетов отключена." },
+                    { "Settings.CurrentPasswordMismatch", "Текущий пароль не совпадает." },
+                    { "Settings.WriteNewPassword", "Введите новый пароль." },
+                    { "Settings.ReportProtectionOff", "Защита отчетов отключена." },
+                    { "Settings.ReportPasswordSaved", "Пароль отчетов сохранен в закодированном виде." },
+                    { "Main.RailHeroProfile", "Профиль героя" },
+                    { "Main.RailHeroProfileDesc", "Полная статистика и чтение игрока." },
+                    { "Main.RailRealTime", "Реальное время" },
+                    { "Main.RailRealTimeDesc", "Живое отслеживание столов." },
+                    { "Main.RailTables", "Анализ столов" },
+                    { "Main.RailTablesDesc", "Выигрыши и KPI по столам." },
+                    { "Main.RailGain", "Прибыль" },
+                    { "Main.RailGainDesc", "Подробные выигрыши и потери." },
+                    { "Main.RailMyTables", "Мои таблицы" },
+                    { "Main.RailMyTablesDesc", "Карты действий по стартовой руке." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Недавние соперники и bb против них." },
+                    { "Main.RailLeaks", "Анализ leaks" },
+                    { "Main.RailLeaksDesc", "Поиск повторяющихся паттернов потерь." },
+                    { "Main.RailSessions", "Сессии" },
+                    { "Main.RailSessionsDesc", "Сохраненные отчеты и сравнения." },
+                    { "Main.RailLiteMode", "Lite mode" },
+                    { "Main.RailLiteModeDesc", "Предыдущая компактная визуальная версия." },
+                    { "Main.RailRooms", "Пути румов" },
+                    { "Main.RailRoomsDesc", "Настройка папок рук по покер-румам." },
+                    { "Main.RailLogout", "Выйти" },
+                    { "Main.RailLogoutDesc", "Очистить этот ПК и вернуться к входу." },
+                    { "Main.LastSession", "Последняя сессия:" },
+                    { "Main.ActiveRoom", "Активный рум" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "ВСЕГО СТОЛОВ" },
+                    { "Main.TotalGain", "ОБЩАЯ ПРИБЫЛЬ" },
+                    { "Main.AccumulatedGain", "НАКОПЛЕННАЯ ПРИБЫЛЬ" },
+                    { "Main.BestRecentTen", "ЛУЧШИЙ СТОЛ ЗА ПОСЛЕДНИЕ 10" },
+                    { "Main.WorstRecentTen", "ХУДШИЙ СТОЛ ЗА ПОСЛЕДНИЕ 10" },
+                    { "Main.SessionFlow", "ПОТОК СЕССИИ" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "Нет данных" },
+                    { "Main.LoadHandsForTags", "Загрузите руки, чтобы создать теги профиля." },
+                    { "Main.GainFolderRequired", "Сначала выберите папку, чтобы загрузить Прибыль." },
+                    { "Main.SessionsOpened", "Сохраненные сессии открыты." },
+                    { "Main.NoDataForRoom", "Нет загруженных данных для {0}." },
+                    { "Main.LogoutTitle", "Выход из APH" },
+                    { "Main.LogoutConfirm", "При выходе локальные данные APH на этом ПК будут удалены, включая локальную DB, токен Google и локальный пароль. Вы сможете восстановить информацию, снова войдя через Google и восстановив копию Drive. Вы уверены?" },
+                    { "Gain.Title", "APH - Прибыль" },
+                    { "Gain.Header", "ПРИБЫЛЬ" },
+                    { "Gain.TotalGain", "ОБЩАЯ ПРИБЫЛЬ" },
+                    { "Gain.AveragePerHand", "СРЕДНЕЕ ЗА РУКУ" },
+                    { "Gain.BestCut", "ЛУЧШИЙ СРЕЗ" },
+                    { "Gain.WorstCut", "ХУДШИЙ СРЕЗ" },
+                    { "Gain.EvolutionByTables", "ДИНАМИКА ПО СТОЛАМ" },
+                    { "Gain.AxisHint", "Дата (X) - Фишки (Y) - средняя линия включена  " },
+                    { "Gain.Street", "Street" },
+                    { "Gain.Position", "Позиция" },
+                    { "Gain.Action", "Действие" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Стол" },
+                    { "Gain.Format", "Формат" },
+                    { "Gain.Blinds", "Блайнды" },
+                    { "Gain.ByStreet", "ПРИБЫЛЬ ПО STREET" },
+                    { "Gain.BarHint", "Каждый столбец показывает итог; наведите для среднего и рук" },
+                    { "Gain.Reading", "ЧТЕНИЕ" },
+                    { "Gain.AnalyzedHands", "Проанализировано рук: {0}" },
+                    { "Gain.NoData", "Нет данных" },
+                    { "Gain.TooltipResult", "Результат" },
+                    { "Gain.TooltipTotal", "Накоплено" },
+                    { "Gain.TooltipHands", "{0} рук" },
+                    { "Gain.TooltipApproxBb", "Примерно BB: {0} bb" },
+                    { "Drive.Connected", "Google Drive подключен. Скрытая резервная копия в appDataFolder: {0}" },
+                    { "Drive.ConnectedAs", "Google Drive подключен как {0}. Скрытая копия: {1}" },
+                    { "Drive.NoLocalDb", "aph.db еще не существует. Сначала загрузите или проанализируйте руки, чтобы создать локальную копию." },
+                    { "Drive.UploadFailed", "Не удалось загрузить в Drive: {0}" },
+                    { "Drive.Uploaded", "Резервная копия aph.db загружена в Google Drive." },
+                    { "Drive.NotFound", "aph.db не найдена в Drive APH." },
+                    { "Drive.DownloadFailed", "Не удалось скачать из Drive: {0}" },
+                    { "Drive.Restored", "aph.db восстановлена из Google Drive. Перезапустите APH для чистой перезагрузки." }
+                },
+                _ => new[,]
+                {
+                    { "Login.Title", "APH - Acceso" },
+                    { "Login.AppName", "APH - Analyzer Poker Hands" },
+                    { "Login.Subtitle", "Acceso seguro con Google Drive y bloqueo local" },
+                    { "Login.GoogleStep", "1. Inicia sesion con Google" },
+                    { "Login.GoogleDesc", "APH usa tu Google Drive privado para guardar y restaurar aph.db." },
+                    { "Login.GoogleButton", "Iniciar sesion con Google" },
+                    { "Login.LocalLockStep", "2. Bloqueo local" },
+                    { "Login.LocalLockDesc", "Despues de Google, APH pide una contrasena local para esta PC." },
+                    { "Login.Password", "Contrasena" },
+                    { "Login.ConfirmPassword", "Confirmar contrasena" },
+                    { "Login.Enter", "Entrar a APH" },
+                    { "Login.CreatePasswordEnter", "Crear contrasena y entrar" },
+                    { "Login.UnlockStep", "2. Desbloquea esta PC" },
+                    { "Login.CreateLockStep", "2. Crea bloqueo local" },
+                    { "Login.GoogleValidatedHelp", "Google ya queda validado; escribe la contrasena local de esta PC." },
+                    { "Login.LocalPasswordHelp", "Esta contrasena protege APH si alguien abre tu computadora." },
+                    { "Login.GoogleReady", "Listo para conectar con Google." },
+                    { "Login.MissingClientSecret", "Falta google_client_secret.json en {0}." },
+                    { "Login.OpeningGoogle", "Abriendo autorizacion de Google..." },
+                    { "Login.GoogleFailed", "Google fallo: {0}" },
+                    { "Login.MustSignInGoogle", "Primero inicia sesion con Google." },
+                    { "Login.BadLocalPassword", "Contrasena local incorrecta." },
+                    { "Login.MinPassword", "Usa minimo 8 caracteres." },
+                    { "Login.ConfirmMismatch", "La confirmacion no coincide." },
+                    { "Login.AccountChanged", "Cuenta Google cambiada de {0} a {1}. DB local anterior borrada." },
+                    { "Unlock.Title", "APH" },
+                    { "Unlock.Help", "Sesion Google guardada. Escribe tu contrasena local para entrar." },
+                    { "Unlock.Enter", "Entrar" },
+                    { "Settings.ReportSecurity", "Seguridad de reportes" },
+                    { "Settings.ReportSecurityDesc", "Guarda una contrasena codificada para proteger informes futuros." },
+                    { "Settings.ProtectReports", "Aplicar contrasena a reportes futuros" },
+                    { "Settings.CurrentPassword", "Contrasena actual" },
+                    { "Settings.NewPassword", "Nueva contrasena" },
+                    { "Settings.ConfirmNewPassword", "Confirmar nueva contrasena" },
+                    { "Settings.SavePassword", "Guardar contrasena" },
+                    { "Settings.ReportsFolder", "Ubicacion de reportes" },
+                    { "Settings.ReportsFolderDesc", "La app guarda y carga las sesiones desde esta carpeta." },
+                    { "Settings.ReportsFolderLabel", "Carpeta de reportes" },
+                    { "Settings.ConnectedAccount", "Cuenta conectada" },
+                    { "Settings.NoAccountDetected", "Sin cuenta detectada" },
+                    { "Settings.UploadBackup", "Subir respaldo" },
+                    { "Settings.UploadBackupDesc", "Guarda aph.db en Drive" },
+                    { "Settings.RestoreDrive", "Restaurar Drive" },
+                    { "Settings.RestoreDriveDesc", "Trae la DB a esta PC" },
+                    { "Settings.ReportPasswordConfigured", "Contrasena de reportes configurada." },
+                    { "Settings.ReportPasswordMissing", "Sin contrasena de reportes configurada." },
+                    { "Settings.DriveReady", "Drive listo. Subir respaldo guarda aph.db en la cuenta conectada." },
+                    { "Settings.UploadingDrive", "Subiendo aph.db a Google Drive..." },
+                    { "Settings.RestoringDrive", "Restaurando aph.db desde Google Drive..." },
+                    { "Settings.RestoreConfirm", "Esto reemplazara la aph.db local con la copia de Google Drive. Se guardara un .bak antes de reemplazar. Continuar?" },
+                    { "Settings.RestoreTitle", "Restaurar respaldo" },
+                    { "Settings.GoogleOAuthHint", "{0}. Crea OAuth Desktop en Google Cloud y guarda el JSON ahi." },
+                    { "Settings.GoogleDriveFailed", "Google Drive fallo: {0}" },
+                    { "Settings.SelectReportsFolder", "Selecciona carpeta de reportes" },
+                    { "Settings.ReportsFolderSaved", "Carpeta de reportes guardada." },
+                    { "Settings.SavePasswordFirst", "Primero guarda una contrasena nueva para reportes." },
+                    { "Settings.ChangeCanceled", "Cambio cancelado o contrasena incorrecta." },
+                    { "Settings.ReportsEnabled", "Proteccion de reportes habilitada." },
+                    { "Settings.ReportsDisabled", "Proteccion de reportes deshabilitada." },
+                    { "Settings.CurrentPasswordMismatch", "La contrasena actual no coincide." },
+                    { "Settings.WriteNewPassword", "Escribe una nueva contrasena." },
+                    { "Settings.ReportProtectionOff", "Proteccion de reportes desactivada." },
+                    { "Settings.ReportPasswordSaved", "Contrasena de reportes guardada de forma codificada." },
+                    { "Main.RailHeroProfile", "Perfil del heroe" },
+                    { "Main.RailHeroProfileDesc", "Stats y lectura completa del jugador." },
+                    { "Main.RailRealTime", "Tiempo real" },
+                    { "Main.RailRealTimeDesc", "Seguimiento de mesas en vivo." },
+                    { "Main.RailTables", "Analisis por mesas" },
+                    { "Main.RailTablesDesc", "Ganancias y KPIs por mesa." },
+                    { "Main.RailGain", "Ganancia" },
+                    { "Main.RailGainDesc", "Ganancias y perdidas detalladas." },
+                    { "Main.RailMyTables", "Mis Tablas" },
+                    { "Main.RailMyTablesDesc", "Mapas de acciones por mano inicial." },
+                    { "Main.RailVillains", "Data Villans" },
+                    { "Main.RailVillainsDesc", "Rivales recientes y bb contra ellos." },
+                    { "Main.RailLeaks", "Analisis de leaks" },
+                    { "Main.RailLeaksDesc", "Encuentra patrones repetidos de perdida." },
+                    { "Main.RailSessions", "Sesiones" },
+                    { "Main.RailSessionsDesc", "Reportes guardados y comparaciones." },
+                    { "Main.RailLiteMode", "Modo lite" },
+                    { "Main.RailLiteModeDesc", "Version visual compacta anterior." },
+                    { "Main.RailRooms", "Rutas de salas" },
+                    { "Main.RailRoomsDesc", "Configura carpetas de manos por sala." },
+                    { "Main.RailLogout", "Log out" },
+                    { "Main.RailLogoutDesc", "Limpia esta PC y vuelve al login." },
+                    { "Main.LastSession", "Ultima sesion:" },
+                    { "Main.ActiveRoom", "Sala activa" },
+                    { "Main.PlayerIntel", "PLAYER INTEL" },
+                    { "Main.TotalTables", "TOTAL MESAS" },
+                    { "Main.TotalGain", "GANANCIA TOTAL" },
+                    { "Main.AccumulatedGain", "GANANCIAS ACUMULADAS" },
+                    { "Main.BestRecentTen", "MEJOR MESA ULTIMAS 10" },
+                    { "Main.WorstRecentTen", "PEOR MESA ULTIMAS 10" },
+                    { "Main.SessionFlow", "SESSION FLOW" },
+                    { "Main.BbTracker", "BB TRACKER" },
+                    { "Main.NoData", "Sin datos" },
+                    { "Main.LoadHandsForTags", "Carga manos para generar los tags del perfil." },
+                    { "Main.GainFolderRequired", "Selecciona una carpeta primero para cargar Ganancia." },
+                    { "Main.SessionsOpened", "Sesiones guardadas abiertas." },
+                    { "Main.NoDataForRoom", "Sin datos cargados para {0}." },
+                    { "Main.LogoutTitle", "Log out de APH" },
+                    { "Main.LogoutConfirm", "Al desconectarte se borraran los datos locales de APH en esta PC, incluyendo la DB local, el token de Google y la contrasena local. Podras recuperar tu informacion iniciando sesion nuevamente con Google y restaurando el respaldo de Drive. Estas seguro?" },
+                    { "Gain.Title", "APH - Ganancia" },
+                    { "Gain.Header", "GANANCIA" },
+                    { "Gain.TotalGain", "GANANCIA TOTAL" },
+                    { "Gain.AveragePerHand", "MEDIA POR MANO" },
+                    { "Gain.BestCut", "MEJOR CORTE" },
+                    { "Gain.WorstCut", "PEOR CORTE" },
+                    { "Gain.EvolutionByTables", "EVOLUCION POR MESAS" },
+                    { "Gain.AxisHint", "Fecha (X) - Fichas (Y) - linea media incluida  " },
+                    { "Gain.Street", "Calle" },
+                    { "Gain.Position", "Posicion" },
+                    { "Gain.Action", "Accion" },
+                    { "Gain.Bluff", "Bluff" },
+                    { "Gain.Table", "Mesa" },
+                    { "Gain.Format", "Formato" },
+                    { "Gain.Blinds", "Ciegas" },
+                    { "Gain.ByStreet", "GANANCIA POR CALLE" },
+                    { "Gain.BarHint", "Cada barra muestra total; pasa el mouse para media y manos" },
+                    { "Gain.Reading", "LECTURA" },
+                    { "Gain.AnalyzedHands", "{0} manos analizadas" },
+                    { "Gain.NoData", "Sin datos" },
+                    { "Gain.TooltipResult", "Resultado" },
+                    { "Gain.TooltipTotal", "Acumulado" },
+                    { "Gain.TooltipHands", "{0} manos" },
+                    { "Gain.TooltipApproxBb", "BB aprox: {0} bb" },
+                    { "Gain.ChipsUnit", "fichas" },
+                    { "Gain.PerHandValue", "{0}/mano" },
+                    { "Gain.Average", "Media" },
+                    { "Gain.AverageLineLabel", "Media {0}" },
+                    { "Gain.PositiveTrend", "Hasta ahora aporta ganancia." },
+                    { "Gain.NegativeTrend", "Hasta ahora esta drenando bb." },
+                    { "Gain.FormatExplanation", "Formato de mesa detectado desde el historial." },
+                    { "Gain.BlindsExplanation", "Nivel de ciegas detectado desde la mesa, como 100/200." },
+                    { "Gain.StreetPreflopExplanation", "Manos que se resolvieron o tuvieron tu ultima decision antes del flop." },
+                    { "Gain.StreetFlopExplanation", "Manos donde tu ultima decision fue en flop; mide c-bets, calls y folds tempranos." },
+                    { "Gain.StreetTurnExplanation", "Manos donde seguiste hasta turn; suele revelar segundos barrels y calls caros." },
+                    { "Gain.StreetRiverExplanation", "Manos decididas en river; aqui pesan value bets, bluffs finales y hero calls." },
+                    { "Gain.StreetUnknownExplanation", "Corte de calle detectado desde el historial." },
+                    { "Gain.PositionButtonExplanation", "Boton: zona de robo y maxima informacion postflop." },
+                    { "Gain.PositionSbExplanation", "Small blind: juegas fuera de posicion y suele ser una fuga natural." },
+                    { "Gain.PositionBbExplanation", "Big blind: mezcla defensa obligada, botes limpeados y calls amplios." },
+                    { "Gain.PositionUtgExplanation", "UTG: rango temprano; deberia ser mas fuerte y estable." },
+                    { "Gain.PositionMpExplanation", "MP: posicion media; revisa aperturas y calls contra early." },
+                    { "Gain.PositionHjExplanation", "Hijack: empieza la presion de robo, pero aun hay jugadores por hablar." },
+                    { "Gain.PositionCoExplanation", "Cutoff: posicion de robo fuerte antes del boton." },
+                    { "Gain.PositionUnknownExplanation", "Posicion no identificada de forma confiable en el historial." },
+                    { "Gain.ActionFoldExplanation", "Fold: abandonaste la mano; si pierde demasiado, revisa calls previos o folds tardios." },
+                    { "Gain.ActionCheckExplanation", "Check: pasaste sin apostar; ayuda a ver si estas controlando bote o cediendo demasiada iniciativa." },
+                    { "Gain.ActionCallExplanation", "Call: pagaste una apuesta; si esta negativo, revisa bluff-catches y draws pagados caro." },
+                    { "Gain.ActionBetExplanation", "Bet: apostaste primero en la calle; mide valor, proteccion y bluffs iniciados por ti." },
+                    { "Gain.ActionRaiseExplanation", "Raise: resubiste una apuesta; mide presion, value fuerte y semi-bluffs." },
+                    { "Gain.ActionAllInExplanation", "All-in: pusiste todas las fichas; es el corte de mayor varianza." },
+                    { "Gain.ActionNoneExplanation", "Sin accion: mano detectada sin accion relevante del heroe." },
+                    { "Gain.ActionUnknownExplanation", "Accion normalizada desde el historial." },
+                    { "Gain.BluffWonExplanation", "Bluff ganado: agresion que cobro el bote sin showdown." },
+                    { "Gain.BluffLostExplanation", "Bluff perdido: agresion con mano debil o sin combinacion fuerte que termino negativa." },
+                    { "Gain.ValueAggressionExplanation", "Valor/agresion: apuestas o raises que no parecen bluff puro por el resultado o combinacion." },
+                    { "Gain.NonAggressiveExplanation", "No agresivo: manos donde tu ultima accion fue fold, check o call." },
+                    { "Gain.BluffUnknownExplanation", "Clasificacion aproximada de agresion." },
+                    { "Gain.NoFormat", "Sin formato" },
+                    { "Gain.NoBlinds", "Sin ciegas" },
+                    { "Gain.Label.Preflop", "Preflop" },
+                    { "Gain.Label.Flop", "Flop" },
+                    { "Gain.Label.Turn", "Turn" },
+                    { "Gain.Label.River", "River" },
+                    { "Gain.Label.NoAction", "Sin accion" },
+                    { "Gain.Label.BluffWon", "Bluff ganado" },
+                    { "Gain.Label.BluffLost", "Bluff perdido" },
+                    { "Gain.Label.ValueAggression", "Valor/agresion" },
+                    { "Gain.Label.NonAggressive", "No agresivo" },
+                    { "Drive.Connected", "Google Drive conectado. Respaldo oculto en appDataFolder: {0}" },
+                    { "Drive.ConnectedAs", "Google Drive conectado como {0}. Respaldo oculto: {1}" },
+                    { "Drive.NoLocalDb", "Aun no existe aph.db. Carga o analiza manos primero para crear el respaldo local." },
+                    { "Drive.UploadFailed", "No se pudo subir a Drive: {0}" },
+                    { "Drive.Uploaded", "Respaldo aph.db subido a Google Drive." },
+                    { "Drive.NotFound", "No encontre aph.db en el Drive de APH." },
+                    { "Drive.DownloadFailed", "No se pudo descargar de Drive: {0}" },
+                    { "Drive.Restored", "Base aph.db restaurada desde Google Drive. Reinicia APH para recargar todo limpio." }
+                }
+            };
+
+            for (var i = 0; i < entries.GetLength(0); i++)
+                dict[entries[i, 0]] = entries[i, 1];
+
+            if (language == "English")
+            {
+                dict["Gain.ByPosition"] = "GAIN BY POSITION";
+                dict["Gain.ByAction"] = "GAIN BY ACTION";
+                dict["Gain.ByBluff"] = "GAIN BY BLUFF";
+                dict["Gain.ByTable"] = "GAIN BY TABLE";
+                dict["Gain.ByFormat"] = "GAIN BY FORMAT";
+                dict["Gain.ByBlinds"] = "GAIN BY BLINDS";
+                dict["Gain.ReadingByPosition"] = "READING BY POSITION";
+                dict["Gain.ReadingByAction"] = "READING BY ACTION";
+                dict["Gain.ReadingByBluff"] = "BLUFF READING";
+                dict["Gain.ReadingByTable"] = "READING BY TABLE";
+                dict["Gain.ReadingByFormat"] = "READING BY FORMAT";
+                dict["Gain.ReadingByBlinds"] = "READING BY BLINDS";
+                dict["Gain.SmallSample"] = "Small sample: treat it as a clue, not a verdict.";
+                dict["Gain.EnoughSample"] = "Enough sample to start reviewing patterns.";
+                dict["Gain.TableExplanation"] = "Specific table: shows where the real gain or loss was concentrated.";
+                dict["Gain.PositionModeDesc"] = "Groups gain by hero seat to detect where value is printed and where it leaks away.";
+                dict["Gain.ActionModeDesc"] = "Groups by the last important hero action in the hand: fold, check, call, bet, raise or all-in.";
+                dict["Gain.BluffModeDesc"] = "Separates aggression without showdown, weak-hand aggression and passive hands to read bluff quality.";
+                dict["Gain.TableModeDesc"] = "Each bar is a full table. This cut shows exactly where you won or lost the most chips.";
+                dict["Gain.FormatModeDesc"] = "Groups by detected format: 6-max, 3-max or other formats.";
+                dict["Gain.BlindsModeDesc"] = "Groups by blind level, for example 100/200 or 250/500, to detect where your game performs best.";
+                dict["Gain.StreetModeDesc"] = "Groups by the last street where the hero made a decision: preflop, flop, turn or river.";
+                dict["Gain.PositionInsight"] = "Helps find whether gain comes from stealing, defending, playing blinds or late positions.";
+                dict["Gain.ActionInsight"] = "The action is the last strong decision detected in the hand. It shows how much you win or lose when ending by folding, calling, betting or raising.";
+                dict["Gain.BluffInsight"] = "Approximate reading from the history: it does not replace manual review, but separates profitable pressure from aggression that costs bb.";
+                dict["Gain.TableInsight"] = "This cut shows concrete tables. If one bar dominates, that table explains much of the result.";
+                dict["Gain.FormatInsight"] = "This cut compares table formats to find where your game adapts best.";
+                dict["Gain.BlindsInsight"] = "This cut compares blind levels to detect where the real result performs best.";
+                dict["Gain.StreetInsight"] = "The street indicates where the hand was decided for the hero. If one street is very negative, review big pots and repeated decisions there.";
+                dict["Gain.GroupDetail"] = "{0} hands | average {1}/hand";
+                dict["Rooms.Title"] = "APH - Room paths";
+                dict["Rooms.Header"] = "Poker room paths";
+                dict["Rooms.Subtitle"] = "Choose where each room saves histories. Use Load to refresh the dashboard with that path.";
+                dict["Rooms.SavedLocally"] = "Paths are saved locally in APH settings.";
+                dict["Rooms.Browse"] = "Browse";
+                dict["Rooms.Load"] = "Load";
+                dict["Rooms.Close"] = "Close";
+                dict["Rooms.SelectFolderFor"] = "Select folder for {0}";
+                dict["Rooms.SavedFor"] = "{0} path saved.";
+                dict["Rooms.SelectValidFolder"] = "Select a valid folder for {0}.";
+                dict["Rooms.LocalHistories"] = "Local hand history folder.";
+                dict["Rooms.LocalExports"] = "Local history or export folder.";
+                dict["Common.Refresh"] = "Refresh";
+                dict["Common.Start"] = "Start";
+                dict["Common.Close"] = "Close";
+                dict["Common.Duration"] = "Duration";
+                dict["Common.File"] = "File";
+                dict["Common.OpenFolder"] = "Open folder";
+                dict["Common.SessionNumber"] = "Session no.";
+                dict["Sessions.NoReports"] = "No saved reports yet.";
+                dict["Sessions.ReportsFound"] = "{0} reports found. Double-click to open a PDF.";
+            }
+            else if (language == "Francais")
+            {
+                dict["Gain.ByPosition"] = "GAIN PAR POSITION";
+                dict["Gain.ByAction"] = "GAIN PAR ACTION";
+                dict["Gain.ByBluff"] = "GAIN PAR BLUFF";
+                dict["Gain.ByTable"] = "GAIN PAR TABLE";
+                dict["Gain.ByFormat"] = "GAIN PAR FORMAT";
+                dict["Gain.ByBlinds"] = "GAIN PAR BLINDS";
+                dict["Gain.ReadingByPosition"] = "LECTURE PAR POSITION";
+                dict["Gain.ReadingByAction"] = "LECTURE PAR ACTION";
+                dict["Gain.ReadingByBluff"] = "LECTURE DE BLUFF";
+                dict["Gain.ReadingByTable"] = "LECTURE PAR TABLE";
+                dict["Gain.ReadingByFormat"] = "LECTURE PAR FORMAT";
+                dict["Gain.ReadingByBlinds"] = "LECTURE PAR BLINDS";
+                dict["Gain.SmallSample"] = "Petit echantillon : a prendre comme indice, pas comme verdict.";
+                dict["Gain.EnoughSample"] = "Echantillon suffisant pour commencer a revoir les patterns.";
+                dict["Gain.TableExplanation"] = "Table specifique : montre ou le gain ou la perte reelle s'est concentre.";
+                dict["Gain.PositionModeDesc"] = "Regroupe le gain par siege du heros pour voir ou la valeur se cree et ou elle fuit.";
+                dict["Gain.ActionModeDesc"] = "Regroupe par derniere action importante du heros dans la main : fold, check, call, bet, raise ou all-in.";
+                dict["Gain.BluffModeDesc"] = "Separe l'agression sans showdown, l'agression avec main faible et les mains passives pour lire la qualite du bluff.";
+                dict["Gain.TableModeDesc"] = "Chaque barre est une table complete. Ce decoupage montre ou vous avez gagne ou perdu le plus de jetons.";
+                dict["Gain.FormatModeDesc"] = "Regroupe par format detecte : 6-max, 3-max ou autres formats.";
+                dict["Gain.BlindsModeDesc"] = "Regroupe par niveau de blinds, par exemple 100/200 ou 250/500.";
+                dict["Gain.StreetModeDesc"] = "Regroupe par derniere street ou le heros a pris une decision : preflop, flop, turn ou river.";
+                dict["Gain.PositionInsight"] = "Aide a voir si le gain vient du vol, de la defense, des blinds ou des positions tardives.";
+                dict["Gain.ActionInsight"] = "L'action est la derniere decision forte detectee dans la main. Elle montre combien vous gagnez ou perdez en finissant par fold, call, bet ou raise.";
+                dict["Gain.BluffInsight"] = "Lecture approximative depuis l'historique : elle ne remplace pas la revision manuelle, mais separe la pression rentable de l'agression couteuse en bb.";
+                dict["Gain.TableInsight"] = "Ce decoupage montre des tables concretes. Si une barre domine, cette table explique une grande partie du resultat.";
+                dict["Gain.FormatInsight"] = "Ce decoupage compare les formats pour trouver ou votre jeu s'adapte le mieux.";
+                dict["Gain.BlindsInsight"] = "Ce decoupage compare les niveaux de blinds pour voir ou le resultat reel accompagne le mieux.";
+                dict["Gain.StreetInsight"] = "La street indique ou la main s'est decidee pour le heros. Si une street est tres negative, revoyez les gros pots et decisions repetees.";
+                dict["Gain.GroupDetail"] = "{0} mains | moyenne {1}/main";
+                dict["Rooms.Title"] = "APH - Chemins des rooms";
+                dict["Rooms.Header"] = "Chemins des rooms de poker";
+                dict["Rooms.Subtitle"] = "Choisissez ou chaque room enregistre les historiques. Utilisez Charger pour actualiser le dashboard avec ce chemin.";
+                dict["Rooms.SavedLocally"] = "Les chemins sont enregistres localement dans la configuration APH.";
+                dict["Rooms.Browse"] = "Parcourir";
+                dict["Rooms.Load"] = "Charger";
+                dict["Rooms.Close"] = "Fermer";
+                dict["Rooms.SelectFolderFor"] = "Selectionner le dossier pour {0}";
+                dict["Rooms.SavedFor"] = "Chemin de {0} enregistre.";
+                dict["Rooms.SelectValidFolder"] = "Selectionnez un dossier valide pour {0}.";
+                dict["Rooms.LocalHistories"] = "Dossier local des historiques de mains.";
+                dict["Rooms.LocalExports"] = "Dossier local des historiques ou exportations.";
+                dict["Common.Refresh"] = "Actualiser";
+                dict["Common.Start"] = "Debut";
+                dict["Common.Close"] = "Cloture";
+                dict["Common.Duration"] = "Duree";
+                dict["Common.File"] = "Fichier";
+                dict["Common.OpenFolder"] = "Ouvrir le dossier";
+                dict["Common.SessionNumber"] = "No. session";
+                dict["Sessions.NoReports"] = "Aucun rapport enregistre pour le moment.";
+                dict["Sessions.ReportsFound"] = "{0} rapports trouves. Double-cliquez pour ouvrir un PDF.";
+            }
+            else if (language == "Portugues")
+            {
+                dict["Gain.ByPosition"] = "GANHO POR POSICAO";
+                dict["Gain.ByAction"] = "GANHO POR ACAO";
+                dict["Gain.ByBluff"] = "GANHO POR BLUFF";
+                dict["Gain.ByTable"] = "GANHO POR MESA";
+                dict["Gain.ByFormat"] = "GANHO POR FORMATO";
+                dict["Gain.ByBlinds"] = "GANHO POR BLINDS";
+                dict["Gain.ReadingByPosition"] = "LEITURA POR POSICAO";
+                dict["Gain.ReadingByAction"] = "LEITURA POR ACAO";
+                dict["Gain.ReadingByBluff"] = "LEITURA DE BLUFF";
+                dict["Gain.ReadingByTable"] = "LEITURA POR MESA";
+                dict["Gain.ReadingByFormat"] = "LEITURA POR FORMATO";
+                dict["Gain.ReadingByBlinds"] = "LEITURA POR BLINDS";
+                dict["Gain.SmallSample"] = "Amostra pequena: use como pista, nao como sentenca.";
+                dict["Gain.EnoughSample"] = "Amostra suficiente para comecar a revisar padroes.";
+                dict["Gain.TableExplanation"] = "Mesa especifica: mostra onde o ganho ou perda real se concentrou.";
+                dict["Gain.PositionModeDesc"] = "Agrupa o ganho por assento do heroi para detectar onde cria valor e onde ele escapa.";
+                dict["Gain.ActionModeDesc"] = "Agrupa pela ultima acao importante do heroi na mao: fold, check, call, bet, raise ou all-in.";
+                dict["Gain.BluffModeDesc"] = "Separa agressao sem showdown, agressao com mao fraca e maos passivas para ler a qualidade do bluff.";
+                dict["Gain.TableModeDesc"] = "Cada barra e uma mesa completa. Este corte mostra onde voce ganhou ou perdeu mais fichas.";
+                dict["Gain.FormatModeDesc"] = "Agrupa por formato detectado: 6-max, 3-max ou outros formatos.";
+                dict["Gain.BlindsModeDesc"] = "Agrupa por nivel de blinds, por exemplo 100/200 ou 250/500.";
+                dict["Gain.StreetModeDesc"] = "Agrupa pela ultima street onde o heroi tomou uma decisao: preflop, flop, turn ou river.";
+                dict["Gain.PositionInsight"] = "Ajuda a entender se o ganho vem de roubar, defender, jogar blinds ou posicoes tardias.";
+                dict["Gain.ActionInsight"] = "A acao e a ultima decisao forte detectada na mao. Mostra quanto voce ganha ou perde quando termina foldando, pagando, apostando ou reaumentando.";
+                dict["Gain.BluffInsight"] = "Leitura aproximada pelo historico: nao substitui revisao manual, mas separa pressao rentavel de agressao que custa bb.";
+                dict["Gain.TableInsight"] = "Este corte mostra mesas concretas. Se uma barra domina, aquela mesa explica boa parte do resultado.";
+                dict["Gain.FormatInsight"] = "Este corte compara formatos para encontrar onde seu jogo se adapta melhor.";
+                dict["Gain.BlindsInsight"] = "Este corte compara niveis de blinds para detectar onde o resultado real acompanha melhor.";
+                dict["Gain.StreetInsight"] = "A street indica onde a mao foi decidida para o heroi. Se uma street sai muito negativa, revise potes grandes e decisoes repetidas.";
+                dict["Gain.GroupDetail"] = "{0} maos | media {1}/mao";
+                dict["Rooms.Title"] = "APH - Rotas das salas";
+                dict["Rooms.Header"] = "Rotas das salas de poker";
+                dict["Rooms.Subtitle"] = "Escolha onde cada sala salva historicos. Use Carregar para atualizar o dashboard com essa rota.";
+                dict["Rooms.SavedLocally"] = "As rotas sao salvas localmente na configuracao do APH.";
+                dict["Rooms.Browse"] = "Buscar";
+                dict["Rooms.Load"] = "Carregar";
+                dict["Rooms.Close"] = "Fechar";
+                dict["Rooms.SelectFolderFor"] = "Selecione a pasta de {0}";
+                dict["Rooms.SavedFor"] = "Rota de {0} salva.";
+                dict["Rooms.SelectValidFolder"] = "Selecione uma pasta valida para {0}.";
+                dict["Rooms.LocalHistories"] = "Pasta local de historicos de maos.";
+                dict["Rooms.LocalExports"] = "Pasta local de historicos ou exportacoes.";
+                dict["Common.Refresh"] = "Atualizar";
+                dict["Common.Start"] = "Inicio";
+                dict["Common.Close"] = "Fechamento";
+                dict["Common.Duration"] = "Duracao";
+                dict["Common.File"] = "Arquivo";
+                dict["Common.OpenFolder"] = "Abrir pasta";
+                dict["Common.SessionNumber"] = "No. sessao";
+                dict["Sessions.NoReports"] = "Ainda nao ha relatorios salvos.";
+                dict["Sessions.ReportsFound"] = "{0} relatorios encontrados. Clique duas vezes para abrir um PDF.";
+            }
+            else if (language == "Deutsch")
+            {
+                dict["Gain.ByPosition"] = "GEWINN NACH POSITION";
+                dict["Gain.ByAction"] = "GEWINN NACH AKTION";
+                dict["Gain.ByBluff"] = "GEWINN NACH BLUFF";
+                dict["Gain.ByTable"] = "GEWINN NACH TISCH";
+                dict["Gain.ByFormat"] = "GEWINN NACH FORMAT";
+                dict["Gain.ByBlinds"] = "GEWINN NACH BLINDS";
+                dict["Gain.ReadingByPosition"] = "LESART NACH POSITION";
+                dict["Gain.ReadingByAction"] = "LESART NACH AKTION";
+                dict["Gain.ReadingByBluff"] = "BLUFF-LESART";
+                dict["Gain.ReadingByTable"] = "LESART NACH TISCH";
+                dict["Gain.ReadingByFormat"] = "LESART NACH FORMAT";
+                dict["Gain.ReadingByBlinds"] = "LESART NACH BLINDS";
+                dict["Gain.SmallSample"] = "Kleine Stichprobe: als Hinweis behandeln, nicht als Urteil.";
+                dict["Gain.EnoughSample"] = "Genug Stichprobe, um Muster zu pruefen.";
+                dict["Gain.TableExplanation"] = "Spezifischer Tisch: zeigt, wo sich Gewinn oder Verlust konzentriert hat.";
+                dict["Gain.PositionModeDesc"] = "Gruppiert Gewinn nach Hero-Sitz, um Wertquellen und Lecks zu erkennen.";
+                dict["Gain.ActionModeDesc"] = "Gruppiert nach der letzten wichtigen Hero-Aktion in der Hand: fold, check, call, bet, raise oder all-in.";
+                dict["Gain.BluffModeDesc"] = "Trennt Aggression ohne showdown, Aggression mit schwacher Hand und passive Haende, um Bluff-Qualitaet zu lesen.";
+                dict["Gain.TableModeDesc"] = "Jeder Balken ist ein kompletter Tisch. Dieser Schnitt zeigt, wo du die meisten Chips gewonnen oder verloren hast.";
+                dict["Gain.FormatModeDesc"] = "Gruppiert nach erkanntem Format: 6-max, 3-max oder andere Formate.";
+                dict["Gain.BlindsModeDesc"] = "Gruppiert nach Blind-Level, zum Beispiel 100/200 oder 250/500.";
+                dict["Gain.StreetModeDesc"] = "Gruppiert nach der letzten Street, auf der Hero eine Entscheidung traf: preflop, flop, turn oder river.";
+                dict["Gain.PositionInsight"] = "Hilft zu erkennen, ob Gewinn aus Steals, Verteidigung, Blinds oder spaeten Positionen kommt.";
+                dict["Gain.ActionInsight"] = "Die Aktion ist die letzte starke Entscheidung in der Hand. Sie zeigt, wie viel du gewinnst oder verlierst, wenn du mit fold, call, bet oder raise endest.";
+                dict["Gain.BluffInsight"] = "Annaehernde Lesart aus der History: ersetzt keine manuelle Review, trennt aber profitable Pressure von Aggression, die bb kostet.";
+                dict["Gain.TableInsight"] = "Dieser Schnitt zeigt konkrete Tische. Dominiert ein Balken, erklaert dieser Tisch einen grossen Teil des Ergebnisses.";
+                dict["Gain.FormatInsight"] = "Dieser Schnitt vergleicht Formate, um zu sehen, wo dein Spiel am besten passt.";
+                dict["Gain.BlindsInsight"] = "Dieser Schnitt vergleicht Blind-Level, um zu erkennen, wo das reale Ergebnis am besten passt.";
+                dict["Gain.StreetInsight"] = "Die Street zeigt, wo die Hand fuer Hero entschieden wurde. Ist eine Street sehr negativ, pruefe grosse Pots und wiederholte Entscheidungen.";
+                dict["Gain.GroupDetail"] = "{0} Haende | Durchschnitt {1}/Hand";
+                dict["Rooms.Title"] = "APH - Room-Pfade";
+                dict["Rooms.Header"] = "Pfade der Poker-Rooms";
+                dict["Rooms.Subtitle"] = "Waehle, wo jeder Room Handhistories speichert. Nutze Laden, um das Dashboard mit diesem Pfad zu aktualisieren.";
+                dict["Rooms.SavedLocally"] = "Pfade werden lokal in den APH-Einstellungen gespeichert.";
+                dict["Rooms.Browse"] = "Suchen";
+                dict["Rooms.Load"] = "Laden";
+                dict["Rooms.Close"] = "Schliessen";
+                dict["Rooms.SelectFolderFor"] = "Ordner fuer {0} auswaehlen";
+                dict["Rooms.SavedFor"] = "Pfad fuer {0} gespeichert.";
+                dict["Rooms.SelectValidFolder"] = "Waehle einen gueltigen Ordner fuer {0}.";
+                dict["Rooms.LocalHistories"] = "Lokaler Ordner fuer Handhistories.";
+                dict["Rooms.LocalExports"] = "Lokaler Ordner fuer Histories oder Exporte.";
+                dict["Common.Refresh"] = "Aktualisieren";
+                dict["Common.Start"] = "Start";
+                dict["Common.Close"] = "Ende";
+                dict["Common.Duration"] = "Dauer";
+                dict["Common.File"] = "Datei";
+                dict["Common.OpenFolder"] = "Ordner oeffnen";
+                dict["Common.SessionNumber"] = "Sitzung Nr.";
+                dict["Sessions.NoReports"] = "Noch keine gespeicherten Berichte.";
+                dict["Sessions.ReportsFound"] = "{0} Berichte gefunden. Doppelklick oeffnet ein PDF.";
+            }
+            else if (language == "日本語")
+            {
+                dict["Gain.ByPosition"] = "ポジション別収益";
+                dict["Gain.ByAction"] = "アクション別収益";
+                dict["Gain.ByBluff"] = "BLUFF 別収益";
+                dict["Gain.ByTable"] = "テーブル別収益";
+                dict["Gain.ByFormat"] = "フォーマット別収益";
+                dict["Gain.ByBlinds"] = "ブラインド別収益";
+                dict["Gain.ReadingByPosition"] = "ポジション別の読み";
+                dict["Gain.ReadingByAction"] = "アクション別の読み";
+                dict["Gain.ReadingByBluff"] = "BLUFF の読み";
+                dict["Gain.ReadingByTable"] = "テーブル別の読み";
+                dict["Gain.ReadingByFormat"] = "フォーマット別の読み";
+                dict["Gain.ReadingByBlinds"] = "ブラインド別の読み";
+                dict["Gain.SmallSample"] = "サンプルが少なめです。結論ではなく手がかりとして見てください。";
+                dict["Gain.EnoughSample"] = "パターン確認を始めるには十分なサンプルです。";
+                dict["Gain.TableExplanation"] = "特定テーブル: 実際の勝ち負けがどこに集中したかを示します。";
+                dict["Gain.PositionModeDesc"] = "ヒーローの座席別に収益をまとめ、どこで価値を作り、どこで漏れているかを見ます。";
+                dict["Gain.ActionModeDesc"] = "ハンド内のヒーロー最後の重要アクション別にまとめます: fold、check、call、bet、raise、all-in。";
+                dict["Gain.BluffModeDesc"] = "showdown なしの攻撃、弱い手での攻撃、受動的なハンドを分け、bluff の質を読みます。";
+                dict["Gain.TableModeDesc"] = "各バーは1つの完全なテーブルです。どこで最もチップを勝ち負けしたかを示します。";
+                dict["Gain.FormatModeDesc"] = "検出されたフォーマット別にまとめます: 6-max、3-max、その他。";
+                dict["Gain.BlindsModeDesc"] = "100/200 や 250/500 など、ブラインドレベル別にまとめます。";
+                dict["Gain.StreetModeDesc"] = "ヒーローが最後に判断した street 別にまとめます: preflop、flop、turn、river。";
+                dict["Gain.PositionInsight"] = "収益が steal、defense、blinds、late position のどこから来ているかを見る助けになります。";
+                dict["Gain.ActionInsight"] = "アクションは検出された最後の強い判断です。fold、call、bet、raise で終わる時にどれだけ勝ち負けしているかを示します。";
+                dict["Gain.BluffInsight"] = "履歴からの近似的な読みです。手動レビューの代わりではありませんが、利益の出るプレッシャーと bb を失う攻撃を分けます。";
+                dict["Gain.TableInsight"] = "この切り口は具体的なテーブルを示します。1本のバーが大きければ、そのテーブルが結果の大部分を説明します。";
+                dict["Gain.FormatInsight"] = "フォーマットを比較し、自分のゲームがどこに最も適応しているかを探します。";
+                dict["Gain.BlindsInsight"] = "ブラインドレベルを比較し、実際の結果がどこで最も安定しているかを見ます。";
+                dict["Gain.StreetInsight"] = "street はヒーローにとってハンドがどこで決まったかを示します。大きくマイナスなら大きな pot と反復判断を確認してください。";
+                dict["Gain.GroupDetail"] = "{0} ハンド | 平均 {1}/ハンド";
+                dict["Rooms.Title"] = "APH - ルームパス";
+                dict["Rooms.Header"] = "ポーカールームのパス";
+                dict["Rooms.Subtitle"] = "各ルームが履歴を保存する場所を選びます。読み込みで dashboard をそのパスから更新します。";
+                dict["Rooms.SavedLocally"] = "パスは APH 設定にローカル保存されます。";
+                dict["Rooms.Browse"] = "参照";
+                dict["Rooms.Load"] = "読み込み";
+                dict["Rooms.Close"] = "閉じる";
+                dict["Rooms.SelectFolderFor"] = "{0} のフォルダーを選択";
+                dict["Rooms.SavedFor"] = "{0} のパスを保存しました。";
+                dict["Rooms.SelectValidFolder"] = "{0} の有効なフォルダーを選択してください。";
+                dict["Rooms.LocalHistories"] = "ハンド履歴のローカルフォルダー。";
+                dict["Rooms.LocalExports"] = "履歴またはエクスポートのローカルフォルダー。";
+                dict["Common.Refresh"] = "更新";
+                dict["Common.Start"] = "開始";
+                dict["Common.Close"] = "終了";
+                dict["Common.Duration"] = "時間";
+                dict["Common.File"] = "ファイル";
+                dict["Common.OpenFolder"] = "フォルダーを開く";
+                dict["Common.SessionNumber"] = "セッション番号";
+                dict["Sessions.NoReports"] = "保存済みレポートはまだありません。";
+                dict["Sessions.ReportsFound"] = "{0} 件のレポートが見つかりました。ダブルクリックで PDF を開きます。";
+            }
+            else if (language == "Русский")
+            {
+                dict["Gain.ByPosition"] = "ПРИБЫЛЬ ПО ПОЗИЦИИ";
+                dict["Gain.ByAction"] = "ПРИБЫЛЬ ПО ДЕЙСТВИЮ";
+                dict["Gain.ByBluff"] = "ПРИБЫЛЬ ПО BLUFF";
+                dict["Gain.ByTable"] = "ПРИБЫЛЬ ПО СТОЛУ";
+                dict["Gain.ByFormat"] = "ПРИБЫЛЬ ПО ФОРМАТУ";
+                dict["Gain.ByBlinds"] = "ПРИБЫЛЬ ПО БЛАЙНДАМ";
+                dict["Gain.ReadingByPosition"] = "ЧТЕНИЕ ПО ПОЗИЦИИ";
+                dict["Gain.ReadingByAction"] = "ЧТЕНИЕ ПО ДЕЙСТВИЮ";
+                dict["Gain.ReadingByBluff"] = "ЧТЕНИЕ BLUFF";
+                dict["Gain.ReadingByTable"] = "ЧТЕНИЕ ПО СТОЛУ";
+                dict["Gain.ReadingByFormat"] = "ЧТЕНИЕ ПО ФОРМАТУ";
+                dict["Gain.ReadingByBlinds"] = "ЧТЕНИЕ ПО БЛАЙНДАМ";
+                dict["Gain.SmallSample"] = "Маленькая выборка: воспринимайте как подсказку, не как приговор.";
+                dict["Gain.EnoughSample"] = "Выборки достаточно, чтобы начать проверять паттерны.";
+                dict["Gain.TableExplanation"] = "Конкретный стол: показывает, где сконцентрировалась реальная прибыль или потеря.";
+                dict["Gain.PositionModeDesc"] = "Группирует прибыль по месту героя, чтобы увидеть, где создается ценность и где она утекает.";
+                dict["Gain.ActionModeDesc"] = "Группирует по последнему важному действию героя в руке: fold, check, call, bet, raise или all-in.";
+                dict["Gain.BluffModeDesc"] = "Разделяет агрессию без showdown, агрессию со слабой рукой и пассивные руки для оценки качества bluff.";
+                dict["Gain.TableModeDesc"] = "Каждый столбец — полный стол. Этот срез показывает, где вы выиграли или потеряли больше всего фишек.";
+                dict["Gain.FormatModeDesc"] = "Группирует по найденному формату: 6-max, 3-max или другие форматы.";
+                dict["Gain.BlindsModeDesc"] = "Группирует по уровню блайндов, например 100/200 или 250/500.";
+                dict["Gain.StreetModeDesc"] = "Группирует по последней street, где герой принял решение: preflop, flop, turn или river.";
+                dict["Gain.PositionInsight"] = "Помогает понять, идет ли прибыль от стила, защиты, игры на блайндах или поздних позиций.";
+                dict["Gain.ActionInsight"] = "Действие — последнее сильное решение в руке. Оно показывает, сколько вы выигрываете или теряете, когда заканчиваете fold, call, bet или raise.";
+                dict["Gain.BluffInsight"] = "Приблизительное чтение по истории: оно не заменяет ручной разбор, но отделяет прибыльное давление от агрессии, которая стоит bb.";
+                dict["Gain.TableInsight"] = "Этот срез показывает конкретные столы. Если один столбец доминирует, этот стол объясняет большую часть результата.";
+                dict["Gain.FormatInsight"] = "Этот срез сравнивает форматы столов, чтобы найти, где ваша игра адаптируется лучше.";
+                dict["Gain.BlindsInsight"] = "Этот срез сравнивает уровни блайндов, чтобы увидеть, где реальный результат лучше.";
+                dict["Gain.StreetInsight"] = "Street показывает, где рука была решена для героя. Если одна street сильно отрицательная, стоит разобрать большие банки и повторяющиеся решения.";
+                dict["Gain.GroupDetail"] = "{0} рук | среднее {1}/руку";
+                dict["Rooms.Title"] = "APH - Пути румов";
+                dict["Rooms.Header"] = "Пути покер-румов";
+                dict["Rooms.Subtitle"] = "Выберите, где каждый рум сохраняет истории. Используйте Загрузить, чтобы обновить dashboard этим путем.";
+                dict["Rooms.SavedLocally"] = "Пути сохраняются локально в настройках APH.";
+                dict["Rooms.Browse"] = "Обзор";
+                dict["Rooms.Load"] = "Загрузить";
+                dict["Rooms.Close"] = "Закрыть";
+                dict["Rooms.SelectFolderFor"] = "Выберите папку для {0}";
+                dict["Rooms.SavedFor"] = "Путь {0} сохранен.";
+                dict["Rooms.SelectValidFolder"] = "Выберите корректную папку для {0}.";
+                dict["Rooms.LocalHistories"] = "Локальная папка историй рук.";
+                dict["Rooms.LocalExports"] = "Локальная папка историй или экспортов.";
+                dict["Common.Refresh"] = "Обновить";
+                dict["Common.Start"] = "Начало";
+                dict["Common.Close"] = "Закрытие";
+                dict["Common.Duration"] = "Длительность";
+                dict["Common.File"] = "Файл";
+                dict["Common.OpenFolder"] = "Открыть папку";
+                dict["Common.SessionNumber"] = "№ сессии";
+                dict["Sessions.NoReports"] = "Сохраненных отчетов пока нет.";
+                dict["Sessions.ReportsFound"] = "Найдено отчетов: {0}. Двойной щелчок откроет PDF.";
+            }
+            else
+            {
+                dict["Gain.ByPosition"] = "GANANCIA POR POSICION";
+                dict["Gain.ByAction"] = "GANANCIA POR ACCION";
+                dict["Gain.ByBluff"] = "GANANCIA POR BLUFF";
+                dict["Gain.ByTable"] = "GANANCIA POR MESA";
+                dict["Gain.ByFormat"] = "GANANCIA POR FORMATO";
+                dict["Gain.ByBlinds"] = "GANANCIA POR CIEGAS";
+                dict["Gain.ReadingByPosition"] = "LECTURA POR POSICION";
+                dict["Gain.ReadingByAction"] = "LECTURA POR ACCION";
+                dict["Gain.ReadingByBluff"] = "LECTURA DE BLUFF";
+                dict["Gain.ReadingByTable"] = "LECTURA POR MESA";
+                dict["Gain.ReadingByFormat"] = "LECTURA POR FORMATO";
+                dict["Gain.ReadingByBlinds"] = "LECTURA POR CIEGAS";
+                dict["Gain.SmallSample"] = "Muestra chica: tomalo como pista, no como sentencia.";
+                dict["Gain.EnoughSample"] = "Muestra suficiente para empezar a revisar patrones.";
+                dict["Gain.TableExplanation"] = "Mesa especifica: permite revisar donde se concentro la ganancia o perdida real.";
+                dict["Gain.PositionModeDesc"] = "Agrupa la ganancia por asiento del heroe para detectar donde imprime bb y donde se fuga valor.";
+                dict["Gain.ActionModeDesc"] = "Agrupa por la ultima accion importante del heroe en la mano: fold, check, call, bet, raise o all-in.";
+                dict["Gain.BluffModeDesc"] = "Separa agresion sin showdown, agresion con mano debil y manos no agresivas para leer la calidad del bluff.";
+                dict["Gain.TableModeDesc"] = "Cada barra es una mesa completa. Este corte sirve para ubicar exactamente donde ganaste o perdiste mas fichas.";
+                dict["Gain.FormatModeDesc"] = "Agrupa por formato detectado: 6-max, 3-max u otros formatos.";
+                dict["Gain.BlindsModeDesc"] = "Agrupa por ciegas, por ejemplo 100/200 o 250/500, para detectar donde rinde mejor tu juego.";
+                dict["Gain.StreetModeDesc"] = "Agrupa por la ultima calle donde el heroe tomo una decision: preflop, flop, turn o river.";
+                dict["Gain.PositionInsight"] = "Sirve para encontrar si la ganancia viene de robar, defender, jugar ciegas o de posiciones tardias.";
+                dict["Gain.ActionInsight"] = "La accion es la ultima decision fuerte detectada en la mano. Te dice cuanto estas ganando o perdiendo cuando terminas foldeando, pagando, apostando o resubiendo.";
+                dict["Gain.BluffInsight"] = "Es una lectura aproximada desde el historial: no reemplaza revision manual, pero ayuda a separar presion rentable de agresion que cuesta bb.";
+                dict["Gain.TableInsight"] = "Este corte muestra mesas concretas. Si una barra domina, esa mesa explica buena parte del resultado.";
+                dict["Gain.FormatInsight"] = "Este corte compara formatos de mesa para encontrar donde se adapta mejor tu juego.";
+                dict["Gain.BlindsInsight"] = "Este corte compara niveles de ciegas para detectar donde el resultado real acompana mejor.";
+                dict["Gain.StreetInsight"] = "La calle indica donde se decidio la mano para el heroe. Si una calle sale muy negativa, ahi conviene revisar botes grandes y decisiones repetidas.";
+                dict["Gain.GroupDetail"] = "{0} manos | media {1}/mano";
+                dict["Rooms.Title"] = "APH - Rutas de salas";
+                dict["Rooms.Header"] = "Rutas de salas de poker";
+                dict["Rooms.Subtitle"] = "Elige donde guarda historiales cada sala. Usa Cargar para actualizar el dashboard con esa ruta.";
+                dict["Rooms.SavedLocally"] = "Las rutas se guardan localmente en la configuracion de APH.";
+                dict["Rooms.Browse"] = "Buscar";
+                dict["Rooms.Load"] = "Cargar";
+                dict["Rooms.Close"] = "Cerrar";
+                dict["Rooms.SelectFolderFor"] = "Selecciona carpeta de {0}";
+                dict["Rooms.SavedFor"] = "Ruta de {0} guardada.";
+                dict["Rooms.SelectValidFolder"] = "Selecciona una carpeta valida para {0}.";
+                dict["Rooms.LocalHistories"] = "Carpeta local de historiales.";
+                dict["Rooms.LocalExports"] = "Carpeta local de historiales o exportaciones.";
+                dict["Common.Refresh"] = "Actualizar";
+                dict["Common.Start"] = "Inicio";
+                dict["Common.Close"] = "Cierre";
+                dict["Common.Duration"] = "Duracion";
+                dict["Common.File"] = "Archivo";
+                dict["Common.OpenFolder"] = "Abrir carpeta";
+                dict["Common.SessionNumber"] = "No. sesion";
+                dict["Sessions.NoReports"] = "No hay informes guardados todavia.";
+                dict["Sessions.ReportsFound"] = "{0} informes encontrados. Doble click para abrir un PDF.";
+            }
+        }
+
+        private static Dictionary<string, string> Japanese() => new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["App.Title"] = "APH - ポーカーハンド分析",
+            ["Main.Subtitle"] = "メインメニュー",
+            ["Main.GlobalStats"] = "グローバル統計",
+            ["Main.SelectFolderHint"] = "平均 stats を計算するにはハンド履歴フォルダーを選択してください。",
+            ["Main.HeroProfileTip"] = "ヒーロープロフィールを開く",
+            ["Main.PickFolderTip"] = "ハンドフォルダーを選択",
+            ["Main.SettingsTip"] = "設定",
+            ["Main.RecentTables"] = "最近のテーブル",
+            ["Main.RealTime"] = "リアルタイム",
+            ["Main.OpenRT"] = "RT アナライザー開始 (8)",
+            ["Main.Waiting"] = "(選択待ち...)",
+            ["Main.HistoryAnalysis"] = "履歴分析",
+            ["Main.TablesAnalysis"] = "テーブル分析",
+            ["Main.TablesAnalysisDesc"] = "テーブル別の収益と KPI",
+            ["Main.MyTables"] = "マイテーブル",
+            ["Main.MyTablesDesc"] = "スターティングハンド別アクションマップ",
+            ["Main.DataVillainsDesc"] = "最近の相手と対戦 bb",
+            ["Main.LeakFinder"] = "Leak 検出",
+            ["Main.LeakFinderDesc"] = "bb を失うパターンを見つけます",
+            ["Main.Sessions"] = "セッション",
+            ["Main.SessionsDesc"] = "保存済みレポートと今後の比較",
+            ["Grid.Player"] = "プレイヤー",
+            ["Grid.Hands"] = "#ハンド",
+            ["Grid.Table"] = "テーブル",
+            ["Grid.Format"] = "フォーマット",
+            ["Grid.Date"] = "日付",
+            ["Grid.FinalBb"] = "最終 BB",
+            ["Settings.Title"] = "APH - 設定",
+            ["Settings.Header"] = "設定",
+            ["Settings.Subtitle"] = "一般設定、PokerStars フォルダー、言語、パレット、同期。",
+            ["Settings.PokerStarsDesc"] = "履歴フォルダーの既定値。アプリ起動時に自動読み込みします。",
+            ["Settings.FolderLabel"] = "hand histories フォルダー",
+            ["Settings.Search"] = "参照",
+            ["Settings.Language"] = "言語",
+            ["Settings.LanguageDesc"] = "言語は変更時に適用・保存されます。",
+            ["Settings.LanguageLabel"] = "アプリの言語",
+            ["Settings.Palette"] = "カラーパレット",
+            ["Settings.PaletteDesc"] = "テーマは変更時に適用・保存されます。",
+            ["Settings.PaletteLabel"] = "ビジュアルテーマ",
+            ["Settings.PalettePreview"] = "パレットプレビュー",
+            ["Settings.PalettePreviewDesc"] = "Classic Poker が現在のテーマです。他のテーマは雰囲気を変えます。",
+            ["Settings.Sync"] = "同期",
+            ["Settings.SyncDesc"] = "クラウド、Google、メール用に準備済み。現在は将来モジュールです。",
+            ["Settings.Cloud"] = "クラウド同期",
+            ["Settings.Google"] = "Google",
+            ["Settings.Email"] = "メール",
+            ["Settings.Soon"] = "近日対応",
+            ["Settings.Status"] = "言語と色の変更は即時保存されます。",
+            ["Settings.Cancel"] = "閉じる",
+            ["Settings.Save"] = "フォルダーを保存",
+            ["RT.Title"] = "APH - リアルタイム (8)",
+            ["RT.HelpTip"] = "Real Time ヘルプを開く",
+            ["RT.Compact"] = "コンパクトモード",
+            ["RT.CompactDesc"] = "(スクロールなしで全体を見せるため、サイズとスケールを下げます)",
+            ["RT.Header"] = "リアルタイム - 8 テーブル",
+            ["RT.Detect"] = "テーブル検出",
+            ["RT.FinishSession"] = "セッション終了",
+            ["RT.DetectHint"] = "テーブル検出を押すと PokerStars ウィンドウとハンド履歴を紐づけます。+ から手動追加もできます。",
+            ["RT.DictionarySubtitle"] = "ライブテーブル読み取りで使う操作、色、メトリクス。",
+            ["RT.NoSessionToReport"] = "レポート作成用に読み込まれたテーブルがありません。",
+            ["RT.ActiveTableLine"] = "- {0} | 最終ハンド: {1}",
+            ["RT.FinishWarning"] = "{0} 個のテーブルがまだアクティブです。今終了すると RT は閉じられ、レポートが保存されます。\n\nテーブル:\n{1}\n\n続行しますか？",
+            ["RT.ReportSaved"] = "レポートを保存しました:\n{0}",
+            ["RT.ReportError"] = "レポートを作成できませんでした:\n{0}",
+            ["Global.Title"] = "APH - テーブル分析",
+            ["Global.Header"] = "テーブル分析",
+            ["Global.Blinds"] = "ブラインド",
+            ["Global.Result"] = "結果",
+            ["Global.MinHands"] = "最小ハンド",
+            ["Global.Type"] = "タイプ",
+            ["Global.Sort"] = "並び順",
+            ["Global.OpenTableTip"] = "このテーブル分析を開く",
+            ["Common.Search"] = "検索",
+            ["Common.RecentTable"] = "最近のテーブル",
+            ["Common.SessionVs"] = "セッション Vs",
+            ["Common.TotalVs"] = "合計 Vs",
+            ["Common.TotalHands"] = "総ハンド",
+            ["Common.Profile"] = "プロフィール",
+            ["Common.SessionBb"] = "セッション BB",
+            ["Common.TotalBb"] = "合計 BB",
+            ["Common.LoadedTables"] = "読み込み済みテーブル",
+            ["Common.AnalyzedHands"] = "分析済みハンド",
+            ["Common.TotalResult"] = "総結果",
+            ["Common.BiggestLeak"] = "最大 leak",
+            ["Common.CriticalHands"] = "重要ハンド",
+            ["Common.ViewAll"] = "すべて表示",
+            ["Common.WorstHand"] = "ワーストハンド",
+            ["Common.MostExpensiveAction"] = "最も高くついたアクション",
+            ["Common.MostExpensivePot"] = "最も高くついた pot",
+            ["Common.Sample"] = "サンプル",
+            ["Common.Hands"] = "ハンド",
+            ["Common.Average"] = "平均",
+            ["Common.Action"] = "アクション",
+            ["Common.Position"] = "ポジション",
+            ["Common.PositionShort"] = "Pos",
+            ["Common.Result"] = "結果",
+            ["Common.Type"] = "タイプ",
+            ["Common.Sort"] = "並び順",
+            ["Common.From"] = "開始",
+            ["Common.To"] = "終了",
+            ["Common.Color"] = "色",
+            ["Common.ProfitBb"] = "利益 bb",
+            ["Common.ColorByProfitBb"] = "利益 bb で色分け",
+            ["Common.SelectCell"] = "セルを選択してください",
+            ["Common.ExactHands"] = "正確なハンド",
+            ["Common.All"] = "すべて",
+            ["Common.AllMale"] = "すべて",
+            ["Common.Won"] = "勝ち",
+            ["Common.Lost"] = "負け",
+            ["Common.BestHands"] = "ベストハンド",
+            ["Common.WorstHands"] = "ワーストハンド",
+            ["Common.QuickRead"] = "クイック読み",
+            ["Common.Cards"] = "カード",
+            ["Common.TableAnalysisTitle"] = "APH - テーブル分析",
+            ["Common.HeroProfileTitle"] = "APH - ヒーロープロフィール",
+            ["Common.OpenDictionary"] = "タグと色の辞書を開く",
+            ["Common.BestPosition"] = "ベストポジション",
+            ["Common.WorstPosition"] = "ワーストポジション",
+            ["Common.Villain"] = "Villain",
+            ["Common.Note"] = "メモ",
+            ["Common.Real"] = "実績",
+            ["Common.Reason"] = "理由",
+            ["Common.DictionarySubtitleVillains"] = "stats と range で使う villain タグ、テーブル、色。",
+            ["Common.DictionarySubtitleProfile"] = "グローバル指標で使うタグ、クイック読み、色。",
+            ["Common.HeroVsVillain"] = "ヒーロー VS VILLAIN",
+            ["Common.BaseProfile"] = "基本プロフィール",
+            ["Common.RecentFormat"] = "最近のフォーマット",
+            ["Common.SelectComboExact"] = "正確なハンドを見るには combo を選択してください",
+            ["Common.TableHand"] = "テーブルハンド",
+            ["Common.ExactHand"] = "正確なハンド",
+            ["Common.FinalBoard"] = "最終 board",
+            ["Common.Lines"] = "行:",
+            ["Common.Last"] = "最終:",
+            ["Common.Hero"] = "ヒーロー:",
+            ["Common.LastNine"] = "直近9",
+            ["Common.Sequence"] = "シーケンス",
+            ["Common.StatusSelectFolderGlobal"] = "テーブル分析を読み込むには先にフォルダーを選択してください。",
+            ["Common.StatusGlobalOpen"] = "テーブル分析を開きました。",
+            ["Common.StatusSelectFolderTables"] = "マイテーブルを読み込むには先にフォルダーを選択してください。",
+            ["Common.StatusTablesOpen"] = "マイテーブルを開きました。",
+            ["Common.StatusSelectFolderVillains"] = "Data Villans を読み込むには先にフォルダーを選択してください。",
+            ["Common.StatusVillainsOpen"] = "Data Villans を開きました。",
+            ["Common.StatusSelectFolderLeaks"] = "Leak 検出を読み込むには先にフォルダーを選択してください。",
+            ["Common.StatusLeaksOpen"] = "Leak 検出を開きました。",
+            ["Common.StatusSelectFolderHero"] = "ヒーロープロフィールを読み込むには先にフォルダーを選択してください。",
+            ["Common.StatusHeroOpen"] = "{0} のプロフィールを開きました。",
+            ["Common.SelectHandFolderTitle"] = "ハンド履歴フォルダーを選択",
+            ["Common.SettingsSaved"] = "設定を保存しました。",
+            ["Common.AnalyzingFolder"] = "フォルダーを分析中: {0}",
+            ["Common.FolderAnalysisFailed"] = "フォルダーを分析できませんでした。",
+            ["Common.AnalyzeErrorTitle"] = "分析エラー",
+            ["Common.SelectPokerStarsFolderTitle"] = "PokerStars 履歴フォルダーを選択",
+            ["Common.PreviewApplied"] = "プレビューを適用しました: {0}。",
+            ["Common.RtNoWindows"] = "アクティブな PokerStars Hold'em テーブルウィンドウが見つかりません。",
+            ["Common.RtNoMatches"] = "検出テーブル: {0}。{1} に一致する新しい HH が見つかりません。",
+            ["Common.PositionLosses"] = "ポジション別損失",
+            ["Common.RealEvByAction"] = "アクション別リアル EV",
+            ["Common.PotType"] = "POT タイプ",
+            ["Common.ProblemHands"] = "問題ハンド",
+            ["Common.BoardTexture"] = "BOARD テクスチャ",
+            ["Common.CompareSessions"] = "セッション比較",
+            ["Common.ReviewHands"] = "レビュー対象ハンド",
+            ["Common.PositionProfit"] = "ポジション別の収益とプレイ",
+            ["Common.TopCombos"] = "よくプレイする TOP 10 COMBOS",
+            ["Common.EvByAction"] = "アクション別 EV",
+            ["Common.HandsTitle"] = "ハンド",
+            ["Common.ProfitChart"] = "収益 / 損失グラフ",
+            ["Common.Dictionary"] = "辞書",
+            ["Common.Tags"] = "タグ",
+            ["Common.MetricColors"] = "メトリクス色",
+            ["Common.TableColors"] = "テーブル色",
+            ["Common.StatMeaning"] = "各 STAT の意味",
+            ["Common.Controls"] = "操作",
+            ["Common.DictionaryMetrics"] = "メトリクス辞書",
+            ["Common.ProfileDictionaryHeader"] = "プロフィール辞書",
+            ["Common.VillainDictionaryHeader"] = "VILLAIN 辞書",
+            ["Common.RealTimeHelpHeader"] = "REAL TIME ヘルプ",
+            ["Common.VillainTables"] = "VILLAIN テーブル (既知サンプル)",
+            ["Common.MyTablesHeader"] = "マイテーブル",
+            ["Common.MyTablesTitle"] = "APH - マイテーブル",
+            ["Common.Times"] = "回数",
+            ["Common.Usage"] = "使用率",
+            ["Common.Chips"] = "チップ",
+            ["Filter.Last7"] = "過去7日",
+            ["Filter.Last30"] = "過去30日",
+            ["Filter.CurrentMonth"] = "今月",
+            ["Filter.Winning"] = "勝ち",
+            ["Filter.Losing"] = "負け",
+            ["Filter.Win100"] = "+100bb 以上",
+            ["Filter.Loss100"] = "-100bb 以下",
+            ["Filter.MostRecent"] = "最新順",
+            ["Filter.BbWin"] = "最大 bb 勝ち",
+            ["Filter.BbLoss"] = "最大 bb 負け",
+            ["Filter.AmountWin"] = "最大チップ/金額勝ち",
+            ["Filter.AmountLoss"] = "最大チップ/金額負け",
+            ["Filter.IWin"] = "こちらが勝った",
+            ["Filter.TheyWin"] = "相手が勝った",
+            ["Filter.Even"] = "イーブン",
+            ["Filter.Plus50"] = "+50bb 以上",
+            ["Filter.Plus10To50"] = "+10 から +50",
+            ["Filter.Minus10To50"] = "-10 から -50",
+            ["Filter.Minus50"] = "-50bb 以下",
+            ["Filter.MostVsHero"] = "ヒーロー対戦数最多",
+            ["Filter.BestVsMe"] = "対自分ベスト結果",
+            ["Filter.WorstVsMe"] = "対自分ワースト結果",
+            ["Filter.HighVpip"] = "高 VPIP",
+            ["Filter.High3Bet"] = "高 3Bet",
+            ["Filter.Profits"] = "利益",
+            ["Filter.WorstFirst"] = "悪い順",
+            ["Filter.BestFirst"] = "良い順",
+            ["Filter.RecentDate"] = "新しい日付",
+            ["Filter.OldDate"] = "古い日付",
+            ["Common.TotalVillains"] = "Villains",
+            ["Common.Folder"] = "フォルダー",
+            ["Common.Files"] = "ファイル",
+            ["Common.NoHandsDetected"] = "ハンドが見つかりません",
+            ["Common.ReviewSummary"] = "検出されたワースト {0} ハンドの概要。すべて表示で tracker 形式の一覧を開きます。",
+            ["Common.TotalVillainHands"] = "Villain 総ハンド",
+            ["Common.HandsVsHero"] = "対ヒーローハンド",
+            ["Common.KnownCards"] = "既知カード",
+            ["Common.NoExactHands"] = "正確なハンドなし",
+            ["Common.VillainDetailTitle"] = "APH - Villain 詳細",
+            ["Common.DataVillainsHeader"] = "DATA VILLANS",
+            ["Common.OwnBb"] = "自分の BB",
+            ["Common.ChipsMoney"] = "チップ/金額",
+            ["Common.LossBb"] = "損失 bb",
+            ["Common.VillainTablesShort"] = "Villain テーブル",
+            ["Common.MyResultVsVillain"] = "自分の対 villain 結果",
+            ["Common.NoAction"] = "アクションなし",
+            ["Common.NoPot"] = "pot なし",
+            ["Common.SelectHand"] = "ハンドを選択",
+            ["Common.NoActionRegistered"] = "アクションは記録されていません。",
+            ["Common.CountOfHands"] = "{0} / {1} ハンド",
+            ["Common.HandCount"] = "{0} ハンド",
+            ["Common.HandCountBbAverage"] = "{0} ハンド | 平均 {1:+0.#;-0.#;0} bb",
+            ["Common.SummaryHandsBbAverage"] = "{0} ハンド | {1:+0.#;-0.#;0} bb | 平均 {2}",
+            ["Common.DefaultFolderLoaded"] = "設定から既定フォルダーを読み込みました。",
+            ["Common.NoData"] = "データなし。",
+            ["Common.Hand"] = "ハンド",
+            ["Common.Shows"] = "表示",
+            ["Common.NoHand"] = "ハンドなし",
+            ["Common.NoSampleLower"] = "サンプルなし",
+            ["Common.NoKnownSample"] = "既知サンプルなし",
+            ["Common.ActionCountBbAverage"] = "{0} アクション | 平均 {1:+0.#;-0.#;0} bb | {2}",
+            ["Common.HandActionAverage"] = "{0} | アクション: {1} | 平均 {2:0.#} bb",
+            ["VillainDetail.Subtitle"] = "既知サンプル: 公開ハンド {0} | 対ヒーロー合計: {1} ハンド",
+            ["PlayerSummary.History"] = "{0} | 履歴: {1} ハンド | 対ヒーロー: {2} | 現在テーブル: {3}",
+            ["LeakReason.BigLoss"] = "{1}, {2}, {3} で {0} による大きな損失。",
+            ["LeakReason.SmallLoss"] = "小さな損失: fold/call が本当に必要だったか確認してください。",
+            ["LeakReason.WinCompare"] = "勝ちハンドは似たラインとの比較に役立ちます。",
+            ["Tag.NoSample"] = "サンプルなし",
+            ["Tag.NoSample.Desc"] = "総ハンドが30未満: 信頼度の低い初期読みです。",
+            ["Tag.NoSample.Short"] = "総ハンド30未満。",
+            ["Tag.Fish.Desc"] = "基本プロフィール: 非常に高い VPIP、低い PFR、低い攻撃性。",
+            ["Tag.Maniac.Desc"] = "基本プロフィール: プレイ/レイズしすぎ、または AF/3Bet が非常に高い。",
+            ["Tag.LoosePassive"] = "Loose passive",
+            ["Tag.LoosePassive.Desc"] = "基本プロフィール: 多くのハンドをプレイするが、十分にレイズしない。",
+            ["Tag.Lag.Desc"] = "基本プロフィール: loose aggressive、広いレンジと高い主導権。",
+            ["Tag.Tag.Desc"] = "基本プロフィール: tight aggressive、整理されたレンジと健全な攻撃性。",
+            ["Tag.Nit.Desc"] = "基本プロフィール: レンジが狭すぎ、PFR が低い。",
+            ["Tag.Tight.Desc"] = "基本プロフィール: プレイするハンドが少なく、オープン範囲も広すぎない。",
+            ["Tag.Passive"] = "パッシブ",
+            ["Tag.Passive.Desc"] = "基本プロフィール: postflop 攻撃性が低い。",
+            ["Tag.Regular"] = "Regular",
+            ["Tag.Regular.Desc"] = "極端な偏りのない基本プロフィール。",
+            ["Tag.ProfileBase.Desc"] = "VPIP/PFR/3Bet/AF に基づく基本プロフィール。",
+            ["Tag.ProfileBaseHero.Desc"] = "Data Villans と同じ VPIP/PFR/3Bet/AF に基づく基本プロフィール。",
+            ["Tag.FrequentRival"] = "よく当たる相手",
+            ["Tag.FrequentRival.Desc"] = "ヒーローとの対戦ハンドが多く、小サンプルより読みが重要です。",
+            ["Tag.FrequentRival.Dynamic"] = "ヒーローとの対戦 {0} ハンド。",
+            ["Tag.LosesVsHero"] = "ヒーローに負け越し",
+            ["Tag.LosesVsHero.Desc"] = "共有結果はヒーロー側が有利です。",
+            ["Tag.LosesVsHero.Dynamic"] = "共有ハンドでヒーロー側に {0:0.#} bb。",
+            ["Tag.WinsVsHero"] = "ヒーローに勝ち越し",
+            ["Tag.WinsVsHero.Desc"] = "共有結果は villain 側が有利です。",
+            ["Tag.WinsVsHero.Dynamic"] = "共有ハンドで villain 側に {0:0.#} bb。",
+            ["Tag.PlaysManyHands"] = "多くのハンドをプレイ",
+            ["Tag.PlaysManyHands.Desc"] = "高 VPIP: preflop で自発的に入りすぎています。",
+            ["Tag.Aggressor"] = "アグレッサー",
+            ["Tag.Aggressor.Desc"] = "AF または AFq が高く、postflop で bet/raise が多い。",
+            ["Tag.High3Bet"] = "高 3Bet",
+            ["Tag.High3Bet.Desc"] = "しきい値を超える 3Bet: preflop reraise が多い。",
+            ["Tag.FoldsCBet"] = "CBet に多く fold",
+            ["Tag.FoldsCBetShort"] = "Folds CBet",
+            ["Tag.FoldsCBet.Desc"] = "高 FvCB: flop の continuation bet に対して降りすぎています。",
+            ["Tag.NoFoldCBet"] = "CBet に降りない",
+            ["Tag.NoFoldCBet.Desc"] = "低 FvCB: continuation bet に対して続けすぎています。",
+            ["Tag.ShowdownOften"] = "showdown 多め",
+            ["Tag.GoesShowdown"] = "showdown に行く",
+            ["Tag.WeakShowdown"] = "弱い showdown",
+            ["Tag.ShowdownOften.Desc"] = "WTSD が高い: showdown へよく行きます。結果の質を確認してください。",
+            ["Tag.CallingStation.Desc"] = "高 VPIP、低 PFR、低攻撃性: call が多く圧力が少ない。",
+            ["Tag.Rock"] = "Rock",
+            ["Tag.Rock.Desc"] = "十分なサンプルで狭いレンジ。",
+            ["Tag.Loose.Desc"] = "高 VPIP: 自発的に多くのハンドをプレイ。",
+            ["Tag.TightHero.Desc"] = "低 VPIP: ハンド選択が非常に慎重。",
+            ["Tag.MidRange"] = "中間レンジ",
+            ["Tag.MidRange.Desc"] = "VPIP に明確な極端さはありません。",
+            ["Tag.AggressivePreflop"] = "preflop 攻撃的",
+            ["Tag.AggressivePreflop.Desc"] = "高 PFR: flop 前に主導権を取りやすい。",
+            ["Tag.LowPfr"] = "低 PFR",
+            ["Tag.LowPfr.Desc"] = "低 PFR: サンプルに対してレイズが少ない。",
+            ["Tag.StablePfr"] = "安定 PFR",
+            ["Tag.StablePfr.Desc"] = "PFR が平均的な範囲。",
+            ["Tag.OverfoldCBet.Desc"] = "高 Fold vs CBet: flop の continuation bet に降りすぎています。",
+            ["Tag.CBetDefenseOk"] = "CBet 防御 ok",
+            ["Tag.CBetDefenseOk.Desc"] = "Fold vs CBet に強い警告はありません。",
+            ["Tag.FrequentCBet"] = "CBet 多め",
+            ["Tag.FrequentCBet.Desc"] = "高 flop CBet: preflop 攻撃後によく打ちます。",
+            ["Tag.SelectiveCBet"] = "選択的 CBet",
+            ["Tag.SelectiveCBet.Desc"] = "中/低 flop CBet: continuation bet を慎重に選んでいます。",
+            ["Tag.StrongShowdown"] = "強い showdown",
+            ["Tag.StrongShowdown.Desc"] = "高 W$SD: showdown 到達時によく勝っています。",
+            ["Tag.ReviewShowdown"] = "showdown 要確認",
+            ["Tag.ReviewShowdown.Desc"] = "低または中 W$SD: showdown まで行ったハンドを確認してください。",
+            ["Tag.LeakPosition"] = "Leak <position>",
+            ["Tag.LeakPosition.Desc"] = "総 bb 結果が最も悪いポジションを示します。",
+            ["Tag.LeakPosition.Dynamic"] = "総 bb で最も悪いポジションは {0}: {1}, {2} bb/100。",
+            ["Tag.ComboLover.Desc"] = "最も多い自発的 combo をカード + lover として表示します。説明は頻度と使用率です。",
+            ["Tag.ComboLover.Dynamic"] = "{0} は最も多い自発的 combo: {1} 回、サンプルの {2}。",
+            ["Tag.PremiumLover"] = "Premium lover",
+            ["Tag.PremiumLover.Desc"] = "既知カードの多くが premium レンジに属します。",
+            ["Tag.PremiumLoverHero.Desc"] = "頻出 combos の多くが premium レンジに属します。",
+            ["Tag.PremiumLoverKnown.Desc"] = "既知カードに premium レンジが多い。",
+            ["Tag.LowHands"] = "低いハンド",
+            ["Tag.LowHands.Desc"] = "低いハンドをオープンまたはプレイする傾向を示します。",
+            ["Tag.LowHandsHero.Desc"] = "頻出 combos の中で低いハンドをプレイする傾向を示します。",
+            ["Tag.SuitedConnectors.Desc"] = "suited connectors をよく見せます。",
+            ["Tag.SuitedConnectorsHero.Desc"] = "suited connectors をよくプレイしています。",
+            ["Tag.Mixed"] = "混合",
+            ["Tag.Mixed.Desc"] = "既知カードが複数のレンジカテゴリにまたがっています。",
+            ["Tag.MixedHero.Desc"] = "頻出 combos が premium、低い手、suited、offsuit など複数カテゴリにまたがっています。",
+            ["Tag.MixedKnown.Desc"] = "既知カテゴリに幅広い多様性があります。",
+            ["Tag.Trapper"] = "Trapper",
+            ["Tag.Trapper.Desc"] = "強い手で turn または river まで攻撃を遅らせた既知ハンド。",
+            ["Tag.TrapperShort.Desc"] = "強い手で攻撃を遅らせた既知ハンド。",
+            ["Tag.AllInEquity.Desc"] = "強い、またはつながりのあるレンジでの既知 all-in。",
+            ["Tag.ColorLover.Desc"] = "flush を完成させて多くの bb を勝っています。",
+            ["Tag.SetLover.Desc"] = "pocket pairs で set を引いて多くの bb を勝っています。",
+            ["Tag.TripsLover.Desc"] = "手札1枚と board ペアで trips を作り多くの bb を勝っています。",
+            ["Tag.DoublePair.Desc"] = "two pair で多くの bb を勝っています。",
+            ["Tag.HighPair"] = "高いペア",
+            ["Tag.HighPair.Desc"] = "高いペアで多くの bb を勝っています。",
+            ["Tag.StraightLover"] = "Straight lover",
+            ["Tag.StraightLover.Desc"] = "straight を完成させて多くの bb を勝っています。",
+            ["Tag.WinningPattern.Dynamic"] = "{0} サンプル: 既知の勝ちハンド {2} 件で {1:+0.#;-0.#;0} bb。",
+            ["Tag.Vpip.Dynamic"] = "VPIP {0:0.#}%。preflop で自発的にプレイするハンド量を示します。",
+            ["Tag.Pfr.Dynamic"] = "PFR {0:0.#}%。単なる call ではなく preflop で raise する頻度を示します。",
+            ["Tag.FoldCBet.Dynamic"] = "Fold vs CBet {0:0.#}%。高いほど flop の continuation bet によく降りています。",
+            ["Tag.CBet.Dynamic"] = "Flop CBet {0:0.#}%。preflop 攻撃後に flop で bet する頻度です。",
+            ["Tag.Wsd.Dynamic"] = "W$SD {0:0.#}%。showdown で勝った割合です。",
+            ["Color.Neutral"] = "ニュートラル",
+            ["Color.Neutral.Desc"] = "30ハンド未満、またはデータ不足。",
+            ["Color.NeutralRt.Desc"] = "サンプル不足、または明確な読みなし。",
+            ["Color.DarkBlue"] = "濃い青",
+            ["Color.DarkBlue.Desc"] = "メトリクスが非常に低い。",
+            ["Color.Blue"] = "青",
+            ["Color.Blue.Desc"] = "低い値。",
+            ["Color.Green"] = "緑",
+            ["Color.Green.Desc"] = "メトリクスに応じた健全/低いゾーン。",
+            ["Color.Yellow"] = "黄",
+            ["Color.Yellow.Desc"] = "中間または注意ゾーン。",
+            ["Color.Orange"] = "オレンジ",
+            ["Color.Orange.Desc"] = "高い値。",
+            ["Color.SoftRed"] = "薄い赤",
+            ["Color.SoftRed.Desc"] = "非常に高い値、または警告。",
+            ["Color.Red"] = "赤",
+            ["Color.Red.Desc"] = "極端な値。FvCBet と W$SD はスケールが反転します。",
+            ["Color.RedRt.Desc"] = "極端な値。FvCBet と W$SD は慎重に読む必要があります。",
+            ["RangeColor.Fold.Desc"] = "Villain がこの combo で fold しました。",
+            ["RangeColor.Check.Desc"] = "Villain が check しました。",
+            ["RangeColor.Call.Desc"] = "Villain が call しました。",
+            ["RangeColor.Bet.Desc"] = "Villain が bet しました。",
+            ["RangeColor.Raise.Desc"] = "Villain が raise しました。",
+            ["RangeColor.ThreeBet.Desc"] = "Villain が preflop reraise しました。",
+            ["RangeColor.FourBet.Desc"] = "Villain が 4Bet 以上を行いました。",
+            ["RangeColor.AllIn.Desc"] = "Villain が all-in で終えました。",
+            ["RangeColor.Profit.Desc"] = "利益 bb 色分け時、緑はそのセルで villain に有利な結果を示します。",
+            ["RangeColor.Loss.Desc"] = "利益 bb 色分け時、赤はそのセルで villain に不利な結果を示します。",
+            ["Metric.VPIP.Desc.Player"] = "プレイヤーが preflop で自発的に参加したハンドの割合。",
+            ["Metric.VPIP.Desc.Hero"] = "あなたが preflop で自発的にプレイしたハンドの割合。",
+            ["Metric.PFR.Desc.Player"] = "プレイヤーが preflop で raise したハンドの割合。",
+            ["Metric.PFR.Desc.Hero"] = "あなたが preflop で raise したハンドの割合。",
+            ["Metric.ThreeBet.Desc"] = "raise に対する preflop reraise の頻度。",
+            ["Metric.AF.Desc"] = "Aggression Factor: postflop calls に対する bets/raises の比率。",
+            ["Metric.AF.Desc.Short"] = "Aggression Factor: bets/raises を postflop calls で割った値。",
+            ["Metric.AFq.Desc.Player"] = "Aggression Frequency: postflop 機会で攻撃的アクションを選ぶ割合。",
+            ["Metric.AFq.Desc.Hero"] = "Aggression Frequency: postflop 機会であなたが攻撃的アクションを選ぶ割合。",
+            ["Metric.CBet.Desc.Player"] = "preflop 攻撃後の flop continuation bet。",
+            ["Metric.CBet.Desc.Hero"] = "あなたの preflop 攻撃後の flop continuation bet。",
+            ["Metric.FvCBet.Desc"] = "Fold vs flop CBet。反転メトリクス: 高すぎると警告/搾取されやすい。",
+            ["Metric.FvCBet.Desc.Hero"] = "Fold vs flop CBet。反転メトリクス: 高すぎると警告。",
+            ["Metric.FvCBet.Desc.Short"] = "Fold vs flop CBet。高い値は exploit される可能性があります。",
+            ["Metric.WTSD.Desc.Player"] = "Went to Showdown: flop 後に showdown まで行く頻度。",
+            ["Metric.WTSD.Desc.Hero"] = "Went to Showdown: あなたが flop 後に showdown まで行く頻度。",
+            ["Metric.WSD.Desc"] = "Won Money at Showdown。色スケールは反転: 低いと警告、高いほど良い。",
+            ["Metric.WSD.Desc.Short"] = "showdown で勝った割合。",
+            ["Metric.WWSF.Desc.Player"] = "Won When Saw Flop: flop を見た後にプレイヤーが勝つ頻度。",
+            ["Metric.WWSF.Desc.Hero"] = "Won When Saw Flop: flop を見た後にあなたが勝つ頻度。",
+            ["Metric.VillainTables.Desc"] = "各セルは combo と観測回数を表示します。タブは PRE-FLOP、FLOP、TURN、RIVER に分かれ、セル選択でアクションと正確なハンドを表示します。",
+            ["RT.Help.AddFile"] = "読み取りを開始するテーブルの .txt ファイルを選択します。",
+            ["RT.Help.Play"] = "選択したファイルの追跡を開始または再開します。",
+            ["RT.Help.Stop"] = "ウィンドウを閉じずに、そのテーブルの追跡を停止します。",
+            ["RT.Help.Hero"] = "テーブル上の相手と自分の行を比較するために使う名前です。",
+            ["RT.Help.Lines"] = "テーブル履歴から読み取った行数です。",
+            ["RT.Help.Compact"] = "スクロールなしで8テーブルを見るためスケールを下げます。",
+            ["RT.SelectTableFileTitle"] = "テーブルの .txt ファイルを選択",
+            ["RT.Metric.Hands"] = "そのテーブルでプレイヤーに配られたハンド数。",
+            ["RT.Note.Sample"] = "リアルタイムの読みは、各テーブルに十分なハンドがあるほど有用です。小サンプルでは色が素早く変化します。",
+            ["RT.Note.HeroRow"] = "ヒーロー行は、あなたのペースをアクティブな villain と比較するために使います。",
+            ["RT.Note.File"] = "テーブルが更新されない場合は、.txt ファイルが正しいか、ルームが履歴を書き込んでいるか確認してください。",
+            ["RT.Note.Refresh"] = "新しいハンドがファイルに入るたびに割合は再計算されます。",
+            ["HeroNote.WorstPosition"] = "サンプル内で最も高くついたポジションは {0}: {1}, {2}。",
+            ["HeroNote.BestPosition"] = "最も利益の出たポジションは {0}: {1}。",
+            ["HeroNote.WorstAction"] = "合計 EV が最も悪いアクションは {0}: {1}。",
+            ["HeroNote.TopCombo"] = "最も多く自発的にプレイした combo は {0}: {1} 回、サンプルの {2}。",
+            ["HeroNote.HighFoldCBet"] = "Fold vs CBet が高い: 特にポジションありと BB で flop defense を見直してください。",
+            ["HeroNote.ShowdownReview"] = "showdown に多く行くが勝率が低い: turn/river の call を見直してください。",
+            ["Common.Preflop"] = "PRE-FLOP"
+        };
+
+        private static Dictionary<string, string> Russian() => new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["App.Title"] = "APH - Анализатор покерных рук",
+            ["Main.Subtitle"] = "Главное меню",
+            ["Main.GlobalStats"] = "ГЛОБАЛЬНАЯ СТАТИСТИКА",
+            ["Main.SelectFolderHint"] = "Выберите папку с историями рук, чтобы рассчитать средние stats.",
+            ["Main.HeroProfileTip"] = "Открыть профиль героя",
+            ["Main.PickFolderTip"] = "Выбрать папку рук",
+            ["Main.SettingsTip"] = "Настройки",
+            ["Main.RecentTables"] = "НЕДАВНИЕ СТОЛЫ",
+            ["Main.RealTime"] = "Реальное время",
+            ["Main.OpenRT"] = "Запустить RT-анализатор (8)",
+            ["Main.Waiting"] = "(Ожидание выбора...)",
+            ["Main.HistoryAnalysis"] = "Анализ истории",
+            ["Main.TablesAnalysis"] = "Анализ столов",
+            ["Main.TablesAnalysisDesc"] = "Выигрыши и KPI отдельно по столам",
+            ["Main.MyTables"] = "Мои таблицы",
+            ["Main.MyTablesDesc"] = "Карта действий по стартовой руке",
+            ["Main.DataVillainsDesc"] = "Недавние соперники и bb против них",
+            ["Main.LeakFinder"] = "Детектор leaks",
+            ["Main.LeakFinderDesc"] = "Находит паттерны, где вы теряете bb",
+            ["Main.Sessions"] = "Сессии",
+            ["Main.SessionsDesc"] = "Сохраненные отчеты и будущие сравнения",
+            ["Grid.Player"] = "Игрок",
+            ["Grid.Hands"] = "#Рук",
+            ["Grid.Table"] = "Стол",
+            ["Grid.Format"] = "Формат",
+            ["Grid.Date"] = "Дата",
+            ["Grid.FinalBb"] = "Итог BB",
+            ["Settings.Title"] = "APH - Настройки",
+            ["Settings.Header"] = "Настройки",
+            ["Settings.Subtitle"] = "Общие параметры, папка PokerStars, язык, палитры и синхронизация.",
+            ["Settings.PokerStarsDesc"] = "Папка историй рук по умолчанию. Приложение загружает ее автоматически при запуске.",
+            ["Settings.FolderLabel"] = "Папка hand histories",
+            ["Settings.Search"] = "Обзор",
+            ["Settings.Language"] = "Язык",
+            ["Settings.LanguageDesc"] = "Язык применяется и сохраняется при изменении.",
+            ["Settings.LanguageLabel"] = "Язык приложения",
+            ["Settings.Palette"] = "Цветовая палитра",
+            ["Settings.PaletteDesc"] = "Тема применяется и сохраняется при изменении.",
+            ["Settings.PaletteLabel"] = "Визуальная тема",
+            ["Settings.PalettePreview"] = "Предпросмотр палитр",
+            ["Settings.PalettePreviewDesc"] = "Classic Poker — текущая; остальные меняют визуальную атмосферу.",
+            ["Settings.Sync"] = "Синхронизация",
+            ["Settings.SyncDesc"] = "Готово для облака, Google и почты. Пока модуль будущего.",
+            ["Settings.Cloud"] = "Облачная синхронизация",
+            ["Settings.Google"] = "Google",
+            ["Settings.Email"] = "Почта",
+            ["Settings.Soon"] = "Скоро",
+            ["Settings.Status"] = "Изменения языка и цвета сохраняются мгновенно.",
+            ["Settings.Cancel"] = "Закрыть",
+            ["Settings.Save"] = "Сохранить папку",
+            ["RT.Title"] = "APH - Реальное время (8)",
+            ["RT.HelpTip"] = "Открыть справку Real Time",
+            ["RT.Compact"] = "Компактный режим",
+            ["RT.CompactDesc"] = "(уменьшает размеры и масштаб, чтобы показать все без прокрутки)",
+            ["RT.Header"] = "Реальное время - 8 столов",
+            ["RT.Detect"] = "Найти столы",
+            ["RT.FinishSession"] = "Завершить сессию",
+            ["RT.DetectHint"] = "Нажмите Найти столы, чтобы связать окна PokerStars с историями рук. Можно также добавить вручную через +.",
+            ["RT.DictionarySubtitle"] = "Контролы, цвета и метрики, используемые при чтении живых столов.",
+            ["RT.NoSessionToReport"] = "Нет загруженных столов для создания отчета.",
+            ["RT.ActiveTableLine"] = "- {0} | последняя рука: {1}",
+            ["RT.FinishWarning"] = "{0} стол(ов) все еще активны. Если завершить сейчас, RT закроется и отчет будет сохранен.\n\nСтолы:\n{1}\n\nЗавершить?",
+            ["RT.ReportSaved"] = "Отчет сохранен:\n{0}",
+            ["RT.ReportError"] = "Не удалось создать отчет:\n{0}",
+            ["Global.Title"] = "APH - Анализ столов",
+            ["Global.Header"] = "АНАЛИЗ СТОЛОВ",
+            ["Global.Blinds"] = "Блайнды",
+            ["Global.Result"] = "Результат",
+            ["Global.MinHands"] = "Мин. рук",
+            ["Global.Type"] = "Тип",
+            ["Global.Sort"] = "Сортировка",
+            ["Global.OpenTableTip"] = "Открыть анализ этого стола",
+            ["Common.Search"] = "Поиск",
+            ["Common.RecentTable"] = "Недавний стол",
+            ["Common.TotalHands"] = "Всего рук",
+            ["Common.Profile"] = "Профиль",
+            ["Common.LoadedTables"] = "Загруженные столы",
+            ["Common.AnalyzedHands"] = "Проанализированные руки",
+            ["Common.TotalResult"] = "Общий результат",
+            ["Common.BiggestLeak"] = "Главный leak",
+            ["Common.CriticalHands"] = "Критические руки",
+            ["Common.ViewAll"] = "Показать все",
+            ["Common.WorstHand"] = "Худшая рука",
+            ["Common.MostExpensiveAction"] = "Самое дорогое действие",
+            ["Common.MostExpensivePot"] = "Самый дорогой банк",
+            ["Common.Sample"] = "Выборка",
+            ["Common.Hands"] = "Руки",
+            ["Common.Average"] = "Среднее",
+            ["Common.Action"] = "Действие",
+            ["Common.Position"] = "Позиция",
+            ["Common.PositionShort"] = "Поз",
+            ["Common.Result"] = "Результат",
+            ["Common.Type"] = "Тип",
+            ["Common.Sort"] = "Сортировка",
+            ["Common.From"] = "С",
+            ["Common.To"] = "По",
+            ["Common.Color"] = "Цвет",
+            ["Common.ProfitBb"] = "Прибыль bb",
+            ["Common.SelectCell"] = "Выберите ячейку",
+            ["Common.ExactHands"] = "Точные руки",
+            ["Common.All"] = "Все",
+            ["Common.AllMale"] = "Все",
+            ["Common.Won"] = "Выиграно",
+            ["Common.Lost"] = "Проиграно",
+            ["Common.BestHands"] = "ЛУЧШИЕ РУКИ",
+            ["Common.WorstHands"] = "ХУДШИЕ РУКИ",
+            ["Common.QuickRead"] = "БЫСТРОЕ ЧТЕНИЕ",
+            ["Common.Cards"] = "Карты",
+            ["Common.TableAnalysisTitle"] = "APH - Анализ стола",
+            ["Common.HeroProfileTitle"] = "APH - Профиль героя",
+            ["Common.OpenDictionary"] = "Открыть словарь тегов и цветов",
+            ["Common.BestPosition"] = "Лучшая позиция",
+            ["Common.WorstPosition"] = "Худшая позиция",
+            ["Common.Villain"] = "Villain",
+            ["Common.Note"] = "Заметка",
+            ["Common.Real"] = "Реальный",
+            ["Common.Reason"] = "Причина",
+            ["Common.DictionarySubtitleVillains"] = "Теги, таблицы villain и цвета, используемые в stats и диапазонах.",
+            ["Common.DictionarySubtitleProfile"] = "Теги, быстрое чтение и цвета, используемые в глобальных метриках.",
+            ["Common.HeroVsVillain"] = "ГЕРОЙ VS VILLAIN",
+            ["Common.BaseProfile"] = "Базовый профиль",
+            ["Common.RecentFormat"] = "Недавний формат",
+            ["Common.SelectComboExact"] = "Выберите комбинацию, чтобы увидеть точные руки",
+            ["Common.TableHand"] = "Рука стола",
+            ["Common.ExactHand"] = "Точная рука",
+            ["Common.FinalBoard"] = "Финальный board",
+            ["Common.Lines"] = "Строки:",
+            ["Common.Last"] = "Последняя:",
+            ["Common.Hero"] = "Герой:",
+            ["Common.LastNine"] = "Последние 9",
+            ["Common.Sequence"] = "Последовательность",
+            ["Common.StatusSelectFolderGlobal"] = "Сначала выберите папку, чтобы загрузить анализ столов.",
+            ["Common.StatusGlobalOpen"] = "Анализ столов открыт.",
+            ["Common.StatusSelectFolderTables"] = "Сначала выберите папку, чтобы загрузить Мои таблицы.",
+            ["Common.StatusTablesOpen"] = "Мои таблицы открыты.",
+            ["Common.StatusSelectFolderVillains"] = "Сначала выберите папку, чтобы загрузить Data Villans.",
+            ["Common.StatusVillainsOpen"] = "Data Villans открыты.",
+            ["Common.StatusSelectFolderLeaks"] = "Сначала выберите папку, чтобы загрузить детектор leaks.",
+            ["Common.StatusLeaksOpen"] = "Детектор leaks открыт.",
+            ["Common.StatusSelectFolderHero"] = "Сначала выберите папку, чтобы загрузить профиль героя.",
+            ["Common.StatusHeroOpen"] = "Профиль {0} открыт.",
+            ["Common.SelectHandFolderTitle"] = "Выберите папку историй рук",
+            ["Common.SettingsSaved"] = "Настройки сохранены.",
+            ["Common.AnalyzingFolder"] = "Анализ папки: {0}",
+            ["Common.FolderAnalysisFailed"] = "Не удалось проанализировать папку.",
+            ["Common.AnalyzeErrorTitle"] = "Ошибка анализа",
+            ["Common.SelectPokerStarsFolderTitle"] = "Выберите папку историй PokerStars",
+            ["Common.PreviewApplied"] = "Предпросмотр применен: {0}.",
+            ["Common.RtNoWindows"] = "Активные окна столов PokerStars Hold'em не найдены.",
+            ["Common.RtNoMatches"] = "Найдены столы: {0}. Подходящие недавние HH не найдены в {1}.",
+            ["Common.PositionLosses"] = "ПОТЕРИ ПО ПОЗИЦИИ",
+            ["Common.RealEvByAction"] = "РЕАЛЬНЫЙ EV ПО ДЕЙСТВИЮ",
+            ["Common.PotType"] = "ТИП БАНКА",
+            ["Common.ProblemHands"] = "ПРОБЛЕМНЫЕ РУКИ",
+            ["Common.BoardTexture"] = "ТЕКСТУРА BOARD",
+            ["Common.CompareSessions"] = "СРАВНИТЬ СЕССИИ",
+            ["Common.ReviewHands"] = "РУКИ ДЛЯ РАЗБОРА",
+            ["Common.PositionProfit"] = "ПРИБЫЛЬ И ИГРА ПО ПОЗИЦИИ",
+            ["Common.TopCombos"] = "ТОП-10 САМЫХ ИГРАЕМЫХ COMBO",
+            ["Common.EvByAction"] = "EV ПО ДЕЙСТВИЮ",
+            ["Common.HandsTitle"] = "РУКИ",
+            ["Common.ProfitChart"] = "ГРАФИК ПРИБЫЛИ / УБЫТКА",
+            ["Common.Dictionary"] = "СЛОВАРЬ",
+            ["Common.Tags"] = "ТЕГИ",
+            ["Common.MetricColors"] = "ЦВЕТА МЕТРИК",
+            ["Common.TableColors"] = "ЦВЕТА ТАБЛИЦ",
+            ["Common.StatMeaning"] = "ЧТО ИЗМЕРЯЕТ КАЖДАЯ STAT",
+            ["Common.Controls"] = "УПРАВЛЕНИЕ",
+            ["Common.DictionaryMetrics"] = "СЛОВАРЬ МЕТРИК",
+            ["Common.ProfileDictionaryHeader"] = "СЛОВАРЬ ПРОФИЛЯ",
+            ["Common.VillainDictionaryHeader"] = "СЛОВАРЬ VILLAIN",
+            ["Common.RealTimeHelpHeader"] = "СПРАВКА REAL TIME",
+            ["Common.VillainTables"] = "ТАБЛИЦЫ VILLAIN (ИЗВЕСТНАЯ ВЫБОРКА)",
+            ["Common.MyTablesHeader"] = "МОИ ТАБЛИЦЫ",
+            ["Common.MyTablesTitle"] = "APH - Мои таблицы",
+            ["Common.Times"] = "Раз",
+            ["Common.Usage"] = "Использование",
+            ["Common.Chips"] = "Фишки",
+            ["Filter.Last7"] = "Последние 7 дней",
+            ["Filter.Last30"] = "Последние 30 дней",
+            ["Filter.CurrentMonth"] = "Текущий месяц",
+            ["Filter.Winning"] = "Выигрышные",
+            ["Filter.Losing"] = "Проигрышные",
+            ["Filter.Win100"] = "+100bb или больше",
+            ["Filter.Loss100"] = "-100bb или хуже",
+            ["Filter.MostRecent"] = "Самые недавние",
+            ["Filter.BbWin"] = "Самый большой выигрыш bb",
+            ["Filter.BbLoss"] = "Самая большая потеря bb",
+            ["Filter.AmountWin"] = "Самый большой выигрыш фишек/денег",
+            ["Filter.AmountLoss"] = "Самая большая потеря фишек/денег",
+            ["Filter.IWin"] = "Я выиграл у них",
+            ["Filter.TheyWin"] = "Они выиграли у меня",
+            ["Filter.Even"] = "Ровно",
+            ["Filter.Plus50"] = "+50bb или больше",
+            ["Filter.Plus10To50"] = "+10 до +50",
+            ["Filter.Minus10To50"] = "-10 до -50",
+            ["Filter.Minus50"] = "-50bb или хуже",
+            ["Filter.MostVsHero"] = "Больше всего рук vs герой",
+            ["Filter.BestVsMe"] = "Лучший результат vs меня",
+            ["Filter.WorstVsMe"] = "Худший результат vs меня",
+            ["Filter.HighVpip"] = "Высокий VPIP",
+            ["Filter.High3Bet"] = "Высокий 3Bet",
+            ["Filter.Profits"] = "Прибыль",
+            ["Filter.WorstFirst"] = "Сначала худшие",
+            ["Filter.BestFirst"] = "Сначала лучшие",
+            ["Filter.RecentDate"] = "Недавняя дата",
+            ["Filter.OldDate"] = "Старая дата",
+            ["Common.TotalVillains"] = "Villains",
+            ["Common.Folder"] = "Папка",
+            ["Common.Files"] = "Файлы",
+            ["Common.NoHandsDetected"] = "Руки не найдены",
+            ["Common.ReviewSummary"] = "Сводка {0} худших найденных рук. Нажмите Показать все, чтобы открыть список в стиле tracker.",
+            ["Common.TotalVillainHands"] = "Всего рук villain",
+            ["Common.HandsVsHero"] = "Руки vs Герой",
+            ["Common.KnownCards"] = "Известные карты",
+            ["Common.NoExactHands"] = "Нет точных рук",
+            ["Common.VillainDetailTitle"] = "APH - Детали villain",
+            ["Common.DataVillainsHeader"] = "DATA VILLANS",
+            ["Common.OwnBb"] = "Собственный BB",
+            ["Common.ChipsMoney"] = "Фишки/Деньги",
+            ["Common.LossBb"] = "Потеря bb",
+            ["Common.VillainTablesShort"] = "Таблицы villain",
+            ["Common.MyResultVsVillain"] = "Мой результат vs villain",
+            ["Common.NoAction"] = "Нет действия",
+            ["Common.NoPot"] = "Нет банка",
+            ["Common.SelectHand"] = "Выберите руку",
+            ["Common.NoActionRegistered"] = "Действие не зарегистрировано.",
+            ["Common.CountOfHands"] = "{0} из {1} рук",
+            ["Common.HandCount"] = "{0} рук",
+            ["Common.HandCountBbAverage"] = "{0} рук | среднее {1:+0.#;-0.#;0} bb",
+            ["Common.SummaryHandsBbAverage"] = "{0} рук | {1:+0.#;-0.#;0} bb | среднее {2}",
+            ["Common.DefaultFolderLoaded"] = "Папка по умолчанию загружена из настроек.",
+            ["Common.NoData"] = "Нет данных.",
+            ["Common.Hand"] = "Рука",
+            ["Common.Shows"] = "показывает",
+            ["Common.NoHand"] = "Нет руки",
+            ["Common.NoSampleLower"] = "нет выборки",
+            ["Common.NoKnownSample"] = "Нет известной выборки",
+            ["Common.ActionCountBbAverage"] = "{0} действий | среднее {1:+0.#;-0.#;0} bb | {2}",
+            ["Common.HandActionAverage"] = "{0} | действий: {1} | среднее {2:0.#} bb",
+            ["VillainDetail.Subtitle"] = "Известная выборка: раскрытых рук {0} | Всего vs герой: {1} рук",
+            ["PlayerSummary.ProfileHands"] = "{0} | {1} рук",
+            ["PlayerSummary.HistoryTag"] = "История {0} vs герой",
+            ["PlayerSummary.History"] = "{0} | История: {1} рук | Vs герой: {2} | Текущий стол: {3}",
+            ["LeakReason.BigLoss"] = "Большая потеря с {0} в {1}, {2}, {3}.",
+            ["LeakReason.SmallLoss"] = "Малая потеря: проверьте, был ли fold/call обязательным.",
+            ["LeakReason.WinCompare"] = "Выигрышная рука полезна для сравнения похожих линий.",
+            ["Tag.NoSample"] = "Нет выборки",
+            ["Tag.NoSample.Desc"] = "Менее 30 рук всего: начальное чтение с низкой надежностью.",
+            ["Tag.NoSample.Short"] = "Менее 30 рук всего.",
+            ["Tag.Fish.Desc"] = "Базовый профиль: очень высокий VPIP, низкий PFR и низкая агрессия.",
+            ["Tag.Maniac.Desc"] = "Базовый профиль: играет/рейзит слишком много или имеет очень высокий AF/3Bet.",
+            ["Tag.LoosePassive"] = "Loose passive",
+            ["Tag.LoosePassive.Desc"] = "Базовый профиль: играет много рук, но недостаточно рейзит.",
+            ["Tag.Lag.Desc"] = "Базовый профиль: loose aggressive, широкий диапазон и много инициативы.",
+            ["Tag.Tag.Desc"] = "Базовый профиль: tight aggressive, упорядоченный диапазон и здоровая агрессия.",
+            ["Tag.Nit.Desc"] = "Базовый профиль: слишком закрытый диапазон и низкий PFR.",
+            ["Tag.Tight.Desc"] = "Базовый профиль: играет мало рук и открывается не слишком широко.",
+            ["Tag.Passive"] = "Пассивный",
+            ["Tag.Passive.Desc"] = "Базовый профиль: низкая postflop агрессия.",
+            ["Tag.Regular"] = "Regular",
+            ["Tag.Regular.Desc"] = "Базовый профиль без явных крайностей.",
+            ["Tag.ProfileBase.Desc"] = "Базовый профиль по VPIP/PFR/3Bet/AF.",
+            ["Tag.ProfileBaseHero.Desc"] = "Базовый профиль по VPIP/PFR/3Bet/AF, как в Data Villans.",
+            ["Tag.FrequentRival"] = "Частый соперник",
+            ["Tag.FrequentRival.Desc"] = "Имеет много рук против героя; чтение важнее маленькой выборки.",
+            ["Tag.FrequentRival.Dynamic"] = "{0} рук против героя.",
+            ["Tag.LosesVsHero"] = "Проигрывает vs Герой",
+            ["Tag.LosesVsHero.Desc"] = "Совместный результат в пользу героя.",
+            ["Tag.LosesVsHero.Dynamic"] = "{0:0.#} bb в пользу героя в общих руках.",
+            ["Tag.WinsVsHero"] = "Выигрывает vs Герой",
+            ["Tag.WinsVsHero.Desc"] = "Совместный результат в пользу villain.",
+            ["Tag.WinsVsHero.Dynamic"] = "{0:0.#} bb в пользу villain в общих руках.",
+            ["Tag.PlaysManyHands"] = "Играет много рук",
+            ["Tag.PlaysManyHands.Desc"] = "Высокий VPIP: добровольно входит в слишком много рук.",
+            ["Tag.Aggressor"] = "Агрессор",
+            ["Tag.Aggressor.Desc"] = "Высокий AF или AFq: часто ставит/рейзит postflop.",
+            ["Tag.High3Bet"] = "Высокий 3Bet",
+            ["Tag.High3Bet.Desc"] = "3Bet выше порога: часто делает preflop reraise.",
+            ["Tag.FoldsCBet"] = "Много fold vs CBet",
+            ["Tag.FoldsCBetShort"] = "Folds CBet",
+            ["Tag.FoldsCBet.Desc"] = "Высокий FvCB: слишком часто сдается на flop против continuation bet.",
+            ["Tag.NoFoldCBet"] = "Не fold CBet",
+            ["Tag.NoFoldCBet.Desc"] = "Низкий FvCB: слишком часто продолжает против continuation bet.",
+            ["Tag.ShowdownOften"] = "Часто идет на showdown",
+            ["Tag.GoesShowdown"] = "Идет на showdown",
+            ["Tag.WeakShowdown"] = "Слабый showdown",
+            ["Tag.ShowdownOften.Desc"] = "Высокий WTSD: часто доходит до showdown; проверьте качество результатов.",
+            ["Tag.CallingStation.Desc"] = "Высокий VPIP, низкий PFR и низкая агрессия: много call и мало давления.",
+            ["Tag.Rock"] = "Rock",
+            ["Tag.Rock.Desc"] = "Закрытый диапазон при достаточной выборке.",
+            ["Tag.Loose.Desc"] = "Высокий VPIP: добровольно играет много рук.",
+            ["Tag.TightHero.Desc"] = "Низкий VPIP: очень тщательно выбирает руки.",
+            ["Tag.MidRange"] = "Средний диапазон",
+            ["Tag.MidRange.Desc"] = "VPIP без явной крайности.",
+            ["Tag.AggressivePreflop"] = "Агрессивный preflop",
+            ["Tag.AggressivePreflop.Desc"] = "Высокий PFR: часто берет инициативу до flop.",
+            ["Tag.LowPfr"] = "Низкий PFR",
+            ["Tag.LowPfr.Desc"] = "Низкий PFR: мало рейзит относительно выборки.",
+            ["Tag.StablePfr"] = "Стабильный PFR",
+            ["Tag.StablePfr.Desc"] = "PFR в среднем диапазоне.",
+            ["Tag.OverfoldCBet.Desc"] = "Высокий Fold vs CBet: слишком часто сдается на flop против continuation bet.",
+            ["Tag.CBetDefenseOk"] = "Защита vs CBet ok",
+            ["Tag.CBetDefenseOk.Desc"] = "Fold vs CBet без сильной тревоги.",
+            ["Tag.FrequentCBet"] = "Частый CBet",
+            ["Tag.FrequentCBet.Desc"] = "Высокий flop CBet: часто ставит после preflop агрессии.",
+            ["Tag.SelectiveCBet"] = "Выборочный CBet",
+            ["Tag.SelectiveCBet.Desc"] = "Средний/низкий flop CBet: выбирает continuation bet осторожнее.",
+            ["Tag.StrongShowdown"] = "Сильный showdown",
+            ["Tag.StrongShowdown.Desc"] = "Высокий W$SD: часто выигрывает, доходя до showdown.",
+            ["Tag.ReviewShowdown"] = "Showdown к разбору",
+            ["Tag.ReviewShowdown.Desc"] = "Низкий или средний W$SD: разберите руки, дошедшие до showdown.",
+            ["Tag.LeakPosition"] = "Leak <position>",
+            ["Tag.LeakPosition.Desc"] = "Отмечает позицию с худшим общим результатом bb.",
+            ["Tag.LeakPosition.Dynamic"] = "Ваша худшая позиция по общему bb — {0}: {1}, {2} bb/100.",
+            ["Tag.ComboLover.Desc"] = "Самый частый добровольный combo показывается как карты + lover. Описание показывает частоту и использование.",
+            ["Tag.ComboLover.Dynamic"] = "{0} — самый частый добровольный combo: {1} раз, {2} выборки.",
+            ["Tag.PremiumLover"] = "Premium lover",
+            ["Tag.PremiumLover.Desc"] = "Много известных карт относится к premium диапазону.",
+            ["Tag.PremiumLoverHero.Desc"] = "Много частых combos относятся к premium диапазону.",
+            ["Tag.PremiumLoverKnown.Desc"] = "Много известных карт — premium диапазон.",
+            ["Tag.LowHands"] = "Низкие руки",
+            ["Tag.LowHands.Desc"] = "Показывает склонность открывать или играть низкие руки.",
+            ["Tag.LowHandsHero.Desc"] = "Показывает склонность играть низкие руки среди частых combos.",
+            ["Tag.SuitedConnectors.Desc"] = "Часто показывает suited connectors.",
+            ["Tag.SuitedConnectorsHero.Desc"] = "Вы часто играете suited connectors.",
+            ["Tag.Mixed"] = "Смешанный",
+            ["Tag.Mixed.Desc"] = "Известные карты покрывают несколько категорий диапазона.",
+            ["Tag.MixedHero.Desc"] = "Частые combos покрывают несколько категорий: premium, низкие, suited и offsuit.",
+            ["Tag.MixedKnown.Desc"] = "Показывает широкое разнообразие известных категорий.",
+            ["Tag.Trapper"] = "Trapper",
+            ["Tag.Trapper.Desc"] = "Известные сильные руки с отложенной агрессией на turn или river.",
+            ["Tag.TrapperShort.Desc"] = "Известные сильные руки с отложенной агрессией.",
+            ["Tag.AllInEquity.Desc"] = "Известные all-in с сильными или связанными диапазонами.",
+            ["Tag.ColorLover.Desc"] = "Выигрывает много bb, собирая flush.",
+            ["Tag.SetLover.Desc"] = "Выигрывает много bb, попадая в set с pocket pairs.",
+            ["Tag.TripsLover.Desc"] = "Выигрывает много bb, собирая trips с одной картой в руке и парой на board.",
+            ["Tag.DoublePair.Desc"] = "Выигрывает много bb, собирая две пары.",
+            ["Tag.HighPair"] = "Высокая пара",
+            ["Tag.HighPair.Desc"] = "Выигрывает много bb с высокой парой.",
+            ["Tag.StraightLover"] = "Straight lover",
+            ["Tag.StraightLover.Desc"] = "Выигрывает много bb, собирая straight.",
+            ["Tag.WinningPattern.Dynamic"] = "{0} Выборка: {1:+0.#;-0.#;0} bb в {2} известных выигрышных руках.",
+            ["Tag.Vpip.Dynamic"] = "VPIP {0:0.#}%. Показывает, сколько рук вы добровольно играете preflop.",
+            ["Tag.Pfr.Dynamic"] = "PFR {0:0.#}%. Измеряет, сколько рук вы рейзите preflop вместо простого call.",
+            ["Tag.FoldCBet.Dynamic"] = "Fold vs CBet {0:0.#}%. Высокое значение значит, что вы часто сдаетесь на flop против continuation bet.",
+            ["Tag.CBet.Dynamic"] = "Flop CBet {0:0.#}%. Как часто вы ставите flop после preflop агрессии.",
+            ["Tag.Wsd.Dynamic"] = "W$SD {0:0.#}%. Процент выигранных showdown при раскрытии.",
+            ["Color.Neutral"] = "Нейтральный",
+            ["Color.Neutral.Desc"] = "Менее 30 рук или недостаточно данных.",
+            ["Color.NeutralRt.Desc"] = "Недостаточная выборка или нет четкого чтения.",
+            ["Color.DarkBlue"] = "Темно-синий",
+            ["Color.DarkBlue.Desc"] = "Очень низкое значение метрики.",
+            ["Color.Blue"] = "Синий",
+            ["Color.Blue.Desc"] = "Низкое значение.",
+            ["Color.Green"] = "Зеленый",
+            ["Color.Green.Desc"] = "Здоровая/низкая зона в зависимости от метрики.",
+            ["Color.Yellow"] = "Желтый",
+            ["Color.Yellow.Desc"] = "Средняя зона или зона внимания.",
+            ["Color.Orange"] = "Оранжевый",
+            ["Color.Orange.Desc"] = "Высокое значение.",
+            ["Color.SoftRed"] = "Мягкий красный",
+            ["Color.SoftRed.Desc"] = "Очень высокое значение или тревога.",
+            ["Color.Red"] = "Красный",
+            ["Color.Red.Desc"] = "Крайнее значение. В FvCBet и W$SD шкала инвертирована.",
+            ["Color.RedRt.Desc"] = "Крайнее значение. В FvCBet и W$SD шкалу нужно читать осторожно.",
+            ["RangeColor.Fold.Desc"] = "Villain сделал fold с этой комбинацией.",
+            ["RangeColor.Check.Desc"] = "Villain сделал check.",
+            ["RangeColor.Call.Desc"] = "Villain сделал call.",
+            ["RangeColor.Bet.Desc"] = "Villain сделал bet.",
+            ["RangeColor.Raise.Desc"] = "Villain сделал raise.",
+            ["RangeColor.ThreeBet.Desc"] = "Villain сделал preflop reraise.",
+            ["RangeColor.FourBet.Desc"] = "Villain сделал 4Bet или больше.",
+            ["RangeColor.AllIn.Desc"] = "Villain закончил all-in.",
+            ["RangeColor.Profit.Desc"] = "При включенном цвете по прибыли bb зеленый означает благоприятный результат для villain в этой ячейке.",
+            ["RangeColor.Loss.Desc"] = "При включенном цвете по прибыли bb красный означает отрицательный результат для villain в этой ячейке.",
+            ["Metric.VPIP.Desc.Player"] = "Процент рук, в которые игрок добровольно входит preflop.",
+            ["Metric.VPIP.Desc.Hero"] = "Процент рук, которые вы добровольно играете preflop.",
+            ["Metric.PFR.Desc.Player"] = "Процент рук, которые игрок рейзит preflop.",
+            ["Metric.PFR.Desc.Hero"] = "Процент рук, которые вы рейзите preflop.",
+            ["Metric.ThreeBet.Desc"] = "Частота preflop reraise против raise.",
+            ["Metric.AF.Desc"] = "Aggression Factor: отношение bets/raises к postflop calls.",
+            ["Metric.AF.Desc.Short"] = "Aggression Factor: bets/raises, деленные на postflop calls.",
+            ["Metric.AFq.Desc.Player"] = "Aggression Frequency: процент postflop возможностей, где игрок выбирает агрессивное действие.",
+            ["Metric.AFq.Desc.Hero"] = "Aggression Frequency: процент postflop возможностей, где вы выбираете агрессивное действие.",
+            ["Metric.CBet.Desc.Player"] = "Flop continuation bet после preflop агрессии.",
+            ["Metric.CBet.Desc.Hero"] = "Flop continuation bet после вашей preflop агрессии.",
+            ["Metric.FvCBet.Desc"] = "Fold vs flop CBet. Метрика инвертирована: слишком высоко — тревога/эксплойт.",
+            ["Metric.FvCBet.Desc.Hero"] = "Fold vs flop CBet. Метрика инвертирована: слишком высоко — тревога.",
+            ["Metric.FvCBet.Desc.Short"] = "Fold vs flop CBet. Высокое значение может быть эксплойтным.",
+            ["Metric.WTSD.Desc.Player"] = "Went to Showdown: как часто игрок доходит до showdown после flop.",
+            ["Metric.WTSD.Desc.Hero"] = "Went to Showdown: как часто вы доходите до showdown после flop.",
+            ["Metric.WSD.Desc"] = "Won Money at Showdown. Цветовая шкала инвертирована: низко — тревога, высоко — лучше.",
+            ["Metric.WSD.Desc.Short"] = "Процент выигранных showdown.",
+            ["Metric.WWSF.Desc.Player"] = "Won When Saw Flop: как часто игрок выигрывает руку после flop.",
+            ["Metric.WWSF.Desc.Hero"] = "Won When Saw Flop: как часто вы выигрываете руку после flop.",
+            ["Metric.VillainTables.Desc"] = "Каждая ячейка показывает combo и количество наблюдений. Вкладки разделяют PRE-FLOP, FLOP, TURN и RIVER; при выборе ячейки показываются действия и точные руки.",
+            ["RT.Help.AddFile"] = "Выберите .txt файл стола, чтобы начать чтение.",
+            ["RT.Help.Play"] = "Запускает или продолжает отслеживание выбранного файла.",
+            ["RT.Help.Stop"] = "Останавливает отслеживание этого стола, не закрывая окно.",
+            ["RT.Help.Hero"] = "Имя, используемое для сравнения вашей строки с активными соперниками за столом.",
+            ["RT.Help.Lines"] = "Количество строк, прочитанных из истории стола.",
+            ["RT.Help.Compact"] = "Уменьшает масштаб, чтобы видеть все 8 столов без прокрутки.",
+            ["RT.SelectTableFileTitle"] = "Выберите .txt файл стола",
+            ["RT.Metric.Hands"] = "Руки, полученные игроком за этим столом.",
+            ["RT.Note.Sample"] = "Чтение в реальном времени полезнее, когда у каждого стола достаточно рук; на малой выборке цвета могут быстро меняться.",
+            ["RT.Note.HeroRow"] = "Строка героя позволяет сравнить ваш темп с активными villain за столом.",
+            ["RT.Note.File"] = "Если стол не обновляется, проверьте правильность .txt файла и запись истории румом.",
+            ["RT.Note.Refresh"] = "Проценты пересчитываются по мере поступления новых рук в файл.",
+            ["HeroNote.WorstPosition"] = "Самая дорогая позиция в выборке — {0}: {1}, {2}.",
+            ["HeroNote.BestPosition"] = "Самая прибыльная позиция — {0}: {1}.",
+            ["HeroNote.WorstAction"] = "Действие с худшим суммарным EV — {0}: {1}.",
+            ["HeroNote.TopCombo"] = "Самый часто играемый добровольный combo — {0}: {1} раз, {2} выборки.",
+            ["HeroNote.HighFoldCBet"] = "Высокий Fold vs CBet: проверьте защиту flop, особенно в позиции и BB.",
+            ["HeroNote.ShowdownReview"] = "Вы часто доходите до showdown и мало выигрываете: проверьте calls на turn/river.",
+            ["Common.Preflop"] = "PRE-FLOP"
+        };
 
         private static Dictionary<string, string> English() => new(StringComparer.OrdinalIgnoreCase)
         {

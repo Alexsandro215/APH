@@ -19,7 +19,7 @@ namespace Hud.App.Views
         {
             if (!LocalAppLockService.VerifyPassword(_settings, PasswordInput.Password))
             {
-                StatusText.Text = "Contrasena local incorrecta.";
+                StatusText.Text = LocalizationManager.Text("Login.BadLocalPassword");
                 PasswordInput.SelectAll();
                 PasswordInput.Focus();
                 return;

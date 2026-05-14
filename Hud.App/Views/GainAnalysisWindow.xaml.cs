@@ -32,7 +32,7 @@ namespace Hud.App.Views
                 .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             _hands = BuildHands(_tables).ToList();
-            SummaryText.Text = $"{_hands.Count} manos analizadas";
+            SummaryText.Text = string.Format(LocalizationManager.Text("Gain.AnalyzedHands"), _hands.Count);
             RefreshMode();
             DrawCurve();
         }
@@ -78,23 +78,23 @@ namespace Hud.App.Views
             _groups = BuildGroups(_mode).ToList();
             BarsTitleText.Text = _mode switch
             {
-                "Position" => "GANANCIA POR POSICION",
-                "Action" => "GANANCIA POR ACCION",
-                "Bluff" => "GANANCIA POR BLUFF",
-                "Table" => "GANANCIA POR MESA",
-                "Format" => "GANANCIA POR FORMATO",
-                "Blinds" => "GANANCIA POR CIEGAS",
-                _ => "GANANCIA POR CALLE"
+                "Position" => LocalizationManager.Text("Gain.ByPosition"),
+                "Action" => LocalizationManager.Text("Gain.ByAction"),
+                "Bluff" => LocalizationManager.Text("Gain.ByBluff"),
+                "Table" => LocalizationManager.Text("Gain.ByTable"),
+                "Format" => LocalizationManager.Text("Gain.ByFormat"),
+                "Blinds" => LocalizationManager.Text("Gain.ByBlinds"),
+                _ => LocalizationManager.Text("Gain.ByStreet")
             };
             ModeDescriptionText.Text = _mode switch
             {
-                "Position" => "Agrupa la ganancia por asiento del heroe para detectar donde imprime bb y donde se fuga valor.",
-                "Action" => "Agrupa por la ultima accion importante del heroe en la mano: fold, check, call, bet, raise o all-in.",
-                "Bluff" => "Separa agresion sin showdown, agresion con mano debil y manos no agresivas para leer la calidad del bluff.",
-                "Table" => "Cada barra es una mesa completa. Este corte sirve para ubicar exactamente donde ganaste o perdiste mas fichas.",
-                "Format" => "Agrupa por formato detectado: 6-max, 3-max u otros formatos.",
-                "Blinds" => "Agrupa por ciegas, por ejemplo 100/200 o 250/500, para detectar donde rinde mejor tu juego.",
-                _ => "Agrupa por la ultima calle donde el heroe tomo una decision: preflop, flop, turn o river."
+                "Position" => LocalizationManager.Text("Gain.PositionModeDesc"),
+                "Action" => LocalizationManager.Text("Gain.ActionModeDesc"),
+                "Bluff" => LocalizationManager.Text("Gain.BluffModeDesc"),
+                "Table" => LocalizationManager.Text("Gain.TableModeDesc"),
+                "Format" => LocalizationManager.Text("Gain.FormatModeDesc"),
+                "Blinds" => LocalizationManager.Text("Gain.BlindsModeDesc"),
+                _ => LocalizationManager.Text("Gain.StreetModeDesc")
             };
 
             SetModeButton(StreetModeButton, _mode == "Street");
@@ -131,11 +131,11 @@ namespace Hud.App.Views
 
             TotalText.Text = FormatChips(total);
             TotalText.Foreground = TrendBrush(total);
-            AverageText.Text = $"{FormatChips(average)}/mano";
+            AverageText.Text = string.Format(LocalizationManager.Text("Gain.PerHandValue"), FormatChips(average));
             AverageText.Foreground = TrendBrush(average);
-            BestText.Text = best is null ? "-" : $"{best.Label} {FormatChips(best.TotalAmount)}";
+            BestText.Text = best is null ? "-" : $"{DisplayGroupLabel(_mode, best.Label)} {FormatChips(best.TotalAmount)}";
             BestText.Foreground = best is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(best.TotalAmount);
-            WorstText.Text = worst is null ? "-" : $"{worst.Label} {FormatChips(worst.TotalAmount)}";
+            WorstText.Text = worst is null ? "-" : $"{DisplayGroupLabel(_mode, worst.Label)} {FormatChips(worst.TotalAmount)}";
             WorstText.Foreground = worst is null ? GetThemeBrush("Brush.Text", Brushes.White) : TrendBrush(worst.TotalAmount);
             CurveTotalText.Text = FormatChips(total);
             CurveTotalText.Foreground = TrendBrush(total);
@@ -145,32 +145,32 @@ namespace Hud.App.Views
         {
             InsightTitleText.Text = _mode switch
             {
-                "Position" => "LECTURA POR POSICION",
-                "Action" => "QUE HACE CADA ACCION",
-                "Bluff" => "LECTURA DE BLUFF",
-                "Table" => "LECTURA POR MESA",
-                "Format" => "LECTURA POR FORMATO",
-                "Blinds" => "LECTURA POR CIEGAS",
-                _ => "LECTURA POR CALLE"
+                "Position" => LocalizationManager.Text("Gain.ReadingByPosition"),
+                "Action" => LocalizationManager.Text("Gain.ReadingByAction"),
+                "Bluff" => LocalizationManager.Text("Gain.ReadingByBluff"),
+                "Table" => LocalizationManager.Text("Gain.ReadingByTable"),
+                "Format" => LocalizationManager.Text("Gain.ReadingByFormat"),
+                "Blinds" => LocalizationManager.Text("Gain.ReadingByBlinds"),
+                _ => LocalizationManager.Text("Gain.Reading")
             };
 
             InsightBodyText.Text = _mode switch
             {
-                "Position" => "Sirve para encontrar si la ganancia viene de robar, defender, jugar ciegas o de posiciones tardias.",
-                "Action" => "La accion es la ultima decision fuerte detectada en la mano. Te dice cuanto estas ganando o perdiendo cuando terminas foldeando, pagando, apostando o resubiendo.",
-                "Bluff" => "Es una lectura aproximada desde el historial: no reemplaza revision manual, pero ayuda a separar presion rentable de agresion que cuesta bb.",
-                "Table" => "Este corte muestra mesas concretas. Si una barra domina, esa mesa explica buena parte del resultado.",
-                "Format" => "Este corte compara formatos de mesa para encontrar donde se adapta mejor tu juego.",
-                "Blinds" => "Este corte compara niveles de ciegas para detectar donde el resultado real acompana mejor.",
-                _ => "La calle indica donde se decidio la mano para el heroe. Si una calle sale muy negativa, ahi conviene revisar botes grandes y decisiones repetidas."
+                "Position" => LocalizationManager.Text("Gain.PositionInsight"),
+                "Action" => LocalizationManager.Text("Gain.ActionInsight"),
+                "Bluff" => LocalizationManager.Text("Gain.BluffInsight"),
+                "Table" => LocalizationManager.Text("Gain.TableInsight"),
+                "Format" => LocalizationManager.Text("Gain.FormatInsight"),
+                "Blinds" => LocalizationManager.Text("Gain.BlindsInsight"),
+                _ => LocalizationManager.Text("Gain.StreetInsight")
             };
 
             InsightList.ItemsSource = _groups
                 .OrderByDescending(group => Math.Abs(group.TotalAmount))
                 .Select(group => new InsightItem(
-                    group.Label,
+                    DisplayGroupLabel(_mode, group.Label),
                     FormatChips(group.TotalAmount),
-                    $"{group.Hands} manos | media {FormatChips(group.AverageAmount)}/mano",
+                    string.Format(LocalizationManager.Text("Gain.GroupDetail"), group.Hands, FormatChips(group.AverageAmount)),
                     BuildGroupExplanation(_mode, group),
                     TrendBrush(group.TotalAmount)))
                 .ToList();
@@ -179,20 +179,20 @@ namespace Hud.App.Views
         private static string BuildGroupExplanation(string mode, GainGroup group)
         {
             var sample = group.Hands < 25
-                ? "Muestra chica: tomalo como pista, no como sentencia."
-                : "Muestra suficiente para empezar a revisar patrones.";
+                ? LocalizationManager.Text("Gain.SmallSample")
+                : LocalizationManager.Text("Gain.EnoughSample");
             var trend = group.TotalAmount >= 0
-                ? "Hasta ahora aporta ganancia."
-                : "Hasta ahora esta drenando bb.";
+                ? LocalizationManager.Text("Gain.PositiveTrend")
+                : LocalizationManager.Text("Gain.NegativeTrend");
 
             var definition = mode switch
             {
                 "Position" => PositionExplanation(group.Label),
                 "Action" => ActionExplanation(group.Label),
                 "Bluff" => BluffExplanation(group.Label),
-                "Table" => "Mesa especifica: permite revisar donde se concentro la ganancia o perdida real.",
-                "Format" => "Formato de mesa detectado desde el historial.",
-                "Blinds" => "Nivel de ciegas detectado desde la mesa, como 100/200.",
+                "Table" => LocalizationManager.Text("Gain.TableExplanation"),
+                "Format" => LocalizationManager.Text("Gain.FormatExplanation"),
+                "Blinds" => LocalizationManager.Text("Gain.BlindsExplanation"),
                 _ => StreetExplanation(group.Label)
             };
 
@@ -201,44 +201,44 @@ namespace Hud.App.Views
 
         private static string StreetExplanation(string value) => value switch
         {
-            "Preflop" => "Manos que se resolvieron o tuvieron tu ultima decision antes del flop.",
-            "Flop" => "Manos donde tu ultima decision fue en flop; mide c-bets, calls y folds tempranos.",
-            "Turn" => "Manos donde seguiste hasta turn; suele revelar segundos barrels y calls caros.",
-            "River" => "Manos decididas en river; aqui pesan value bets, bluffs finales y hero calls.",
-            _ => "Corte de calle detectado desde el historial."
+            "Preflop" => LocalizationManager.Text("Gain.StreetPreflopExplanation"),
+            "Flop" => LocalizationManager.Text("Gain.StreetFlopExplanation"),
+            "Turn" => LocalizationManager.Text("Gain.StreetTurnExplanation"),
+            "River" => LocalizationManager.Text("Gain.StreetRiverExplanation"),
+            _ => LocalizationManager.Text("Gain.StreetUnknownExplanation")
         };
 
         private static string PositionExplanation(string value) => value switch
         {
-            "BTN" or "BTN/SB" => "Boton: zona de robo y maxima informacion postflop.",
-            "SB" => "Small blind: juegas fuera de posicion y suele ser una fuga natural.",
-            "BB" => "Big blind: mezcla defensa obligada, botes limpeados y calls amplios.",
-            "UTG" => "UTG: rango temprano; deberia ser mas fuerte y estable.",
-            "MP" => "MP: posicion media; revisa aperturas y calls contra early.",
-            "HJ" => "Hijack: empieza la presion de robo, pero aun hay jugadores por hablar.",
-            "CO" => "Cutoff: posicion de robo fuerte antes del boton.",
-            _ => "Posicion no identificada de forma confiable en el historial."
+            "BTN" or "BTN/SB" => LocalizationManager.Text("Gain.PositionButtonExplanation"),
+            "SB" => LocalizationManager.Text("Gain.PositionSbExplanation"),
+            "BB" => LocalizationManager.Text("Gain.PositionBbExplanation"),
+            "UTG" => LocalizationManager.Text("Gain.PositionUtgExplanation"),
+            "MP" => LocalizationManager.Text("Gain.PositionMpExplanation"),
+            "HJ" => LocalizationManager.Text("Gain.PositionHjExplanation"),
+            "CO" => LocalizationManager.Text("Gain.PositionCoExplanation"),
+            _ => LocalizationManager.Text("Gain.PositionUnknownExplanation")
         };
 
         private static string ActionExplanation(string value) => value switch
         {
-            "Fold" => "Fold: abandonaste la mano; si pierde demasiado, revisa calls previos o folds tardios.",
-            "Check" => "Check: pasaste sin apostar; ayuda a ver si estas controlando bote o cediendo demasiada iniciativa.",
-            "Call" => "Call: pagaste una apuesta; si esta negativo, revisa bluff-catches y draws pagados caro.",
-            "Bet" => "Bet: apostaste primero en la calle; mide valor, proteccion y bluffs iniciados por ti.",
-            "Raise" => "Raise: resubiste una apuesta; mide presion, value fuerte y semi-bluffs.",
-            "All-in" => "All-in: pusiste todas las fichas; es el corte de mayor varianza.",
-            "Sin accion" => "Sin accion: mano detectada sin accion relevante del heroe.",
-            _ => "Accion normalizada desde el historial."
+            "Fold" => LocalizationManager.Text("Gain.ActionFoldExplanation"),
+            "Check" => LocalizationManager.Text("Gain.ActionCheckExplanation"),
+            "Call" => LocalizationManager.Text("Gain.ActionCallExplanation"),
+            "Bet" => LocalizationManager.Text("Gain.ActionBetExplanation"),
+            "Raise" => LocalizationManager.Text("Gain.ActionRaiseExplanation"),
+            "All-in" => LocalizationManager.Text("Gain.ActionAllInExplanation"),
+            "Sin accion" => LocalizationManager.Text("Gain.ActionNoneExplanation"),
+            _ => LocalizationManager.Text("Gain.ActionUnknownExplanation")
         };
 
         private static string BluffExplanation(string value) => value switch
         {
-            "Bluff ganado" => "Bluff ganado: agresion que cobro el bote sin showdown.",
-            "Bluff perdido" => "Bluff perdido: agresion con mano debil o sin combinacion fuerte que termino negativa.",
-            "Valor/agresion" => "Valor/agresion: apuestas o raises que no parecen bluff puro por el resultado o combinacion.",
-            "No agresivo" => "No agresivo: manos donde tu ultima accion fue fold, check o call.",
-            _ => "Clasificacion aproximada de agresion."
+            "Bluff ganado" => LocalizationManager.Text("Gain.BluffWonExplanation"),
+            "Bluff perdido" => LocalizationManager.Text("Gain.BluffLostExplanation"),
+            "Valor/agresion" => LocalizationManager.Text("Gain.ValueAggressionExplanation"),
+            "No agresivo" => LocalizationManager.Text("Gain.NonAggressiveExplanation"),
+            _ => LocalizationManager.Text("Gain.BluffUnknownExplanation")
         };
 
         private IEnumerable<GainGroup> BuildGroups(string mode)
@@ -286,7 +286,7 @@ namespace Hud.App.Views
         {
             var groups = mode switch
             {
-                "Format" => _tables.GroupBy(table => string.IsNullOrWhiteSpace(table.GameFormat) ? "Sin formato" : table.GameFormat),
+                "Format" => _tables.GroupBy(table => string.IsNullOrWhiteSpace(table.GameFormat) ? LocalizationManager.Text("Gain.NoFormat") : table.GameFormat),
                 "Blinds" => _tables.GroupBy(BlindsLabel),
                 _ => _tables.GroupBy(table => table.TableName)
             };
@@ -444,7 +444,7 @@ namespace Hud.App.Views
                 .ToList();
             if (ordered.Count == 0)
             {
-                AddCanvasLabel(CurveCanvas, "Sin datos", CurveCanvas.ActualWidth / 2 - 24, CurveCanvas.ActualHeight / 2 - 8, GetThemeBrush("Brush.Text", Brushes.White));
+                AddCanvasLabel(CurveCanvas, LocalizationManager.Text("Gain.NoData"), CurveCanvas.ActualWidth / 2 - 24, CurveCanvas.ActualHeight / 2 - 8, GetThemeBrush("Brush.Text", Brushes.White));
                 return;
             }
 
@@ -495,8 +495,8 @@ namespace Hud.App.Views
                     BuildGainChartToolTip(table, cumulative[i], chartColor));
             }
 
-            AddCanvasLabel(CurveCanvas, $"{max:0.#} fichas", 4, geometry.Top - 2, GetThemeBrush("Brush.TextDim", Brushes.White));
-            AddCanvasLabel(CurveCanvas, $"{min:0.#} fichas", 4, geometry.Bottom - 12, GetThemeBrush("Brush.TextDim", Brushes.White));
+            AddCanvasLabel(CurveCanvas, FormatChips(max), 4, geometry.Top - 2, GetThemeBrush("Brush.TextDim", Brushes.White));
+            AddCanvasLabel(CurveCanvas, FormatChips(min), 4, geometry.Bottom - 12, GetThemeBrush("Brush.TextDim", Brushes.White));
             AddXAxisDateLabels(CurveCanvas, ordered, points, geometry.Bottom);
         }
 
@@ -508,7 +508,7 @@ namespace Hud.App.Views
             BarsCanvas.Children.Clear();
             if (_groups.Count == 0)
             {
-                AddCanvasLabel(BarsCanvas, "Sin datos", BarsCanvas.ActualWidth / 2 - 24, BarsCanvas.ActualHeight / 2 - 8, GetThemeBrush("Brush.Text", Brushes.White));
+                AddCanvasLabel(BarsCanvas, LocalizationManager.Text("Gain.NoData"), BarsCanvas.ActualWidth / 2 - 24, BarsCanvas.ActualHeight / 2 - 8, GetThemeBrush("Brush.Text", Brushes.White));
                 return;
             }
 
@@ -548,7 +548,7 @@ namespace Hud.App.Views
                     Background = new SolidColorBrush(Color.FromArgb(210, color.R, color.G, color.B)),
                     BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255)),
                     BorderThickness = new Thickness(1),
-                    ToolTip = BuildGainBarToolTip(group, color)
+                    ToolTip = BuildGainBarToolTip(group, color, _mode)
                 };
                 ToolTipService.SetInitialShowDelay(rect, 0);
                 ToolTipService.SetBetweenShowDelay(rect, 0);
@@ -558,7 +558,7 @@ namespace Hud.App.Views
                 BarsCanvas.Children.Add(rect);
 
                 AddCanvasLabel(BarsCanvas, FormatCompactChips(group.TotalAmount), x - 8, group.TotalAmount >= 0 ? y - 18 : y + barHeight + 3, TrendBrush(group.TotalAmount));
-                AddCanvasLabel(BarsCanvas, ShortLabel(group.AxisLabel), x - 6, plotBottom + 10, GetThemeBrush("Brush.TextDim", Brushes.White));
+                AddCanvasLabel(BarsCanvas, ShortLabel(DisplayAxisLabel(_mode, group)), x - 6, plotBottom + 10, GetThemeBrush("Brush.TextDim", Brushes.White));
             }
         }
 
@@ -634,7 +634,7 @@ namespace Hud.App.Views
                 StrokeThickness = 1.4,
                 StrokeDashArray = new DoubleCollection { 6, 4 }
             });
-            AddCanvasLabel(canvas, $"Media {FormatCompactChips(average)}", right - 112, y - 18, brush);
+            AddCanvasLabel(canvas, string.Format(LocalizationManager.Text("Gain.AverageLineLabel"), FormatCompactChips(average)), right - 112, y - 18, brush);
         }
 
         private static double ValueToY(double value, double min, double max, double top, double bottom) =>
@@ -697,7 +697,7 @@ namespace Hud.App.Views
             canvas.Children.Add(dot);
         }
 
-        private static FrameworkElement BuildGainBarToolTip(GainGroup group, Color chartColor)
+        private static FrameworkElement BuildGainBarToolTip(GainGroup group, Color chartColor, string mode)
         {
             var isWin = group.TotalAmount >= 0;
             var resultColor = isWin
@@ -743,7 +743,7 @@ namespace Hud.App.Views
             titleRow.Children.Add(icon);
             titleRow.Children.Add(new TextBlock
             {
-                Text = group.Label,
+                Text = DisplayGroupLabel(mode, group.Label),
                 Foreground = textBrush,
                 FontSize = 13,
                 FontWeight = FontWeights.Bold,
@@ -754,7 +754,7 @@ namespace Hud.App.Views
 
             root.Children.Add(new TextBlock
             {
-                Text = $"{group.Hands} manos",
+                Text = string.Format(LocalizationManager.Text("Gain.TooltipHands"), group.Hands),
                 Foreground = dimBrush,
                 FontSize = 11,
                 Margin = new Thickness(21, 2, 0, 10)
@@ -764,8 +764,8 @@ namespace Hud.App.Views
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var result = BuildTooltipMetric("Resultado", FormatChips(group.TotalAmount), borderBrush);
-            var average = BuildTooltipMetric("Media", $"{FormatChips(group.AverageAmount)}/mano", new SolidColorBrush(chartColor));
+            var result = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipResult"), FormatChips(group.TotalAmount), borderBrush);
+            var average = BuildTooltipMetric(LocalizationManager.Text("Gain.Average"), string.Format(LocalizationManager.Text("Gain.PerHandValue"), FormatChips(group.AverageAmount)), new SolidColorBrush(chartColor));
             Grid.SetColumn(average, 1);
             metrics.Children.Add(result);
             metrics.Children.Add(average);
@@ -773,7 +773,7 @@ namespace Hud.App.Views
 
             root.Children.Add(new TextBlock
             {
-                Text = $"BB aprox: {group.TotalBb:+0.#;-0.#;0} bb",
+                Text = string.Format(LocalizationManager.Text("Gain.TooltipApproxBb"), $"{group.TotalBb:+0.#;-0.#;0}"),
                 Foreground = dimBrush,
                 FontSize = 11,
                 Margin = new Thickness(0, 10, 0, 0)
@@ -853,8 +853,8 @@ namespace Hud.App.Views
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var result = BuildTooltipMetric("Resultado", FormatChips(table.NetAmount), borderBrush);
-            var total = BuildTooltipMetric("Acumulado", FormatChips(cumulativeAmount), new SolidColorBrush(chartColor));
+            var result = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipResult"), FormatChips(table.NetAmount), borderBrush);
+            var total = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipTotal"), FormatChips(cumulativeAmount), new SolidColorBrush(chartColor));
             Grid.SetColumn(total, 1);
             metrics.Children.Add(result);
             metrics.Children.Add(total);
@@ -862,7 +862,7 @@ namespace Hud.App.Views
 
             root.Children.Add(new TextBlock
             {
-                Text = $"{table.HandsReceived} manos | {table.NetBb:+0.#;-0.#;0} bb | {table.NetAmountLabel}",
+                Text = $"{string.Format(LocalizationManager.Text("Gain.TooltipHands"), table.HandsReceived)} | {table.NetBb:+0.#;-0.#;0} bb | {table.NetAmountLabel}",
                 Foreground = dimBrush,
                 FontSize = 11,
                 Margin = new Thickness(0, 10, 0, 0)
@@ -924,7 +924,7 @@ namespace Hud.App.Views
                 : GetThemeBrush("Brush.Negative", new SolidColorBrush(Color.FromRgb(240, 93, 108)));
 
         private static string FormatChips(double value) =>
-            $"{value:+0.#;-0.#;0} fichas";
+            $"{value:+0.#;-0.#;0} {LocalizationManager.Text("Gain.ChipsUnit")}";
 
         private static string FormatCompactChips(double value)
         {
@@ -940,7 +940,7 @@ namespace Hud.App.Views
         {
             var big = table.BigBlind;
             if (big <= 0)
-                return "Sin ciegas";
+                return LocalizationManager.Text("Gain.NoBlinds");
 
             var small = big / 2d;
             return $"{FormatBlind(small)}/{FormatBlind(big)}";
@@ -967,6 +967,35 @@ namespace Hud.App.Views
 
         private static string ShortLabel(string label) =>
             label.Length <= 12 ? label : label[..11] + ".";
+
+        private static string DisplayAxisLabel(string mode, GainGroup group) =>
+            mode == "Table" ? group.AxisLabel : DisplayGroupLabel(mode, group.AxisLabel);
+
+        private static string DisplayGroupLabel(string mode, string label) => mode switch
+        {
+            "Street" => label switch
+            {
+                "Preflop" => LocalizationManager.Text("Gain.Label.Preflop"),
+                "Flop" => LocalizationManager.Text("Gain.Label.Flop"),
+                "Turn" => LocalizationManager.Text("Gain.Label.Turn"),
+                "River" => LocalizationManager.Text("Gain.Label.River"),
+                _ => label
+            },
+            "Action" => label switch
+            {
+                "Sin accion" => LocalizationManager.Text("Gain.Label.NoAction"),
+                _ => label
+            },
+            "Bluff" => label switch
+            {
+                "Bluff ganado" => LocalizationManager.Text("Gain.Label.BluffWon"),
+                "Bluff perdido" => LocalizationManager.Text("Gain.Label.BluffLost"),
+                "Valor/agresion" => LocalizationManager.Text("Gain.Label.ValueAggression"),
+                "No agresivo" => LocalizationManager.Text("Gain.Label.NonAggressive"),
+                _ => label
+            },
+            _ => label
+        };
 
         private static int StreetOrder(string value) => value switch
         {

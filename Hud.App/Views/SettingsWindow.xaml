@@ -186,31 +186,31 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Margin="0,0,12,0">
-              <TextBlock Text="Seguridad de reportes"
+              <TextBlock Text="{DynamicResource Settings.ReportSecurity}"
                          FontSize="19"
                          FontWeight="Bold"/>
-              <TextBlock Text="Guarda una contrasena codificada para proteger informes futuros."
+              <TextBlock Text="{DynamicResource Settings.ReportSecurityDesc}"
                          Foreground="{DynamicResource Brush.TextDim}"
                          Margin="0,4,0,12"/>
               <CheckBox x:Name="ProtectReportsCheck"
                         Margin="0,0,0,10"
                         Click="ProtectReportsCheck_Click">
-                <TextBlock Text="Aplicar contrasena a reportes futuros"
+                <TextBlock Text="{DynamicResource Settings.ProtectReports}"
                            Foreground="{DynamicResource Brush.Text}"/>
               </CheckBox>
-              <TextBlock Text="Contrasena actual" Style="{StaticResource FieldLabel}"/>
+              <TextBlock Text="{DynamicResource Settings.CurrentPassword}" Style="{StaticResource FieldLabel}"/>
               <PasswordBox x:Name="OldPasswordBox"
                            Height="32"
                            Margin="0,0,0,8"/>
-              <TextBlock Text="Nueva contrasena" Style="{StaticResource FieldLabel}"/>
+              <TextBlock Text="{DynamicResource Settings.NewPassword}" Style="{StaticResource FieldLabel}"/>
               <PasswordBox x:Name="NewPasswordBox"
                            Height="32"
                            Margin="0,0,0,8"/>
-              <TextBlock Text="Confirmar nueva contrasena" Style="{StaticResource FieldLabel}"/>
+              <TextBlock Text="{DynamicResource Settings.ConfirmNewPassword}" Style="{StaticResource FieldLabel}"/>
               <PasswordBox x:Name="ConfirmPasswordBox"
                            Height="32"
                            Margin="0,0,0,10"/>
-              <Button Content="Guardar contrasena"
+              <Button Content="{DynamicResource Settings.SavePassword}"
                       Style="{StaticResource Btn.Primary}"
                       Width="160"
                       HorizontalAlignment="Left"
@@ -221,13 +221,13 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Margin="12,0,0,0">
-              <TextBlock Text="Ubicacion de reportes"
+              <TextBlock Text="{DynamicResource Settings.ReportsFolder}"
                          FontSize="19"
                          FontWeight="Bold"/>
-              <TextBlock Text="La app guarda y carga las sesiones desde esta carpeta."
+              <TextBlock Text="{DynamicResource Settings.ReportsFolderDesc}"
                          Foreground="{DynamicResource Brush.TextDim}"
                          Margin="0,4,0,12"/>
-              <TextBlock Text="Carpeta de reportes" Style="{StaticResource FieldLabel}"/>
+              <TextBlock Text="{DynamicResource Settings.ReportsFolderLabel}" Style="{StaticResource FieldLabel}"/>
               <TextBox x:Name="ReportsFolderText"
                        Height="34"
                        IsReadOnly="True"
@@ -243,7 +243,7 @@
                       Click="BtnPickReportsFolder_Click">
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
-                  <TextBlock Text="Buscar"/>
+                  <TextBlock Text="{DynamicResource Settings.Search}"/>
                 </StackPanel>
               </Button>
             </StackPanel>
@@ -275,9 +275,9 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="G" FontWeight="Black" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
                   <StackPanel>
-                    <TextBlock Text="Cuenta conectada" FontWeight="Bold"/>
+                    <TextBlock Text="{DynamicResource Settings.ConnectedAccount}" FontWeight="Bold"/>
                     <TextBlock x:Name="GoogleAccountText"
-                               Text="Sin cuenta detectada"
+                               Text="{DynamicResource Settings.NoAccountDetected}"
                                Foreground="{DynamicResource Brush.TextDim}"
                                FontSize="12"
                                TextTrimming="CharacterEllipsis"
@@ -294,8 +294,8 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
                   <StackPanel>
-                    <TextBlock Text="Subir respaldo" FontWeight="Bold"/>
-                    <TextBlock Text="Guarda aph.db en Drive" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                    <TextBlock Text="{DynamicResource Settings.UploadBackup}" FontWeight="Bold"/>
+                    <TextBlock Text="{DynamicResource Settings.UploadBackupDesc}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
                 </StackPanel>
               </Button>
@@ -307,8 +307,8 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,8,0"/>
                   <StackPanel>
-                    <TextBlock Text="Restaurar Drive" FontWeight="Bold"/>
-                    <TextBlock Text="Trae la DB a esta PC" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                    <TextBlock Text="{DynamicResource Settings.RestoreDrive}" FontWeight="Bold"/>
+                    <TextBlock Text="{DynamicResource Settings.RestoreDriveDesc}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
                   </StackPanel>
                 </StackPanel>
               </Button>

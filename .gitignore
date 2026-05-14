@@ -25,6 +25,7 @@ TestResults/
 Muestras/
 *.session.json
 *.pdf
+!docs/APH-Architecture.pdf
 *.db
 *.db-wal
 *.db-shm
@@ -40,6 +41,9 @@ token*.json
 *.rar
 *.7z
 *.bak
+
+# Local documentation generators
+tools/
 
 # OS files
 Thumbs.db
