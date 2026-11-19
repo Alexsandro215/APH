@@ -528,6 +528,13 @@
   asked for it: "de ahí sigue dándola por buena"). The session's stack losses following the advice
   included A5o top pair and A5s fives on rivers that completed the flush and AJo with a jack-high
   flush draw on the turn (~-227 bb); sets on dry boards still call (77 on 5-7-2-4 loses to ~4%).
+- Play-money no-re-raise rule (`TrainerDecisionRules.NoReRaiseReason`): when an opponent raises on
+  the turn or river (over the hero's bet or someone else's), the advice only re-raises with a
+  near-nut hand (under 2% of the holdings left beat it); otherwise it calls or folds. A raise there
+  is almost always a made hand. Not applied when the hero is already committed (stack behind of
+  60% of the pot or less). Found by replaying the big pots of 18/19-11 through the new advisor: it
+  re-raised all-in 230 bb with a king-high flush on K-Q-Q with four diamonds (~7% beat it) against
+  a calling station who had raised the turn and the river.
 - Five solver improvements the user approved ("dale todas") after the 19-11 early-morning session:
   1. Strength within the strong class (`TrainerRangeEstimator.LineWeight`, `StrongPercentiles`):
      when an opponent bets or raises, each strong holding weighs by how high it sits among the

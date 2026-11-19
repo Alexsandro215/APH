@@ -923,6 +923,10 @@ namespace Hud.App.Services.Trainer
             if (turn.FacingBet && TrainerDecisionRules.NoCallReason(hero, board, street, turn.ToCallBb, turn.PotBb,
                     maniac: leakProfile?.Leak == "maníaco", opponents: opponents.Count) is { } noCall)
                 limit = limit with { NoCall = noCall };
+            // Te suben en turn o river: solo se resube con una mano casi imbatible.
+            if (turn.FacingBet && raisedPot && limit.CanRaise &&
+                TrainerDecisionRules.NoReRaiseReason(hero, board, street, turn.HeroStackBb, turn.PotBb) is { } noReRaise)
+                limit = limit with { CanRaise = false, CanAllIn = false, Why = noReRaise };
 
             // Rival que se deja farolear (nit o se retira mucho a las c-bets, 40+ manos), mano a mano y
             // sin mano hecha: con "Farol" activado en la mesa se permite apostar hasta medio bote (nunca

@@ -329,6 +329,29 @@ namespace Hud.App.Services.Trainer
         }
 
         /// <summary>
+        /// Dinero ficticio: si te suben en el turn o el river (sobre tu apuesta o la de otro), solo se resube
+        /// con una mano casi imbatible (menos del 2% de las manos posibles le ganan). Esa subida casi
+        /// siempre es mano hecha, asi que un color o un set que pierde contra un 4-7% se paga, pero no se
+        /// resube all-in. Salvo que ya estes comprometido (pila de 60% del bote o menos). 19-11: color al K
+        /// en K-Q-Q con cuatro diamantes (~7% le ganan), el solver nuevo resubia all-in 230 bb contra un
+        /// pagador que habia subido turn y river. Devuelve el motivo, o null si se puede resubir.
+        /// </summary>
+        public static string? NoReRaiseReason(IReadOnlyList<int> hero, IReadOnlyList<int> board, string street,
+            double? stackBehind = null, double? pot = null)
+        {
+            if (street is not ("TURN" or "RIVER") || hero.Count < 2 || board.Count < 4)
+                return null;
+            if (stackBehind is { } behind && pot is { } total && total > 0 && behind <= total * 0.6)
+                return null;
+            var beaten = BeatenShare(hero, board);
+            if (beaten < 0.02)
+                return null;
+            var streetName = street == "RIVER" ? "river" : "turn";
+            return $"Te suben en el {streetName} y tu mano no es de las mejores ({beaten * 100:0}% de las manos posibles te ganan): " +
+                   "en dinero ficticio esa subida casi siempre es mano hecha; se paga, pero no se resube";
+        }
+
+        /// <summary>
         /// Cuanta agresion se recomienda en dinero ficticio con esta mano en esta mesa. Ahi casi todo
         /// se paga: los faroles y las subidas con manos medianas pierden, y en mesas de escalera o de
         /// color las manos que parecen buenas van perdiendo contra quien paga todo. Por eso, aunque el

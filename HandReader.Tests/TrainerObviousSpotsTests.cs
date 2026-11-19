@@ -668,6 +668,25 @@ public class TrainerObviousSpotsTests
     }
 
     /// <summary>
+    /// 19-11: si te suben en turn o river solo se resube con una mano casi imbatible. El color al K en
+    /// K-Q-Q con cuatro diamantes (Letaba IV) o un set con escalera posible se pagan sin resubir; el set
+    /// alto en mesa seca y el color al as sí se resuben; con la pila comprometida, all-in.
+    /// </summary>
+    [Theory]
+    [InlineData("Kc Jd", "5d Kd Qh 3d Qd", "RIVER", 204.4, 161.35, true)]  // color al K, mesa doblada
+    [InlineData("7s 7d", "5c 7h 2d 4h", "TURN", 200, 120, true)]           // set de 7 con 63, 68 o A3 posibles
+    [InlineData("Ks Kd", "Kh 7c 2s 9d", "TURN", 150, 60, false)]           // set alto en mesa seca
+    [InlineData("Ad Jd", "5d Kd Qh 3d 8c", "RIVER", 150, 80, false)]       // color al as
+    [InlineData("7s 7d", "5c 7h 2d 4h", "TURN", 69.1, 235.6, false)]       // comprometido: pila de 30% del bote
+    [InlineData("Kc Jd", "5d Kd Qh", "FLOP", 204.4, 40, false)]            // en el flop no aplica
+    public void Si_te_suben_en_turn_o_river_solo_se_resube_con_casi_la_mejor(string hero, string board, string street,
+        double stack, double pot, bool blocked)
+    {
+        var reason = TrainerDecisionRules.NoReRaiseReason(Cards(hero), Cards(board), street, stack, pot);
+        Assert.Equal(blocked, reason is not null);
+    }
+
+    /// <summary>
     /// Dentro de las manos fuertes, lo arriba que esta cada una: si el rival sube el river en una mesa
     /// de cuatro diamantes, el color con as pesa mucho mas que un color con el 4 (antes pesaban igual).
     /// Pagando, no cambia nada.
