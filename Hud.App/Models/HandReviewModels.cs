@@ -47,8 +47,8 @@ namespace Hud.App.Models
                 .Select(_ => new Hud.App.Views.CardChipViewModel(
                     "?",
                     '?',
-                    new SolidColorBrush(Color.FromRgb(41, 47, 58)),
-                    new SolidColorBrush(Color.FromRgb(198, 211, 226))))
+                    Hud.App.Services.ThemeBrushes.NeutralBackground,
+                    Hud.App.Services.ThemeBrushes.TextDim))
                 .ToList();
     }
 

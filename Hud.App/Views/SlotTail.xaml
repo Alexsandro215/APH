@@ -30,49 +30,25 @@
     <views:PlayerHistoryRowBrushConverter x:Key="PlayerHistoryRowBrush"/>
     <views:PlayerHistoryTextBrushConverter x:Key="PlayerHistoryTextBrush"/>
 
-    <!-- PALETA -->
-    <SolidColorBrush x:Key="BgDark"
-                     Color="#121418"/>
-    <SolidColorBrush x:Key="PanelDark"
-                     Color="#1B1E24"/>
-    <SolidColorBrush x:Key="BorderDark"
-                     Color="#2A2F36"/>
-    <SolidColorBrush x:Key="FgLight"
-                     Color="#F2F4F8"/>
-    <SolidColorBrush x:Key="FgDim"
-                     Color="#B7BDC7"/>
-    <SolidColorBrush x:Key="FgAccent"
-                     Color="#69D1FF"/>
-    <SolidColorBrush x:Key="HeroRow"
-                     Color="#1E3A5F"/>
-    <SolidColorBrush x:Key="HeroRowSelected"
-                     Color="#2B5B95"/>
-    <SolidColorBrush x:Key="HeroRowAccent"
-                     Color="#69D1FF"/>
-    <SolidColorBrush x:Key="BtnBg"
-                     Color="#2D6CDF"/>
-    <SolidColorBrush x:Key="BtnBgHover"
-                     Color="#2457B0"/>
-    <SolidColorBrush x:Key="BtnFg"
-                     Color="#FFFFFF"/>
+    <!-- PALETA: viene del tema global (Styles/PokerTheme.xaml + ThemePaletteManager) -->
 
     <!-- ESTILOS BASE -->
     <Style TargetType="TextBlock">
       <Setter Property="FontSize"
               Value="12"/>
       <Setter Property="Foreground"
-              Value="{StaticResource FgLight}"/>
+              Value="{DynamicResource FgLight}"/>
     </Style>
 
     <Style TargetType="Button">
       <Setter Property="FontSize"
               Value="12"/>
       <Setter Property="Background"
-              Value="{StaticResource BtnBg}"/>
+              Value="{DynamicResource BtnBg}"/>
       <Setter Property="Foreground"
               Value="{StaticResource BtnFg}"/>
       <Setter Property="BorderBrush"
-              Value="{StaticResource BorderDark}"/>
+              Value="{DynamicResource BorderDark}"/>
       <Setter Property="BorderThickness"
               Value="1"/>
       <Setter Property="Padding"
@@ -83,7 +59,7 @@
         <Trigger Property="IsMouseOver"
                  Value="True">
           <Setter Property="Background"
-                  Value="{StaticResource BtnBgHover}"/>
+                  Value="{DynamicResource BtnBgHover}"/>
         </Trigger>
       </Style.Triggers>
     </Style>
@@ -100,24 +76,24 @@
       <Setter Property="GridLinesVisibility"
               Value="None"/>
       <Setter Property="Background"
-              Value="{StaticResource BgDark}"/>
+              Value="{DynamicResource BgDark}"/>
       <Setter Property="RowBackground"
-              Value="{StaticResource BgDark}"/>
+              Value="{DynamicResource BgDark}"/>
       <Setter Property="AlternatingRowBackground"
-              Value="{StaticResource BgDark}"/>
+              Value="{DynamicResource BgDark}"/>
       <Setter Property="BorderBrush"
-              Value="{StaticResource BorderDark}"/>
+              Value="{DynamicResource BorderDark}"/>
       <Setter Property="Foreground"
-              Value="{StaticResource FgLight}"/>
+              Value="{DynamicResource FgLight}"/>
     </Style>
 
     <Style TargetType="DataGridColumnHeader">
       <Setter Property="Background"
-              Value="{StaticResource PanelDark}"/>
+              Value="{DynamicResource PanelDark}"/>
       <Setter Property="Foreground"
-              Value="{StaticResource FgLight}"/>
+              Value="{DynamicResource FgLight}"/>
       <Setter Property="BorderBrush"
-              Value="{StaticResource BorderDark}"/>
+              Value="{DynamicResource BorderDark}"/>
       <Setter Property="FontWeight"
               Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment"
@@ -130,22 +106,22 @@
 
     <Style TargetType="DataGridRow">
       <Setter Property="Background"
-              Value="{StaticResource BgDark}"/>
+              Value="{DynamicResource BgDark}"/>
       <Setter Property="Foreground"
-              Value="{StaticResource FgLight}"/>
+              Value="{DynamicResource FgLight}"/>
       <Setter Property="BorderBrush"
-              Value="{StaticResource BorderDark}"/>
+              Value="{DynamicResource BorderDark}"/>
       <Setter Property="BorderThickness"
               Value="0,0,0,1"/>
     </Style>
 
     <Style TargetType="DataGridCell">
       <Setter Property="Background"
-              Value="{StaticResource BgDark}"/>
+              Value="{DynamicResource BgDark}"/>
       <Setter Property="Foreground"
-              Value="{StaticResource FgLight}"/>
+              Value="{DynamicResource FgLight}"/>
       <Setter Property="BorderBrush"
-              Value="{StaticResource BorderDark}"/>
+              Value="{DynamicResource BorderDark}"/>
       <Setter Property="BorderThickness"
               Value="0,0,0,1"/>
       <Setter Property="Padding"
@@ -154,8 +130,8 @@
 
   </UserControl.Resources>
 
-  <Border Background="{StaticResource BgDark}"
-          BorderBrush="{StaticResource BorderDark}"
+  <Border Background="{DynamicResource BgDark}"
+          BorderBrush="{DynamicResource BorderDark}"
           BorderThickness="1"
           CornerRadius="10"
           Padding="8">
@@ -176,7 +152,7 @@
                   VerticalAlignment="Center">
         <TextBlock x:Name="PathText"
                    Text="{DynamicResource Common.TablePlaceholder}"
-                   Foreground="{StaticResource FgAccent}"
+                   Foreground="{DynamicResource FgAccent}"
                    Margin="0,0,8,0"/>
         <Button x:Name="BtnPick"
                 Content="+"
@@ -195,9 +171,50 @@
                 Width="26"
                 Height="26"
                 Click="Stop_Click"/>
+        <!-- Farol por mesa (solo dinero ficticio): contra quien se deja farolear, el consejo puede apostar de farol -->
+        <ToggleButton x:Name="BtnBluff"
+                      Content="{DynamicResource RT.Bluff}"
+                      AutomationProperties.Name="{DynamicResource RT.Bluff}"
+                      ToolTip="{DynamicResource RT.BluffTip}"
+                      Height="26"
+                      Margin="6,0,0,0"
+                      Padding="8,0"
+                      FontSize="12"
+                      Cursor="Hand"
+                      IsEnabled="False"
+                      Click="Bluff_Click">
+          <ToggleButton.Style>
+            <Style TargetType="ToggleButton">
+              <Setter Property="Background" Value="{DynamicResource BtnBg}"/>
+              <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
+              <Setter Property="BorderBrush" Value="{DynamicResource BorderDark}"/>
+              <Setter Property="BorderThickness" Value="1"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+              <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                  <Setter Property="Background" Value="#3A6EA5"/>
+                  <Setter Property="Foreground" Value="White"/>
+                  <Setter Property="BorderBrush" Value="#78C8FF"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter Property="Opacity" Value="0.45"/>
+                </Trigger>
+              </Style.Triggers>
+            </Style>
+          </ToggleButton.Style>
+        </ToggleButton>
 
             <TextBlock Text="{DynamicResource Common.Lines}"
-                   Foreground="{StaticResource FgDim}"
+                   Foreground="{DynamicResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
         <TextBlock x:Name="Lines"
@@ -205,7 +222,7 @@
                    FontWeight="Bold"
                    VerticalAlignment="Center"/>
             <TextBlock Text="{DynamicResource Common.Last}"
-                   Foreground="{StaticResource FgDim}"
+                   Foreground="{DynamicResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
         <TextBlock x:Name="Last"
@@ -214,7 +231,7 @@
                    VerticalAlignment="Center"/>
 
             <TextBlock Text="{DynamicResource Common.Hero}"
-                   Foreground="{StaticResource FgDim}"
+                   Foreground="{DynamicResource FgDim}"
                    Margin="12,0,4,0"
                    VerticalAlignment="Center"/>
         <TextBox Width="130"
@@ -226,7 +243,7 @@
                       Margin="12,0,0,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <TextBlock Foreground="{StaticResource FgDim}"
+              <TextBlock Foreground="{DynamicResource FgDim}"
                          FontSize="11"
                          Text="{Binding}"/>
             </DataTemplate>
@@ -259,7 +276,7 @@
                     <Border x:Name="HeroAccent"
                             Width="3"
                             HorizontalAlignment="Left"
-                            Background="{StaticResource HeroRowAccent}"
+                            Background="{DynamicResource HeroRowAccent}"
                             Opacity="0"/>
                     <Border x:Name="RowBg"
                             Background="{TemplateBinding Background}"
@@ -293,7 +310,7 @@
                       </DataTrigger.Binding>
                       <Setter TargetName="RowBg"
                               Property="Background"
-                              Value="{StaticResource HeroRow}"/>
+                              Value="{DynamicResource HeroRow}"/>
                       <Setter TargetName="HeroAccent"
                               Property="Opacity"
                               Value="1"/>
@@ -306,7 +323,7 @@
                              Value="True">
                       <Setter TargetName="RowBg"
                               Property="Background"
-                              Value="{StaticResource HeroRowSelected}"/>
+                              Value="{DynamicResource HeroRowSelected}"/>
                     </Trigger>
                   </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -340,7 +357,7 @@
                   </MultiBinding>
                 </DataTrigger.Binding>
                 <Setter Property="Background"
-                        Value="{StaticResource HeroRow}"/>
+                        Value="{DynamicResource HeroRow}"/>
                 <Setter Property="FontWeight"
                         Value="Bold"/>
               </DataTrigger>
@@ -348,7 +365,7 @@
               <Trigger Property="IsSelected"
                        Value="True">
                 <Setter Property="Background"
-                        Value="{StaticResource HeroRowSelected}"/>
+                        Value="{DynamicResource HeroRowSelected}"/>
               </Trigger>
             </Style.Triggers>
           </Style>
@@ -359,6 +376,15 @@
               <DataGridTextColumn Header="{DynamicResource Grid.Player}"
                               Binding="{Binding Name}"
                               Width="150"/>
+          <!-- Nota y color del jugador (se ven en su cuadro del HUD de la mesa) -->
+          <DataGridTemplateColumn Header="{DynamicResource Notes.Column}" Width="58">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="{DynamicResource Notes.Column}" Padding="6,1" Margin="1" FontSize="11"
+                        Click="NoteButton_Click" Tag="{Binding Name}"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
           <DataGridTextColumn Header="{DynamicResource Grid.Hands}"
                               Binding="{Binding HandsReceived}"
                               Width="64"/>
@@ -384,6 +410,32 @@
                       <!-- clave preset -->
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="VPIPPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos (gating) -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <!-- stake -->
+                      <Binding Source="VPIP"/>
+                      <!-- clave preset -->
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="VPIPPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos (gating) -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <!-- stake -->
+                      <Binding Source="VPIP"/>
+                      <!-- clave preset -->
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -404,6 +456,24 @@
                       <Binding Source="PFR"/>
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="PFRPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="PFR"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="PFRPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="PFR"/>
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -425,6 +495,24 @@
                       <Binding Source="THREEBET"/>
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="ThreeBetPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="THREEBET"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="ThreeBetPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="THREEBET"/>
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -447,6 +535,24 @@
                       <Binding Source="AF"/>
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="AF"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="AF"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="AF"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="AF"/>
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -470,6 +576,30 @@
                       <!-- clave -->
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="AFqPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="AFQ"/>
+                      <!-- clave -->
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="AFqPct"/>
+                      <!-- valor -->
+                      <Binding Path="HandsReceived"/>
+                      <!-- manos -->
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="AFQ"/>
+                      <!-- clave -->
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -495,6 +625,28 @@
                       <!-- Si alg?n d?a expones "CBetOppFlop" como oportunidades, pasalo como 5? binding -->
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="CBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="CBF"/>
+                      <!-- clave -->
+                      <!-- Si alg?n d?a expones "CBetOppFlop" como oportunidades, pasalo como 5? binding -->
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="CBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="CBF"/>
+                      <!-- clave -->
+                      <!-- Si alg?n d?a expones "CBetOppFlop" como oportunidades, pasalo como 5? binding -->
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -521,6 +673,26 @@
                       <!-- esta clave ya est? marcada Invert=true en los presets -->
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="FoldVsCBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="FVCBF"/>
+                      <!-- esta clave ya est? marcada Invert=true en los presets -->
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="FoldVsCBetFlopPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="FVCBF"/>
+                      <!-- esta clave ya est? marcada Invert=true en los presets -->
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -543,6 +715,24 @@
                       <Binding Source="WTSD"/>
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="WTSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WTSD"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="WTSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WTSD"/>
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -565,6 +755,26 @@
                       <!-- clave (invertida) -->
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="WSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WSD"/>
+                      <!-- clave (invertida) -->
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="WSDPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WSD"/>
+                      <!-- clave (invertida) -->
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
@@ -586,6 +796,24 @@
                       <Binding Source="WWSF"/>
                     </MultiBinding>
                   </TextBlock.Background>
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                      <Binding Path="WWSFPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WWSF"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                  <TextBlock.ToolTip>
+                    <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                      <Binding Path="WWSFPct"/>
+                      <Binding Path="HandsReceived"/>
+                      <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"
+                      Path="DataContext.Stake"/>
+                      <Binding Source="WWSF"/>
+                    </MultiBinding>
+                  </TextBlock.ToolTip>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>

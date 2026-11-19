@@ -19,7 +19,7 @@
       <Setter Property="Padding" Value="14,8"/>
       <Setter Property="FontSize" Value="14"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="MinWidth" Value="120"/>
+      <Setter Property="MinWidth" Value="88"/>
     </Style>
 
     <Style x:Key="FilterLabel" TargetType="TextBlock">
@@ -29,7 +29,7 @@
     </Style>
 
     <Style x:Key="FilterCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
-      <Setter Property="MinWidth" Value="118"/>
+      <Setter Property="MinWidth" Value="104"/>
       <Setter Property="Height" Value="28"/>
       <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
       <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
@@ -138,16 +138,51 @@
     </Style>
 
     <Style x:Key="FilterDate" TargetType="DatePicker">
-      <Setter Property="MinWidth" Value="154"/>
+      <Setter Property="MinWidth" Value="140"/>
       <Setter Property="Height" Value="28"/>
-      <Setter Property="Foreground" Value="Black"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
       <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="Margin" Value="0"/>
       <Setter Property="CalendarStyle" Value="{StaticResource FilterCalendar}"/>
       <Style.Resources>
+        <!-- Caja de fecha del tema: la de Windows salia blanca dentro del panel oscuro. -->
         <Style TargetType="DatePickerTextBox">
-          <Setter Property="Foreground" Value="Black"/>
-          <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+          <Setter Property="Foreground" Value="{DynamicResource Brush.SurfaceText}"/>
+          <Setter Property="Background" Value="Transparent"/>
+          <Setter Property="CaretBrush" Value="{DynamicResource Brush.SurfaceText}"/>
+          <Setter Property="VerticalContentAlignment" Value="Center"/>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="DatePickerTextBox">
+                <Grid Background="{TemplateBinding Background}">
+                  <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="WatermarkStates">
+                      <VisualState x:Name="Unwatermarked"/>
+                      <VisualState x:Name="Watermarked">
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="PART_ContentHost" Storyboard.TargetProperty="Opacity" To="0" Duration="0"/>
+                          <DoubleAnimation Storyboard.TargetName="PART_Watermark" Storyboard.TargetProperty="Opacity" To="1" Duration="0"/>
+                        </Storyboard>
+                      </VisualState>
+                    </VisualStateGroup>
+                  </VisualStateManager.VisualStateGroups>
+                  <ContentControl x:Name="PART_Watermark"
+                                  Opacity="0"
+                                  Focusable="False"
+                                  IsHitTestVisible="False"
+                                  Foreground="{DynamicResource Brush.TextDim}"
+                                  Margin="6,0,0,0"
+                                  VerticalAlignment="Center"/>
+                  <ScrollViewer x:Name="PART_ContentHost"
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center"
+                                Focusable="False"
+                                HorizontalScrollBarVisibility="Hidden"
+                                VerticalScrollBarVisibility="Hidden"/>
+                </Grid>
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
         </Style>
         <Style TargetType="Calendar">
           <Setter Property="Foreground" Value="Black"/>
@@ -220,8 +255,8 @@
 
     <Style x:Key="ExactHandsHeaderStyle" TargetType="DataGridColumnHeader">
       <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
-      <Setter Property="TextElement.Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="4,2"/>
@@ -234,7 +269,7 @@
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                 VerticalAlignment="Center"
-                                TextElement.Foreground="{StaticResource FgLight}"
+                                TextElement.Foreground="{DynamicResource FgLight}"
                                 TextElement.FontWeight="SemiBold"/>
             </Border>
           </ControlTemplate>
@@ -351,6 +386,7 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
       <RowDefinition Height="490"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="360"/>
@@ -386,9 +422,17 @@
         <StackPanel DockPanel.Dock="Left"
                     VerticalAlignment="Center"
                     Margin="0,0,18,0">
-          <TextBlock Text="{DynamicResource Common.Color}" Style="{StaticResource FilterLabel}"/>
+          <CheckBox x:Name="CompareChartToggle"
+                    Content="{DynamicResource Mine.CompareChart}"
+                    ToolTip="{DynamicResource Mine.CompareChartDesc}"
+                    Foreground="{DynamicResource Brush.Text}"
+                    IsChecked="True"
+                    Margin="0,0,0,6"
+                    Checked="CompareChartToggle_Changed"
+                    Unchecked="CompareChartToggle_Changed"/>
           <CheckBox x:Name="ProfitColorToggle"
                     Content="{DynamicResource Common.ProfitBb}"
+                    ToolTip="{DynamicResource Mine.ProfitDesc}"
                     Foreground="{DynamicResource Brush.Text}"
                     VerticalAlignment="Center"
                     Checked="ProfitColorToggle_Changed"
@@ -397,12 +441,18 @@
 
         <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center">
           <StackPanel Margin="0,0,8,0">
+            <TextBlock Text="{DynamicResource Mine.Situation}" Style="{StaticResource FilterLabel}"/>
+            <ComboBox x:Name="SituationFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"
+                      ToolTip="{DynamicResource Mine.SituationDesc}"/>
+          </StackPanel>
+
+          <StackPanel Margin="0,0,8,0">
             <TextBlock Text="{DynamicResource Common.Position}" Style="{StaticResource FilterLabel}"/>
             <ComboBox x:Name="PositionFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"/>
           </StackPanel>
 
           <StackPanel Margin="0,0,8,0">
-            <TextBlock Text="{DynamicResource Grid.Table}" Style="{StaticResource FilterLabel}"/>
+            <TextBlock Text="{DynamicResource Grid.Format}" Style="{StaticResource FilterLabel}"/>
             <ComboBox x:Name="FormatFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed"/>
           </StackPanel>
 
@@ -424,7 +474,13 @@
       </DockPanel>
     </Border>
 
-    <Border Grid.Row="2"
+    <!-- Leyenda: que significa cada color, la barra de abajo, lo tenue y la esquina -->
+    <WrapPanel x:Name="LegendPanel"
+               Grid.Row="2"
+               MinHeight="30"
+               Margin="2,0,0,8"/>
+
+    <Border Grid.Row="3"
             Background="{DynamicResource Brush.Inset}"
             BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1"
@@ -439,19 +495,20 @@
       </Grid>
     </Border>
 
-    <Border Grid.Row="3"
+    <Border Grid.Row="4"
             Style="{StaticResource ProjectPanelBorder}"
             Padding="12"
             Margin="0,14,0,0">
       <Grid>
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="0.9*"/>
-          <ColumnDefinition Width="3*"/>
+          <ColumnDefinition Width="1.3*"/>
+          <ColumnDefinition Width="2.6*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel>
+        <StackPanel Margin="0,0,12,0">
           <TextBlock x:Name="SelectedHandText" Text="{DynamicResource Common.SelectCell}" FontSize="18" FontWeight="Bold"/>
           <TextBlock x:Name="SelectedStreetText" Text="PRE-FLOP" Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
+          <StackPanel x:Name="InsightPanel" Margin="0,6,0,0"/>
         </StackPanel>
 
         <ItemsControl x:Name="ActionSummaryList" Grid.Column="1">
@@ -479,7 +536,7 @@
     </Border>
 
     <Border x:Name="ExactHandsPanel"
-            Grid.Row="4"
+            Grid.Row="5"
             Style="{StaticResource ProjectPanelBorder}"
             Padding="10"
             Margin="0,14,0,0"
@@ -548,7 +605,7 @@
             </Style>
           </DataGrid.Resources>
           <DataGrid.Columns>
-            <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="2.2*"/>
+            <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="1.7*"/>
             <DataGridTextColumn Header="{DynamicResource Common.DateTime}" Binding="{Binding HandDateTimeLabel}" Width="1.2*"/>
             <DataGridTextColumn Header="{DynamicResource Common.TableHand}" Binding="{Binding HandNumber}" Width="0.8*"/>
             <DataGridTemplateColumn Header="{DynamicResource Common.ExactHand}" Width="0.9*">
@@ -570,7 +627,9 @@
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
-            <DataGridTextColumn Header="{DynamicResource Common.Action}" Binding="{Binding ActionLabel}" Width="1*"/>
+            <DataGridTextColumn Header="{DynamicResource Mine.Situation}" Binding="{Binding SituationLabel}" Width="1.4*"/>
+            <DataGridTextColumn Header="{DynamicResource Common.Action}" Binding="{Binding ActionLabel}" Width="0.9*"/>
+            <DataGridTextColumn Header="{DynamicResource Mine.ChartColumn}" Binding="{Binding ChartLabel}" Width="1.3*"/>
             <DataGridTemplateColumn Header="{DynamicResource Common.Result}" Width="0.9*">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>

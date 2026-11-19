@@ -64,7 +64,7 @@ namespace Hud.App.Views
 
         private void DrawChart()
         {
-            if (!IsLoaded || ProfitChart.ActualWidth <= 1 || ProfitChart.ActualHeight <= 1)
+            if (!ProfitChart.IsLoaded || ProfitChart.ActualWidth <= 1 || ProfitChart.ActualHeight <= 1)
                 return;
 
             ProfitChart.Children.Clear();
@@ -106,7 +106,7 @@ namespace Hud.App.Views
                 X2 = plotRight,
                 Y1 = zeroY,
                 Y2 = zeroY,
-                Stroke = new SolidColorBrush(Color.FromRgb(62, 76, 92)),
+                Stroke = Hud.App.Services.ThemeBrushes.Border,
                 StrokeThickness = 1
             });
 
@@ -229,22 +229,23 @@ namespace Hud.App.Views
             var text = new TextBlock
             {
                 Text = hit.Hand.ChartTooltip,
-                Foreground = Brushes.Black,
                 FontSize = 12,
                 FontWeight = FontWeights.SemiBold,
                 LineHeight = 16
             };
+            text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
 
+            // Con los colores del tema (antes era una caja blanca fija sobre la app oscura).
             _hoverTooltip = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(238, 242, 246)),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(143, 211, 244)),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(8, 6, 8, 6),
                 Child = text,
                 IsHitTestVisible = false
             };
+            _hoverTooltip.SetResourceReference(Border.BackgroundProperty, "Brush.Card");
+            _hoverTooltip.SetResourceReference(Border.BorderBrushProperty, "Brush.Accent");
 
             _hoverTooltip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             var tooltipWidth = _hoverTooltip.DesiredSize.Width;
@@ -353,9 +354,9 @@ namespace Hud.App.Views
             Func<int, double> x,
             Func<double, double> y)
         {
-            var axisBrush = new SolidColorBrush(Color.FromRgb(77, 94, 112));
-            var gridBrush = new SolidColorBrush(Color.FromRgb(38, 50, 64));
-            var textBrush = new SolidColorBrush(Color.FromRgb(164, 184, 203));
+            var axisBrush = Hud.App.Services.ThemeBrushes.NeutralBorder;
+            var gridBrush = Hud.App.Services.ThemeBrushes.Border;
+            var textBrush = Hud.App.Services.ThemeBrushes.TextDim;
 
             ProfitChart.Children.Add(new Line { X1 = plotLeft, X2 = plotLeft, Y1 = plotTop, Y2 = plotBottom, Stroke = axisBrush, StrokeThickness = 1 });
             ProfitChart.Children.Add(new Line { X1 = plotLeft, X2 = plotRight, Y1 = plotBottom, Y2 = plotBottom, Stroke = axisBrush, StrokeThickness = 1 });
@@ -604,16 +605,6 @@ namespace Hud.App.Views
                 return PokerStarsHandHistory.BuildPositionMap(hand);
             }
 
-            private static string PositionFromOffset(int offset, int playerCount) =>
-                playerCount switch
-                {
-                    <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                    3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                    4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                    5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                    _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
-                };
-
             private static IReadOnlyList<StreetActionViewModel> ExtractStreetActions(
                 IReadOnlyList<string> hand,
                 string street,
@@ -803,27 +794,27 @@ namespace Hud.App.Views
             private static string TranslatePlayerAction(string action, double bigBlind)
             {
                 var normalized = action.Trim();
-                var raise = Regex.Match(normalized, @"(?:raises|sube)\s+(?<from>\$?[\d,.]+)\s+(?:to|a|hasta)\s+(?<to>\$?[\d,.]+)", RegexOptions.IgnoreCase);
+                var raise = Regex.Match(normalized, @"(?:raises|sube)\s+(?<from>[$€£]?[\d,.]+)\s+(?:to|a|hasta)\s+(?<to>[$€£]?[\d,.]+)", RegexOptions.IgnoreCase);
                 if (raise.Success)
                     return $"sube {FormatAmountAsBb(raise.Groups["from"].Value, bigBlind)} hasta {FormatAmountAsBb(raise.Groups["to"].Value, bigBlind)}";
 
-                var smallBlind = Regex.Match(normalized, @"^posts small blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                var smallBlind = Regex.Match(normalized, @"^posts small blind\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
                 if (smallBlind.Success)
                     return $"pone ciega chica {FormatAmountAsBb(smallBlind.Groups["amount"].Value, bigBlind)}";
 
-                var bigBlindPost = Regex.Match(normalized, @"^posts big blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                var bigBlindPost = Regex.Match(normalized, @"^posts big blind\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
                 if (bigBlindPost.Success)
                     return $"pone ciega grande {FormatAmountAsBb(bigBlindPost.Groups["amount"].Value, bigBlind)}";
 
-                var ante = Regex.Match(normalized, @"^posts the ante\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+                var ante = Regex.Match(normalized, @"^posts the ante\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
                 if (ante.Success)
                     return $"pone ante {FormatAmountAsBb(ante.Groups["amount"].Value, bigBlind)}";
 
-                var call = Regex.Match(normalized, @"^(?:calls|iguala|paga)\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+                var call = Regex.Match(normalized, @"^(?:calls|iguala|paga)\s+[$€£]?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
                 if (call.Success)
                     return $"paga {FormatAmountAsBb(call.Groups["amount"].Value, bigBlind)}{TranslateAllInText(call.Groups["rest"].Value)}";
 
-                var bet = Regex.Match(normalized, @"^(?:bets|apuesta)\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+                var bet = Regex.Match(normalized, @"^(?:bets|apuesta)\s+[$€£]?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
                 if (bet.Success)
                     return $"apuesta {FormatAmountAsBb(bet.Groups["amount"].Value, bigBlind)}{TranslateAllInText(bet.Groups["rest"].Value)}";
 
@@ -923,7 +914,7 @@ namespace Hud.App.Views
                 var abs = Math.Abs(netBb);
 
                 if (abs < 5)
-                    return new SolidColorBrush(Color.FromRgb(18, 24, 32));
+                    return Hud.App.Services.ThemeBrushes.Panel;
 
                 if (netBb > 0)
                 {

@@ -19,6 +19,8 @@ namespace Hud.App.Services
 
     public static class GoogleDriveBackupService
     {
+        private static readonly HttpClient Http = new();
+
         private const string ApplicationName = "APH";
         private const string BackupFileName = "aph.db";
         private const string BackupMimeType = "application/x-sqlite3";
@@ -56,13 +58,13 @@ namespace Hud.App.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH Google token cleanup failed: {ex.Message}");
+                AppLog.Warn($"Google token cleanup failed: {ex.Message}");
             }
         }
 
         public static async Task<GoogleDriveBackupResult> ConnectAsync(CancellationToken cancellationToken = default)
         {
-            var session = await CreateDriveSessionAsync(cancellationToken);
+            using var session = await CreateDriveSessionAsync(cancellationToken);
             return new GoogleDriveBackupResult(
                 true,
                 string.IsNullOrWhiteSpace(session.AccountEmail)
@@ -77,9 +79,18 @@ namespace Hud.App.Services
             if (!File.Exists(AphBackupDatabaseService.DatabasePath))
                 return new GoogleDriveBackupResult(false, LocalizationManager.Text("Drive.NoLocalDb"));
 
-            var session = await CreateDriveSessionAsync(cancellationToken);
+            using var session = await CreateDriveSessionAsync(cancellationToken);
             var service = session.Service;
-            var snapshot = CreateDatabaseSnapshot();
+
+            string snapshot;
+            try
+            {
+                snapshot = CreateDatabaseSnapshot();
+            }
+            catch (Exception ex)
+            {
+                return new GoogleDriveBackupResult(false, string.Format(LocalizationManager.Text("Drive.UploadFailed"), ex.Message));
+            }
 
             try
             {
@@ -122,7 +133,7 @@ namespace Hud.App.Services
 
         public static async Task<GoogleDriveBackupResult> RestoreDatabaseAsync(CancellationToken cancellationToken = default)
         {
-            var session = await CreateDriveSessionAsync(cancellationToken);
+            using var session = await CreateDriveSessionAsync(cancellationToken);
             var service = session.Service;
             var existing = await FindBackupFileAsync(service, cancellationToken);
             if (existing is null)
@@ -145,10 +156,27 @@ namespace Hud.App.Services
                     var backupPath = Path.Combine(
                         Path.GetDirectoryName(AphBackupDatabaseService.DatabasePath)!,
                         $"aph.before_drive_restore.{DateTime.Now:yyyyMMdd_HHmmss}.bak");
-                    File.Copy(AphBackupDatabaseService.DatabasePath, backupPath, overwrite: true);
+
+                    // Copia de seguridad consistente: si solo se copiase aph.db, el respaldo de
+                    // emergencia perderia lo que aun este en el WAL.
+                    try
+                    {
+                        AphBackupDatabaseService.CreateConsistentSnapshot(backupPath);
+                    }
+                    catch
+                    {
+                        File.Copy(AphBackupDatabaseService.DatabasePath, backupPath, overwrite: true);
+                    }
                 }
 
+                // Sin esto el archivo sigue tomado por el pool de conexiones y, sobre todo, el
+                // aph.db-wal antiguo se reproduciria encima de la base recien restaurada.
+                AphBackupDatabaseService.PrepareForExternalRestore();
+
                 File.Copy(tempPath, AphBackupDatabaseService.DatabasePath, overwrite: true);
+
+                AphBackupDatabaseService.DiscardStaleSidecars();
+
                 return new GoogleDriveBackupResult(true, LocalizationManager.Text("Drive.Restored"), DateTimeOffset.Now, session.AccountEmail);
             }
             finally
@@ -191,10 +219,11 @@ namespace Hud.App.Services
             try
             {
                 var token = await credential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using var response = await client.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo", cancellationToken);
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v2/userinfo");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                using var response = await Http.SendAsync(request, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                     return null;
 
@@ -206,7 +235,7 @@ namespace Hud.App.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH Google account email lookup failed: {ex.Message}");
+                AppLog.Warn($"Google account email lookup failed: {ex.Message}");
                 return null;
             }
         }
@@ -226,7 +255,7 @@ namespace Hud.App.Services
         private static string CreateDatabaseSnapshot()
         {
             var snapshot = Path.Combine(Path.GetTempPath(), $"aph_drive_snapshot_{Guid.NewGuid():N}.db");
-            File.Copy(AphBackupDatabaseService.DatabasePath, snapshot, overwrite: true);
+            AphBackupDatabaseService.CreateConsistentSnapshot(snapshot);
             return snapshot;
         }
 
@@ -255,6 +284,9 @@ namespace Hud.App.Services
             }
         }
 
-        private sealed record GoogleDriveSession(DriveService Service, string? AccountEmail);
+        private sealed record GoogleDriveSession(DriveService Service, string? AccountEmail) : IDisposable
+        {
+            public void Dispose() => Service.Dispose();
+        }
     }
 }

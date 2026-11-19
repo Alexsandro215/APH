@@ -25,10 +25,95 @@ namespace Hud.App.Services
             }
         }
 
+        /// <summary>
+        /// Copia consistente de la base para subirla a Drive.
+        /// File.Copy de aph.db NO vale: en modo WAL las transacciones ya confirmadas viven en
+        /// aph.db-wal hasta el checkpoint, y el pool de conexiones mantiene la conexion abierta,
+        /// asi que la copia plana se sube sin las ultimas manos importadas.
+        /// VACUUM INTO produce un unico archivo ya consolidado.
+        /// </summary>
+        public static void CreateConsistentSnapshot(string destinationPath)
+        {
+            if (!File.Exists(DatabasePath))
+                throw new FileNotFoundException("No hay base local que respaldar.", DatabasePath);
+
+            lock (Sync)
+            {
+                DeleteIfExists(destinationPath);
+
+                using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+                connection.Open();
+
+                using var checkpoint = connection.CreateCommand();
+                checkpoint.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                checkpoint.ExecuteNonQuery();
+
+                using var vacuum = connection.CreateCommand();
+                vacuum.CommandText = "VACUUM INTO $destination;";
+                vacuum.Parameters.AddWithValue("$destination", destinationPath);
+                vacuum.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// Deja el disco listo para que otro componente sobrescriba aph.db.
+        /// Cierra el pool (si no, en Windows el archivo sigue en uso) y borra los sidecars:
+        /// un -wal huerfano pertenece a la base ANTERIOR y SQLite lo reproduciria sobre la nueva.
+        /// </summary>
+        public static void PrepareForExternalRestore()
+        {
+            lock (Sync)
+            {
+                SqliteConnection.ClearAllPools();
+                DeleteIfExists($"{DatabasePath}-wal");
+                DeleteIfExists($"{DatabasePath}-shm");
+            }
+        }
+
+        /// <summary>Borra los sidecars que hayan quedado tras sustituir el archivo aph.db.</summary>
+        public static void DiscardStaleSidecars()
+        {
+            lock (Sync)
+            {
+                DeleteIfExists($"{DatabasePath}-wal");
+                DeleteIfExists($"{DatabasePath}-shm");
+            }
+        }
+
+        /// <summary>
+        /// Copia de seguridad local antes de borrar la base (cerrar sesion, cambio de cuenta).
+        /// Antes esas acciones borraban aph.db sin dejar nada: lo importado desde el ultimo
+        /// respaldo en Drive se perdia. Devuelve la ruta de la copia, o null si no habia base.
+        /// </summary>
+        public static string? KeepSafetyCopy(string reason)
+        {
+            if (!File.Exists(DatabasePath))
+                return null;
+
+            var folder = Path.Combine(Path.GetDirectoryName(DatabasePath)!, "backups");
+            Directory.CreateDirectory(folder);
+            var path = Path.Combine(folder, $"aph.{reason}.{DateTime.Now:yyyyMMdd_HHmmss}.db");
+
+            try
+            {
+                CreateConsistentSnapshot(path);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("No se pudo hacer la copia consistente; se copia el archivo tal cual", ex);
+                SqliteConnection.ClearAllPools();
+                File.Copy(DatabasePath, path, overwrite: true);
+            }
+
+            AppLog.Info($"Copia de seguridad local guardada en {path}");
+            return path;
+        }
+
         public static void DeleteLocalDatabase()
         {
             lock (Sync)
             {
+                SqliteConnection.ClearAllPools();
                 DeleteIfExists(DatabasePath);
                 DeleteIfExists($"{DatabasePath}-wal");
                 DeleteIfExists($"{DatabasePath}-shm");
@@ -50,11 +135,21 @@ namespace Hud.App.Services
                     EnsureSchema(connection);
 
                     using var command = connection.CreateCommand();
+                    // Solo la version mas reciente de cada archivo de origen. Las anteriores que
+                    // quedan en la base (archivo reescrito o truncado, o prefijos que dejaron
+                    // versiones previas de APH) pueden compartir manos con ella y se contarian dos
+                    // veces. Las manos que solo estan en una version antigua siguen en aph.db,
+                    // pero no se restauran aqui.
                     command.CommandText =
                         """
                         SELECT file_hash, source_path, file_name, raw_text
                         FROM imported_files
                         WHERE poker_room = $poker_room
+                          AND id IN (
+                              SELECT MAX(id) FROM imported_files
+                              WHERE poker_room = $poker_room
+                              GROUP BY source_path
+                          )
                         ORDER BY played_at_utc, imported_at_utc, id;
                         """;
                     command.Parameters.AddWithValue("$poker_room", pokerRoom);
@@ -79,7 +174,7 @@ namespace Hud.App.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH backup materialize error: {ex.Message}");
+                AppLog.Warn($"backup materialize error: {ex.Message}");
             }
 
             return restored;
@@ -110,6 +205,18 @@ namespace Hud.App.Services
             string sourcePath,
             string pokerRoom,
             string? heroName,
+            MainWindow.TableSessionStats? table) =>
+            BackupHandHistoryFile(sourcePath, lines: null, pokerRoom, heroName, table);
+
+        /// <summary>
+        /// Respalda un archivo de historial. Si quien llama ya tiene las lineas en memoria las
+        /// pasa aqui y se evita releer el archivo entero de disco.
+        /// </summary>
+        public static void BackupHandHistoryFile(
+            string sourcePath,
+            IReadOnlyList<string>? lines,
+            string pokerRoom,
+            string? heroName,
             MainWindow.TableSessionStats? table)
         {
             if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
@@ -122,7 +229,7 @@ namespace Hud.App.Services
             {
                 lock (Sync)
                 {
-                    var lines = File.ReadAllLines(sourcePath);
+                    lines ??= File.ReadAllLines(sourcePath);
                     var rawText = string.Join(Environment.NewLine, lines);
                     var fileInfo = new FileInfo(sourcePath);
                     var fileHash = Sha256(rawText);
@@ -144,13 +251,16 @@ namespace Hud.App.Services
                         fileHash,
                         rawText);
 
+                    // Las manos van antes de la limpieza: el upsert reapunta a la fila nueva las
+                    // que siguen en el archivo y el borrado en cascada solo se lleva las demas.
                     BackupRawHands(connection, transaction, fileId, lines, pokerRoom, heroName, table);
+                    DeleteSupersededVersions(connection, transaction, sourcePath, fileHash, rawText);
                     transaction.Commit();
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH backup DB error for {sourcePath}: {ex.Message}");
+                AppLog.Warn($"backup DB error for {sourcePath}: {ex.Message}");
             }
         }
 
@@ -172,7 +282,7 @@ namespace Hud.App.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH backup DB delete failed for {path}: {ex.Message}");
+                AppLog.Warn($"backup DB delete failed for {path}: {ex.Message}");
             }
         }
 
@@ -249,6 +359,7 @@ namespace Hud.App.Services
                 """
                 PRAGMA journal_mode=WAL;
                 PRAGMA synchronous=NORMAL;
+                PRAGMA foreign_keys=ON;
 
                 CREATE TABLE IF NOT EXISTS app_metadata (
                     key TEXT PRIMARY KEY,
@@ -386,7 +497,7 @@ namespace Hud.App.Services
             SqliteConnection connection,
             SqliteTransaction transaction,
             long importedFileId,
-            string[] lines,
+            IReadOnlyList<string> lines,
             string pokerRoom,
             string? heroName,
             MainWindow.TableSessionStats? table)
@@ -430,6 +541,56 @@ namespace Hud.App.Services
                     ("$table_name", table?.TableName),
                     ("$played_at_utc", ToUtcText(playedAt)),
                     ("$raw_text", rawHand));
+            }
+        }
+
+        /// <summary>
+        /// Borra las versiones anteriores del mismo archivo solo si su texto es prefijo exacto del
+        /// nuevo (el archivo solo crecio): como mucho se pierde una ultima mano a medio escribir que
+        /// la nueva ya trae completa. Si se reescribio o se trunco, la anterior se conserva porque
+        /// puede tener manos que ya no estan en el archivo.
+        /// </summary>
+        private static void DeleteSupersededVersions(
+            SqliteConnection connection,
+            SqliteTransaction transaction,
+            string sourcePath,
+            string fileHash,
+            string rawText)
+        {
+            var superseded = new List<long>();
+            using (var command = CreateCommand(
+                connection,
+                transaction,
+                """
+                SELECT id, file_hash, raw_text
+                FROM imported_files
+                WHERE source_path = $source_path AND file_hash <> $file_hash;
+                """,
+                ("$source_path", sourcePath),
+                ("$file_hash", fileHash)))
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var oldText = reader.GetString(2);
+                    // El hash confirma que el texto guardado esta entero: Microsoft.Data.Sqlite
+                    // guarda las cadenas largas cortadas en el primer NUL (archivos con ceros tras
+                    // un cuelgue) y un texto cortado pareceria prefijo sin serlo.
+                    if (rawText.StartsWith(oldText, StringComparison.Ordinal) &&
+                        Sha256(oldText) == reader.GetString(1))
+                    {
+                        superseded.Add(reader.GetInt64(0));
+                    }
+                }
+            }
+
+            foreach (var id in superseded)
+            {
+                ExecuteNonQuery(
+                    connection,
+                    transaction,
+                    "DELETE FROM imported_files WHERE id = $id;",
+                    ("$id", id));
             }
         }
 

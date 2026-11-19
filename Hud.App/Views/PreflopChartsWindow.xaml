@@ -1,0 +1,180 @@
+<Window x:Class="Hud.App.Views.PreflopChartsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tablas preflop"
+        Width="1200" Height="860" MinWidth="420" MinHeight="520"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Brush.Bg}"
+        Foreground="{DynamicResource Brush.Text}"
+        FontFamily="Segoe UI">
+  <Window.Resources>
+    <Style x:Key="PanelCard" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="16"/>
+    </Style>
+
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+
+    <!-- Fichas para elegir situacion y posiciones -->
+    <Style x:Key="Chip" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Padding" Value="14,6"/>
+      <Setter Property="Margin" Value="0,0,8,8"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Bd" CornerRadius="16" Padding="{TemplateBinding Padding}"
+                    Background="{DynamicResource Brush.Inset}"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.AccentSoft}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid x:Name="RootGrid" Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Cabecera (dentro de APH la muestra la barra superior) -->
+    <Border x:Name="HeaderCard" Grid.Row="0" Style="{StaticResource PanelCard}" Margin="0,0,0,12">
+      <StackPanel>
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="Bold"/>
+        <TextBlock x:Name="SummaryText" Margin="0,4,0,0" Foreground="{DynamicResource Brush.TextDim}" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Elegir la situacion -->
+    <Border x:Name="ControlsCard" Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition x:Name="ToolsColumn" Width="260"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel>
+          <TextBlock x:Name="SituationLabel" Style="{StaticResource FieldLabel}"/>
+          <WrapPanel x:Name="ScenarioPanel"/>
+
+          <TextBlock x:Name="HeroLabel" Style="{StaticResource FieldLabel}" Margin="0,6,0,6"/>
+          <WrapPanel x:Name="HeroPanel"/>
+
+          <StackPanel x:Name="VillainSection">
+            <TextBlock x:Name="VillainLabel" Style="{StaticResource FieldLabel}" Margin="0,6,0,6"/>
+            <WrapPanel x:Name="VillainPanel"/>
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel x:Name="ToolsPanel" Grid.Column="1" Margin="16,0,0,0">
+          <!-- Mesa de 6 o heads-up: en esta columna para no restarle alto a la tabla -->
+          <TextBlock x:Name="TableLabel" Style="{StaticResource FieldLabel}"/>
+          <WrapPanel x:Name="TablePanel" Margin="0,0,0,4"/>
+          <TextBlock x:Name="FindLabel" Style="{StaticResource FieldLabel}"/>
+          <TextBox x:Name="HandSearchBox" FontSize="15" Padding="8,6" TextChanged="HandSearchBox_TextChanged"/>
+          <TextBlock x:Name="FindHint" Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource Brush.TextDim}"/>
+          <Button x:Name="FloatButton" Margin="0,14,0,0" Padding="12,8" Click="FloatButton_Click"/>
+          <CheckBox x:Name="TopmostCheck" Margin="0,12,0,0" Visibility="Collapsed" IsChecked="True"
+                    Checked="TopmostCheck_Changed" Unchecked="TopmostCheck_Changed"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Tabla y panel lateral -->
+    <Grid x:Name="ContentGrid" Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition x:Name="SideColumn" Width="320"/>
+      </Grid.ColumnDefinitions>
+
+      <Border Style="{StaticResource PanelCard}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <!-- Titulo y tamano en una sola linea cada uno: si cambiaran de alto, la tabla cambiaria de tamano -->
+          <StackPanel>
+            <DockPanel>
+              <Border x:Name="DraftBadge" DockPanel.Dock="Right" CornerRadius="10" Padding="10,3" Margin="10,0,0,0"
+                      VerticalAlignment="Center" BorderThickness="1"
+                      Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Warning}">
+                <TextBlock x:Name="DraftBadgeText" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}"/>
+              </Border>
+              <TextBlock x:Name="ChartTitleText" FontSize="17" FontWeight="SemiBold"
+                         TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+            </DockPanel>
+            <TextBlock x:Name="SizeText" Margin="0,4,0,0" Foreground="{DynamicResource Brush.TextDim}"
+                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+
+          <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,12,0,0" VerticalAlignment="Top">
+            <UniformGrid x:Name="ChartGrid" Rows="13" Columns="13" Width="598" Height="598"/>
+          </Viewbox>
+
+          <!-- Siempre tres casillas del mismo tamano (subir, pagar, retirarse) -->
+          <UniformGrid x:Name="LegendPanel" Grid.Row="2" Margin="0,12,0,0" Rows="1" Columns="3"/>
+        </Grid>
+      </Border>
+
+      <ScrollViewer x:Name="SidePanel" Grid.Column="1" Margin="12,0,0,0"
+                    VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <!-- Como jugaron de verdad esta situacion, comparado con la tabla -->
+          <Border Style="{StaticResource PanelCard}">
+            <StackPanel>
+              <TextBlock x:Name="YouTitle" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <ComboBox x:Name="PlayerCombo" Margin="0,8,0,0" Visibility="Collapsed"
+                        SelectionChanged="PlayerCombo_SelectionChanged"/>
+              <StackPanel x:Name="YouList" Margin="0,8,0,0"/>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource PanelCard}" Margin="0,12,0,0">
+            <StackPanel>
+              <TextBlock x:Name="LookupTitle" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <StackPanel x:Name="LookupList" Margin="0,8,0,0"/>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource PanelCard}" Margin="0,12,0,0">
+            <StackPanel>
+              <TextBlock x:Name="HelpTitle" FontSize="15" FontWeight="SemiBold"/>
+              <StackPanel x:Name="HelpList" Margin="0,6,0,0"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</Window>

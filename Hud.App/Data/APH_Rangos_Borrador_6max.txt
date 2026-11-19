@@ -1,0 +1,43 @@
+# =====================================================================================
+#  APH - Rangos BORRADOR para revisar (6-max y heads-up, 100 ciegas grandes)
+#
+#  Situaciones que faltaban en APH_Reference_100bb_6max.csv: contra limp, squeeze y heads-up.
+#  Son rangos de partida escritos para mesas de microlimites y dinero ficticio (rivales que
+#  pagan mucho). El entrenador (el coach) debe revisarlos y ajustarlos a su estilo.
+#
+#  Formato de cada linea:
+#     SITUACION | TU POSICION | POSICIONES DEL RIVAL | SUBIR | PAGAR
+#  - Posiciones: LJ (UTG), HJ (MP), CO, BTN, SB, BB. Varias separadas por comas.
+#  - En "contra limp" el rival es quien hizo limp; en "squeeze", quien abrio subiendo.
+#  - Notacion de manos: QQ+ (QQ, KK, AA), TT-77, ATs+ (ATs a AKs), A5s-A2s, T9s-54s
+#    (conectores), AK (AKs y AKo), "resto" (todas las manos que no estan en SUBIR).
+#  - Lo que no aparece ni en SUBIR ni en PAGAR es retirarse.
+#  - En la ciega grande contra limp, PAGAR significa pasar (check); en la ciega pequena,
+#    completar.
+# =====================================================================================
+
+# ---------------- Contra limp (alguien solo pago la ciega grande) ----------------
+# Subir para aislar: 4 bb + 1 bb por cada limper (5 bb desde las ciegas).
+# Pagar detras: manos que ganan en botes de varios jugadores (parejas pequenas, conectores).
+VS LIMP | HJ  | LJ          | 77+, ATs+, KTs+, QTs+, JTs, AJo+, KQo | 66-22, A9s-A2s, T9s-65s
+VS LIMP | CO  | LJ,HJ       | 66+, A9s+, K9s+, Q9s+, J9s+, T9s, ATo+, KJo+, QJo | 55-22, A8s-A2s, K8s-K6s, 98s-54s
+VS LIMP | BTN | LJ,HJ,CO    | 55+, A7s+, K9s+, Q9s+, J9s+, T9s, 98s, A9o+, KTo+, QTo+, JTo | 44-22, A6s-A2s, K8s-K2s, Q8s, J8s, T8s, 97s, 87s-54s, A8o, K9o, Q9o, J9o, T9o
+VS LIMP | SB  | LJ,HJ,CO,BTN | 77+, ATs+, KTs+, QTs+, JTs, AJo+, KQo | 66-22, A9s-A2s, K9s-K2s, Q9s-Q6s, J9s-J7s, T9s-T7s, 97s, 98s, 86s, 87s, 75s, 76s, 64s, 65s, 54s, ATo-A8o, KJo, KTo, QJo, QTo, JTo
+VS LIMP | BB  | LJ,HJ,CO,BTN | 88+, ATs+, KJs+, QJs, AJo+, KQo | resto
+VS LIMP | BB  | SB          | 66+, A2s+, K9s+, Q9s+, J9s+, T9s, 98s, A9o+, KTo+, QTo+, JTo | resto
+
+# ---------------- Squeeze (alguien abrio subiendo y otro pago) ----------------
+# Squeeze: 4 veces la subida + 1 subida por cada pagador (5 veces desde las ciegas).
+SQUEEZE | CO  | LJ          | QQ+, AK, A5s, A4s | JJ-66, AQs, AJs, KQs, QJs, JTs, T9s
+SQUEEZE | BTN | LJ,HJ       | QQ+, AK, AQs, A5s, A4s | JJ-22, AJs, ATs, KQs, KJs, QJs, JTs, T9s-76s, AQo
+SQUEEZE | SB  | LJ,HJ       | QQ+, AK, AQs, A5s, A4s | JJ-77, AJs, KQs
+SQUEEZE | SB  | CO          | JJ+, AK, AQs, AJs, KQs, A5s-A3s | TT-66, ATs, KJs, QJs, JTs
+SQUEEZE | BB  | LJ,HJ       | QQ+, AK, AQs, A5s, A4s | JJ-22, AJs-A6s, KQs-K9s, QJs-Q9s, JTs, J9s, T9s, T8s, 98s, 97s, 87s, 86s, 76s, 65s, 54s, AQo, AJo, KQo
+SQUEEZE | BB  | CO,BTN      | JJ+, AK, AQs, AJs, KQs, AQo, A5s-A2s | TT-22, ATs-A6s, KJs-K8s, QJs-Q9s, JTs, J9s, T9s, T8s, 98s, 97s, 87s, 86s, 76s, 75s, 65s, 54s, AJo, ATo, KQo, KJo, QJo
+
+# ---------------- Heads-up (mesa de 2: el boton es la ciega pequena) ----------------
+# Abrir desde el boton a 2-2.5 bb; 3bet desde la ciega grande a unas 3.5 veces.
+HU OPEN     | SB | -  | 22+, A2s+, A2o+, K2s+, K2o+, Q2s+, Q2o+, J2s+, J4o+, T2s+, T5o+, 92s+, 95o+, 83s+, 85o+, 73s+, 75o+, 63s+, 64o+, 52s+, 54o, 42s+, 32s |
+HU VS RAISE | BB | SB | 99+, A9s+, A5s, A4s, KTs+, QTs+, JTs, AJo+, KQo | 88-22, A8s-A6s, A3s, A2s, K9s-K2s, Q9s-Q2s, J9s-J4s, T9s-T6s, 98s-95s, 87s-85s, 76s-74s, 65s-63s, 54s, 53s, 43s, ATo-A2o, KJo-K5o, QJo-Q8o, JTo-J8o, T9o, T8o, 98o, 87o, Q7o-Q4o, J7o-J5o, T7o, T6o, 97o, 96o, 86o, 76o, 65o, 54o, J3s, J2s, T5s-T2s, 94s-92s, 84s-82s, 73s, 72s, 62s, 52s, 42s, 32s
+HU VS 3BET  | SB | BB | QQ+, AK, AQs, A5s, A4s | JJ-22, AJs-A6s, A3s, A2s, KQs-K8s, QJs-Q9s, JTs, J9s, T9s, T8s, 98s, 87s, 76s, 65s, AQo-A9o, KQo-KTo, QJo, QTo, JTo
+HU VS 4BET  | BB | SB | KK+, AKs | QQ-TT, AKo, AQs

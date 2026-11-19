@@ -1,0 +1,30 @@
+PokerStars Game #200000000002: Tournament #900000001, $1.00+$0.10 USD Hold'em No Limit - Level V (100/200) - 2026/10/01 10:05:00 ET
+Table '900000001 1' 9-max Seat #1 is the button
+Seat 1: Hero (10000 in chips)
+Seat 2: Villain (10000 in chips)
+Hero: posts the ante 25
+Villain: posts the ante 25
+Villain: posts small blind 100
+Hero: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [Ah Kh]
+Villain: raises 400 to 600
+Hero: calls 400
+*** FLOP *** [2c 7d 9s]
+Villain: bets 500
+Hero: calls 500
+*** TURN *** [2c 7d 9s] [Jd]
+Villain: checks
+Hero: checks
+*** RIVER *** [2c 7d 9s Jd] [3h]
+Villain: checks
+Hero: checks
+*** SHOW DOWN ***
+Villain: shows [9h 9d] (three of a kind, Nines)
+Hero: mucks hand
+Villain collected 2250 from pot
+*** SUMMARY ***
+Total pot 2250 | Rake 0
+Board [2c 7d 9s Jd 3h]
+Seat 1: Hero (button) (big blind) mucked [Ah Kh]
+Seat 2: Villain (small blind) showed [9h 9d] and won (2250) with three of a kind, Nines

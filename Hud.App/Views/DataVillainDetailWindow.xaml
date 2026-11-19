@@ -21,7 +21,7 @@
 
     <Style x:Key="HeaderStyle" TargetType="DataGridColumnHeader">
       <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="4"/>
@@ -30,7 +30,7 @@
     </Style>
 
     <Style x:Key="CellText" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
       <Setter Property="Padding" Value="4,0"/>
     </Style>
@@ -213,11 +213,11 @@
                       RowHeight="28"
                       HeadersVisibility="Column"
                       GridLinesVisibility="None"
-                      Background="{StaticResource BgDark}"
+                      Background="{DynamicResource BgDark}"
                       RowBackground="{DynamicResource Brush.Inset}"
                       AlternatingRowBackground="{DynamicResource Brush.Card}"
-                      BorderBrush="{StaticResource BorderDark}"
-                      Foreground="{StaticResource FgLight}"
+                      BorderBrush="{DynamicResource BorderDark}"
+                      Foreground="{DynamicResource FgLight}"
                       ColumnHeaderStyle="{StaticResource HeaderStyle}">
               <DataGrid.Columns>
               <DataGridTextColumn Header="{DynamicResource Grid.Player}" Binding="{Binding Name}" Width="150" ElementStyle="{StaticResource CellText}"/>
@@ -225,8 +225,7 @@
                 <DataGridTemplateColumn Header="VPIP" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="VPIPPct"/>
@@ -235,6 +234,22 @@
                             <Binding Source="VPIP"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="VPIPPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="VPIP"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="VPIPPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="VPIP"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -242,8 +257,7 @@
                 <DataGridTemplateColumn Header="PFR" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="PFRPct"/>
@@ -252,6 +266,22 @@
                             <Binding Source="PFR"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="PFRPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="PFR"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="PFRPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="PFR"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -259,8 +289,7 @@
                 <DataGridTemplateColumn Header="3Bet" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="ThreeBetPct"/>
@@ -269,6 +298,22 @@
                             <Binding Source="THREEBET"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="ThreeBetPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="THREEBET"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="ThreeBetPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="THREEBET"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -276,8 +321,7 @@
                 <DataGridTemplateColumn Header="AF" Width="58">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="AF"/>
@@ -286,6 +330,22 @@
                             <Binding Source="AF"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="AF"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="AF"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="AF"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="AF"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -293,8 +353,7 @@
                 <DataGridTemplateColumn Header="AFq" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="AFqPct"/>
@@ -303,6 +362,22 @@
                             <Binding Source="AFQ"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="AFqPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="AFQ"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="AFqPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="AFQ"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -310,8 +385,7 @@
                 <DataGridTemplateColumn Header="CBet" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding CBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding CBetPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="CBetPct"/>
@@ -320,6 +394,22 @@
                             <Binding Source="CBF"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="CBetPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="CBF"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="CBetPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="CBF"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -327,8 +417,7 @@
                 <DataGridTemplateColumn Header="FvCB" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding FvCBPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding FvCBPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="FvCBPct"/>
@@ -337,6 +426,22 @@
                             <Binding Source="FVCBF"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="FvCBPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="FVCBF"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="FvCBPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="FVCBF"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -344,8 +449,7 @@
                 <DataGridTemplateColumn Header="WTSD" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="WTSDPct"/>
@@ -354,6 +458,22 @@
                             <Binding Source="WTSD"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="WTSDPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WTSD"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="WTSDPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WTSD"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -361,8 +481,7 @@
                 <DataGridTemplateColumn Header="W$SD" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="WSDPct"/>
@@ -371,6 +490,22 @@
                             <Binding Source="WSD"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="WSDPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WSD"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="WSDPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WSD"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -378,8 +513,7 @@
                 <DataGridTemplateColumn Header="WWSF" Width="62">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1"
-                                 Foreground="{Binding Hands, Converter={StaticResource StatTextBrush}}">
+                      <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" TextAlignment="Center" Padding="1">
                         <TextBlock.Background>
                           <MultiBinding Converter="{StaticResource StatToBrush}">
                             <Binding Path="WWSFPct"/>
@@ -388,6 +522,22 @@
                             <Binding Source="WWSF"/>
                           </MultiBinding>
                         </TextBlock.Background>
+                        <TextBlock.Foreground>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                            <Binding Path="WWSFPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WWSF"/>
+                          </MultiBinding>
+                        </TextBlock.Foreground>
+                        <TextBlock.ToolTip>
+                          <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                            <Binding Path="WWSFPct"/>
+                            <Binding Path="Hands"/>
+                            <Binding Path="Stake"/>
+                            <Binding Source="WWSF"/>
+                          </MultiBinding>
+                        </TextBlock.ToolTip>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>

@@ -89,6 +89,12 @@ namespace Hud.App.Views
                 {
                     _settings.GoogleAccountEmail = result.AccountEmail;
                     GoogleAccountText.Text = result.AccountEmail;
+
+                    // Quien entro en modo local y conecta Drive ahora tambien quiere el
+                    // respaldo automatico al cerrar.
+                    if (result.Success)
+                        _settings.GoogleSyncEnabled = true;
+
                     AppSettingsService.Save(_settings);
                 }
 

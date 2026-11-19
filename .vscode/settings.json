@@ -1,0 +1,56 @@
+{
+    // Tema verde solo para este proyecto (APH). Los demas proyectos conservan su tema.
+    "workbench.colorCustomizations": {
+        "titleBar.activeBackground": "#0E4A2C",
+        "titleBar.activeForeground": "#EAF7EF",
+        "titleBar.inactiveBackground": "#0B3A23",
+        "titleBar.inactiveForeground": "#9CC3AD",
+        "titleBar.border": "#1F4A33",
+
+        "activityBar.background": "#0B3A23",
+        "activityBar.foreground": "#EAF7EF",
+        "activityBar.inactiveForeground": "#9CC3AD",
+        "activityBar.activeBorder": "#34D399",
+        "activityBarBadge.background": "#E3B341",
+        "activityBarBadge.foreground": "#06120C",
+
+        "statusBar.background": "#17804B",
+        "statusBar.foreground": "#FFFFFF",
+        "statusBar.noFolderBackground": "#17804B",
+        "statusBar.debuggingBackground": "#B8860B",
+        "statusBarItem.hoverBackground": "#1F9D5C",
+        "statusBarItem.remoteBackground": "#229A5E",
+
+        "sideBar.background": "#08180F",
+        "sideBar.border": "#1F4A33",
+        "sideBarSectionHeader.background": "#0B2417",
+        "sideBarTitle.foreground": "#EAF7EF",
+
+        "editor.background": "#06120C",
+        "editorGutter.background": "#06120C",
+        "editor.lineHighlightBackground": "#0E251980",
+        "editor.selectionBackground": "#1D5C3C",
+        "editorLineNumber.activeForeground": "#34D399",
+
+        "editorGroupHeader.tabsBackground": "#0B1D14",
+        "tab.activeBackground": "#06120C",
+        "tab.inactiveBackground": "#0B1D14",
+        "tab.activeBorderTop": "#34D399",
+        "tab.border": "#08180F",
+
+        "panel.background": "#06120C",
+        "panel.border": "#1F4A33",
+        "terminal.background": "#06120C",
+
+        "focusBorder": "#34D399",
+        "list.activeSelectionBackground": "#14402A",
+        "list.inactiveSelectionBackground": "#10301F",
+        "list.hoverBackground": "#0E2519",
+        "button.background": "#229A5E",
+        "button.hoverBackground": "#1A7446",
+        "input.background": "#0B1D14",
+        "dropdown.background": "#0B1D14",
+        "scrollbarSlider.background": "#1F4A3380",
+        "scrollbarSlider.hoverBackground": "#23553AAA"
+    }
+}

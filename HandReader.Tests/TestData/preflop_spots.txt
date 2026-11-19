@@ -1,0 +1,122 @@
+PokerStars Hand #900000000001:  Hold'em No Limit (100/200) - 2026/10/02 3:21:29 ET
+Table 'Prueba I' 6-max (Play Money) Seat #4 is the button
+Seat 1: Lj (20000 in chips)
+Seat 2: Hj (20000 in chips)
+Seat 3: Hero (20000 in chips)
+Seat 4: Btn (20000 in chips)
+Seat 5: Sb (20000 in chips)
+Seat 6: Bb (20000 in chips)
+Sb: posts small blind 100
+Bb: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [Ah Jd]
+Lj: folds
+Hj: folds
+Hero: raises 300 to 500
+Btn: raises 1000 to 1500
+Sb: folds
+Bb: folds
+Hero: folds
+Uncalled bet (1000) returned to Btn
+Btn collected 1300 from pot
+*** SUMMARY ***
+Total pot 1300 | Rake 0
+Seat 3: Hero folded before Flop
+
+
+
+PokerStars Hand #900000000002:  Hold'em No Limit (100/200) - 2026/10/02 3:22:29 ET
+Table 'Prueba I' 6-max (Play Money) Seat #6 is the button
+Seat 1: Sb (20000 in chips)
+Seat 2: Bb (20000 in chips)
+Seat 3: Lj (20000 in chips)
+Seat 4: Hj (20000 in chips)
+Seat 5: Co (20000 in chips)
+Seat 6: Hero (20000 in chips)
+Sb: posts small blind 100
+Bb: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [Kc Qc]
+Lj: calls 200
+Hj: folds
+Co: folds
+Hero: raises 800 to 1000
+Sb: folds
+Bb: folds
+Lj: folds
+Uncalled bet (800) returned to Hero
+Hero collected 700 from pot
+*** SUMMARY ***
+Total pot 700 | Rake 0
+
+
+
+PokerStars Hand #900000000003:  Hold'em No Limit (100/200) - 2026/10/02 3:23:29 ET
+Table 'Prueba I' 6-max (Play Money) Seat #4 is the button
+Seat 1: Lj (20000 in chips)
+Seat 2: Hj (20000 in chips)
+Seat 3: Co (20000 in chips)
+Seat 4: Btn (20000 in chips)
+Seat 5: Sb (20000 in chips)
+Seat 6: Hero (20000 in chips)
+Sb: posts small blind 100
+Hero: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [Qs Qh]
+Lj: raises 300 to 500
+Hj: calls 500
+Co: folds
+Btn: folds
+Sb: folds
+Hero: raises 2500 to 3000
+Lj: folds
+Hj: folds
+Uncalled bet (2500) returned to Hero
+Hero collected 1600 from pot
+*** SUMMARY ***
+Total pot 1600 | Rake 0
+
+
+
+PokerStars Hand #900000000004:  Hold'em No Limit (100/200) - 2026/10/02 3:24:29 ET
+Table 'Duelo' 2-max (Play Money) Seat #1 is the button
+Seat 1: Hero (20000 in chips)
+Seat 2: Villain (20000 in chips)
+Hero: posts small blind 100
+Villain: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [7d 2c]
+Hero: raises 300 to 500
+Villain: raises 1000 to 1500
+Hero: calls 1000
+*** FLOP *** [2h 7s Kd]
+Villain: bets 1000
+Hero: folds
+Uncalled bet (1000) returned to Villain
+Villain collected 3000 from pot
+*** SUMMARY ***
+Total pot 3000 | Rake 0
+
+
+
+PokerStars Hand #900000000005:  Hold'em No Limit (100/200) - 2026/10/02 3:25:29 ET
+Table 'Prueba I' 6-max (Play Money) Seat #5 is the button
+Seat 1: Bb (20000 in chips)
+Seat 2: Away (20000 in chips) is sitting out
+Seat 3: Hero (20000 in chips)
+Seat 4: Co (20000 in chips)
+Seat 5: Btn (20000 in chips)
+Seat 6: Sb (20000 in chips)
+Sb: posts small blind 100
+Bb: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Hero [9s 4s]
+Hero: folds
+Co: folds
+Btn: raises 300 to 500
+Sb: folds
+Bb: folds
+Uncalled bet (300) returned to Btn
+Btn collected 500 from pot
+*** SUMMARY ***
+Total pot 500 | Rake 0

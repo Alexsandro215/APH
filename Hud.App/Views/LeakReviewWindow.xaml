@@ -31,7 +31,7 @@
         </Style>
 
         <Style x:Key="ValueText" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
@@ -46,7 +46,7 @@
         </Style>
 
         <Style x:Key="HandListItem" TargetType="ListBoxItem">
-            <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
             <Setter Property="Background" Value="{DynamicResource Brush.Inset}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
@@ -313,7 +313,9 @@
                             <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Canvas Width="980" Height="520" Background="Transparent">
                                     <!-- Table Oval -->
-                                    <Ellipse Fill="#1A1A2E" Stroke="{DynamicResource Brush.Border}" StrokeThickness="4" Width="700" Height="300" Canvas.Left="140" Canvas.Top="105"/>
+                                    <!-- Pano del color del tema (antes verde fijo) -->
+                                    <Ellipse Fill="{DynamicResource Brush.Inset}" Stroke="{DynamicResource Brush.Border}" StrokeThickness="4" Width="700" Height="300" Canvas.Left="140" Canvas.Top="105"/>
+                                    <Ellipse Fill="{DynamicResource Brush.Club}" Opacity="0.22" Width="692" Height="292" Canvas.Left="144" Canvas.Top="109"/>
 
                                     <!-- APH table watermark -->
                                     <StackPanel Canvas.Left="370" Canvas.Top="205" Width="240" Opacity="0.11">
@@ -340,7 +342,7 @@
                                     <!-- Pot Info (Center Top) -->
                                     <StackPanel Canvas.Left="440" Canvas.Top="165" Width="120">
                                         <TextBlock Text="POT" Foreground="{DynamicResource Brush.TextDim}" FontSize="16" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding CurrentStep.PotSize, StringFormat={}{0:0.##} bb}" Foreground="{StaticResource FgLight}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CurrentStep.PotSize, StringFormat={}{0:0.##} bb}" Foreground="{DynamicResource FgLight}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center"/>
                                     </StackPanel>
 
                                     <!-- Player Avatars (Dynamic) -->
@@ -664,14 +666,14 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <TextBlock Text="{Binding SelectedHand.HandResultSummary}" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}"/>
                         <TextBlock Text=" | " FontWeight="Bold" Foreground="{DynamicResource Brush.TextDim}" Margin="5,0"/>
-                        <TextBlock Text="{Binding SelectedHand.MadeHand}" FontWeight="Bold" Foreground="{StaticResource FgLight}"/>
+                        <TextBlock Text="{Binding SelectedHand.MadeHand}" FontWeight="Bold" Foreground="{DynamicResource FgLight}"/>
 
                         <StackPanel Orientation="Horizontal" Visibility="{Binding SelectedHand.HasVillainCards, Converter={StaticResource BoolToVisibility}}" Margin="15,0,0,0">
                             <TextBlock Text=" vs " Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding SelectedHand.VillainName}" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <ContentControl Content="{Binding SelectedHand.VillainCardChips}" ContentTemplate="{StaticResource CardChipListTemplate}" VerticalAlignment="Center"/>
                             <TextBlock Text=" (" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding SelectedHand.VillainCombination}" Foreground="{StaticResource FgLight}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedHand.VillainCombination}" Foreground="{DynamicResource FgLight}" VerticalAlignment="Center"/>
                             <TextBlock Text=")" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>

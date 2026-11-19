@@ -139,7 +139,7 @@ namespace Hud.App.Views
             };
 
             TablesGrid.SelectedItem = null;
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void ApplyFilters()
@@ -165,7 +165,53 @@ namespace Hud.App.Views
             foreach (var table in query)
                 Tables.Add(table);
 
-            SummaryText.Text = $"{_summary} | {Hud.App.Services.LocalizationManager.Text("Grid.Table")}: {Tables.Count}/{_allTables.Count}";
+            SummaryText.Text = string.Join(" | ", new[] { _summary, $"{Hud.App.Services.LocalizationManager.Text("Grid.Table")}: {Tables.Count}/{_allTables.Count}" }.Where(part => !string.IsNullOrWhiteSpace(part)));
+            UpdateVisualSummary();
+        }
+
+        // "De un vistazo": mesas ganadas, resultado total, mejor y peor mesa, y una barra por mesa
+        // (verde ganada, roja perdida), con las mesas filtradas.
+        private void UpdateVisualSummary()
+        {
+            var tables = Tables.ToList();
+            var won = tables.Count(table => table.NetBb > 0);
+            var text = Hud.App.Services.LocalizationManager.Text;
+
+            WinCountText.Text = tables.Count == 0 ? "-" : $"{won} {text("Visual.Of")} {tables.Count}";
+            WinMeterFill.Width = new GridLength(Math.Max(0.0001, won), GridUnitType.Star);
+            WinMeterRest.Width = new GridLength(Math.Max(0.0001, tables.Count - won), GridUnitType.Star);
+            WinMeterBar.Visibility = won > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            var total = tables.Sum(table => table.NetBb);
+            TotalResultText.Text = tables.Count == 0 ? "-" : FormatBb(total);
+
+            var best = tables.OrderByDescending(table => table.NetBb).FirstOrDefault();
+            var worst = tables.OrderBy(table => table.NetBb).FirstOrDefault();
+            BestTableText.Text = best is null ? "-" : $"{best.TableName}  {FormatBb(best.NetBb)}";
+            WorstTableText.Text = worst is null ? "-" : $"{worst.TableName}  {FormatBb(worst.NetBb)}";
+
+            TableResultBars.Items = tables
+                .OrderByDescending(table => table.NetBb)
+                .Select(table => new Charts.BarDatum(
+                    table.TableName,
+                    table.NetBb,
+                    FormatBb(table.NetBb),
+                    $"{table.PlayedDate}  ·  {table.HandsReceived} {text("Visual.Hands")}",
+                    $"{table.TableName}  ({table.GameFormat}, {table.PlayedDate})\n" +
+                    $"{table.HandsReceived} {text("Visual.Hands")}  ·  {table.NetAmountLabel}\n" +
+                    $"VPIP {table.VPIPPct:0.#}%  ·  PFR {table.PFRPct:0.#}%  ·  3Bet {table.ThreeBetPct:0.#}%\n" +
+                    $"WTSD {table.WTSDPct:0.#}%  ·  W$SD {table.WSDPct:0.#}%",
+                    table))
+                .ToList();
+        }
+
+        private static string FormatBb(double bb) =>
+            $"{bb.ToString("+0.#;-0.#;0", System.Globalization.CultureInfo.InvariantCulture)} bb";
+
+        private void TableResultBars_ItemClicked(object sender, RoutedEventArgs e)
+        {
+            if (TableResultBars.LastClicked?.Payload is MainWindow.TableSessionStats table)
+                AppNavigator.Open(new TableDetailWindow(table));
         }
 
         private static IEnumerable<MainWindow.TableSessionStats> ApplyDateFilter(

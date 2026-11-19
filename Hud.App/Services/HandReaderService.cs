@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel; // INotifyPropertyChanged
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions; // Regex
 using System.Threading.Tasks;
 using System.Windows; // Dispatcher (App.Current.Dispatcher)
@@ -44,11 +42,21 @@ namespace Hud.App.Services
 
 
         private StatsAggregator _agg = new();
-        private ParserAdapter _adapter;
+        private PokerStarsParser _parser;
         private FileTailReader? _tail;
 
         /// <summary>ColecciÃ³n observable para la grilla del HUD.</summary>
         public ObservableCollection<PlayerStats> Players { get; }
+
+        /// <summary>Asiento de cada jugador de la ultima mano (para el HUD sobre la mesa).</summary>
+        public IReadOnlyList<TableSeat> Seats { get; private set; } = Array.Empty<TableSeat>();
+
+        /// <summary>Asientos de la mesa (2, 6, 9 o 10).</summary>
+        public int TableSize { get; private set; } = 6;
+
+        /// <summary>La ultima mano terminada y cuando llego (para el repaso en la mesa).</summary>
+        public IReadOnlyList<string> LastHandLines { get; private set; } = Array.Empty<string>();
+        public DateTime LastHandAt { get; private set; }
 
         private string? _heroName;
         /// <summary>Nombre del HÃ©roe para resaltar en la UI.</summary>
@@ -78,36 +86,22 @@ namespace Hud.App.Services
                     var m = BlindsRx.Match(l);
                     if (!m.Success) continue;
 
-                    if (PokerAmountParser.TryParse(m.Groups["bb"].Value, out var parsedBb))
-                    {
-                        if (parsedBb <= 0.10) return StakeProfile.Low;   // NL2-NL25 aprox
-                        if (parsedBb >= 2.00) return StakeProfile.High; // NL500+
-                        return StakeProfile.Mid;                   // NL50-NL200
-                    }
+                    if (!PokerAmountParser.TryParse(m.Groups["bb"].Value, out var bb)) continue;
 
-                    var bbTxt = m.Groups["bb"].Value
-                        .Replace("$", "")
-                        .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
-                        .Replace("US", "", StringComparison.OrdinalIgnoreCase)
-                        .Replace("\u00A0", "")
-                        .Replace(" ", "")
-                        .Replace(",", ".");
-                    if (double.TryParse(bbTxt, NumberStyles.Number, CultureInfo.InvariantCulture, out var bb))
-                    {
-                        if (bb <= 0.10) return StakeProfile.Low;   // NL2â€“NL25 aprox
-                        if (bb >= 2.00) return StakeProfile.High; // NL500+
-                        return StakeProfile.Mid;                   // NL50â€“NL200
-                    }
+                    return StakeProfileRules.FromBigBlind(bb, m.Groups["bb"].Value);
                 }
             }
-            catch { /* ignore */ }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"deteccion de stake fallo en {path}: {ex.Message}");
+            }
+
             return StakeProfile.Low;
         }
 
-
         public HandReaderService()
         {
-            _adapter = new ParserAdapter(_agg);
+            _parser = new PokerStarsParser(_agg);
             Players = new ObservableCollection<PlayerStats>();
         }
 
@@ -119,34 +113,20 @@ namespace Hud.App.Services
             ResetState(clearHero: false);
 
             var newStake = DetectStakeFromFile(path);
-            if (newStake != Stake) {
-        Stake = newStake;
-        OnPropertyChanged(nameof(Stake));
-    }
+            if (newStake != Stake)
+            {
+                Stake = newStake;
+                OnPropertyChanged(nameof(Stake));
+            }
 
+            // 1) Historico + tiempo real: FileTailReader arranca en el byte 0, asi que el
+            //    propio tail entrega primero todo el archivo existente y luego lo que se vaya
+            //    escribiendo. Leerlo aparte antes de arrancarlo alimentaba el parser dos veces
+            //    con las mismas manos y duplicaba cada estadistica del HUD.
 
-                // 1) HistÃ³rico inicial (si existe) + autodetecciÃ³n del HÃ‰ROE
-                if (File.Exists(path))
-                {
-                    try
-                    {
-                        IEnumerable<string> all = File.ReadLines(path);
-
-                        // Detecta hÃ©roe si aÃºn no estÃ¡
-                        if (string.IsNullOrWhiteSpace(HeroName))
-                            DetectHeroFromLines(all);
-
-                        _adapter.FeedLines(all, PublishSnapshot);
-                    }
-                    catch
-                    {
-                        // opcional: log
-                    }
-                }
-
-            // 2) Tiempo real
             _tail = new FileTailReader(path);
             _tail.OnLines += OnTailLines;
+            _tail.OnError += OnTailError;
             _tail.Start();
 
             PublishSnapshot(); // inicial
@@ -159,6 +139,7 @@ namespace Hud.App.Services
                 if (_tail != null)
                 {
                     _tail.OnLines -= OnTailLines;
+                    _tail.OnError -= OnTailError;
                     _tail.Dispose();
                     _tail = null;
                 }
@@ -182,8 +163,11 @@ namespace Hud.App.Services
             if (string.IsNullOrWhiteSpace(HeroName))
                 DetectHeroFromLines(new[] { line });
 
-            _adapter.FeedLines(new[] { line }, PublishSnapshot);
+            FeedAndPublish(new[] { line });
         }
+
+        private static void OnTailError(Exception ex) =>
+            AppLog.Warn("HUD: no se pudo leer el historial en vivo", ex);
 
         private void OnTailLines(string[] lines)
         {
@@ -191,30 +175,61 @@ namespace Hud.App.Services
             if (string.IsNullOrWhiteSpace(HeroName))
                 DetectHeroFromLines(lines);
 
-            _adapter.FeedLines(lines, PublishSnapshot);
+            FeedAndPublish(lines);
+        }
+
+        private void FeedAndPublish(IEnumerable<string> lines)
+        {
+            // Una publicacion por lote y no por mano: el historico entra por el tail en lotes de
+            // miles de manos y publicar cada una encolaba miles de vaciados y rellenos de la
+            // grilla que saturaban el hilo de la UI. En el finally para que, si el parser falla
+            // a mitad de lote, las manos ya procesadas lleguen igual a la grilla.
+            var rendered = false;
+            try
+            {
+                _parser.FeedLines(lines, () => rendered = true);
+            }
+            finally
+            {
+                if (rendered)
+                    PublishSnapshot();
+            }
         }
 
         // --------------- PublicaciÃ³n a la UI ---------------
 
         private void PublishSnapshot()
         {
-            var snapshot = _adapter.GetPlayersSnapshot();
-            if (snapshot == null) return;
+            // Capturar el agregador una sola vez: ResetState lo sustituye y leerlo dos veces
+            // podria mezclar la tabla de un archivo con el orden de asientos de otro.
+            var agg = _agg;
 
-            // Solo los de la Ãºltima mano, en orden por asiento
-            var byName = snapshot.ToDictionary(p => p.Name, StringComparer.Ordinal);
-            var tableOrder = new List<PlayerStats>(6);
-            foreach (var name in _agg.CurrentTableOrder)
+            // Solo los de la ultima mano, en orden por asiento
+            var byName = agg.Players;
+            var tableOrder = new List<PlayerStats>(StatsAggregator.MaxSeats);
+            foreach (var name in agg.CurrentTableOrder)
             {
                 if (string.IsNullOrWhiteSpace(name)) continue;
                 if (byName.TryGetValue(name, out var ps))
                     tableOrder.Add(ps);
             }
 
-            Application.Current?.Dispatcher?.Invoke(() =>
+            // InvokeAsync y no Invoke: esto corre en el hilo del tail y Dispose() espera a ese
+            // hilo desde la UI, asi que un Invoke sincrono cierra el circulo del interbloqueo.
+            var seats = agg.CurrentSeats.ToArray();
+            var tableSize = agg.TableSize;
+            var lastHand = _parser.LastHandLines;
+            Application.Current?.Dispatcher?.InvokeAsync(() =>
             {
                 Players.Clear();
                 foreach (var ps in tableOrder) Players.Add(ps);
+                Seats = seats;
+                TableSize = tableSize;
+                if (!ReferenceEquals(LastHandLines, lastHand) && lastHand.Count > 0)
+                {
+                    LastHandLines = lastHand;
+                    LastHandAt = DateTime.Now;
+                }
             });
         }
 
@@ -237,148 +252,26 @@ namespace Hud.App.Services
         private void ResetState(bool clearHero)
         {
             _agg = new StatsAggregator();
-            _adapter = new ParserAdapter(_agg);
+            _parser = new PokerStarsParser(_agg);
             Stake = StakeProfile.Low;
 
-            Application.Current?.Dispatcher?.Invoke(() =>
-            {
-                Players.Clear();
-                if (clearHero)
-                    HeroName = null;
-            });
+            // El heroe se limpia aqui mismo y no en el dispatcher: encolado podia ejecutarse
+            // cuando el tail nuevo ya lo habia usado (o ya lo habia fijado quien arranca la
+            // mesa) y dejaba la sesion nueva sin heroe.
+            if (clearHero)
+                HeroName = null;
+
+            // La grilla si se vacia en cola, como publica PublishSnapshot: el dispatcher ejecuta
+            // en orden lo de igual prioridad, asi que el vaciado llega despues de lo que el tail
+            // anterior dejo pendiente y antes de lo del nuevo. Con Invoke se vaciaria al instante
+            // y una publicacion vieja aun en cola repintaria la mesa anterior.
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null)
+                dispatcher.InvokeAsync(() => Players.Clear());
+            else
+                Players.Clear(); // sin WPF (consola/tests)
 
             OnPropertyChanged(nameof(Stake));
-        }
-
-        // ==================== ParserAdapter ====================
-
-        private sealed class ParserAdapter
-        {
-            private readonly StatsAggregator _agg;
-            private readonly object _parser;
-
-            private readonly MethodInfo? _feedLines;  // (IEnumerable<string>, Action)
-            private readonly MethodInfo? _feedOneStr; // (string)
-            private readonly MethodInfo? _feedStrAgg; // (string, StatsAggregator)
-            private readonly Func<IEnumerable<PlayerStats>?> _getPlayers;
-
-            public ParserAdapter(StatsAggregator agg)
-            {
-                _agg = agg;
-
-                var parserType = typeof(PokerStarsParser);
-                _parser = Activator.CreateInstance(parserType, _agg)
-                          ?? throw new InvalidOperationException("No se pudo instanciar PokerStarsParser.");
-
-                _feedLines = parserType.GetMethod(
-                    "FeedLines",
-                    BindingFlags.Instance | BindingFlags.Public,
-                    binder: null,
-                    types: new[] { typeof(IEnumerable<string>), typeof(Action) },
-                    modifiers: null
-                );
-
-                _feedOneStr = parserType.GetMethod(
-                    "ParseLine",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase
-                ) ?? parserType.GetMethod(
-                    "Feed",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase,
-                    binder: null,
-                    types: new[] { typeof(string) },
-                    modifiers: null
-                ) ?? parserType.GetMethod(
-                    "OnLine",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase,
-                    binder: null,
-                    types: new[] { typeof(string) },
-                    modifiers: null
-                );
-
-                _feedStrAgg = parserType.GetMethod(
-                    "Parse",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase,
-                    binder: null,
-                    types: new[] { typeof(string), typeof(StatsAggregator) },
-                    modifiers: null
-                ) ?? parserType.GetMethod(
-                    "Feed",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase,
-                    binder: null,
-                    types: new[] { typeof(string), typeof(StatsAggregator) },
-                    modifiers: null
-                );
-
-                _getPlayers = ResolvePlayersAccessor(_agg);
-            }
-
-            public void FeedLines(IEnumerable<string> lines, Action onRendered)
-            {
-                if (_feedLines != null)
-                {
-                    _feedLines.Invoke(_parser, new object?[] { lines, onRendered });
-                    return;
-                }
-                foreach (var line in lines) FeedLine(line);
-                onRendered();
-            }
-
-            public void FeedLine(string line)
-            {
-                if (_feedStrAgg != null) { _feedStrAgg.Invoke(_parser, new object?[] { line, _agg }); return; }
-                if (_feedOneStr != null) { _feedOneStr.Invoke(_parser, new object?[] { line }); return; }
-            }
-
-            public IEnumerable<PlayerStats>? GetPlayersSnapshot() => _getPlayers();
-
-            private static Func<IEnumerable<PlayerStats>?> ResolvePlayersAccessor(StatsAggregator agg)
-            {
-                var prop = agg.GetType().GetProperty("Players", BindingFlags.Instance | BindingFlags.Public);
-                if (prop != null)
-                {
-                    return () =>
-                    {
-                        var val = prop.GetValue(agg);
-                        return ExtractPlayers(val);
-                    };
-                }
-                return () => ExtractPlayers(agg);
-            }
-
-            private static IEnumerable<PlayerStats>? ExtractPlayers(object? maybe)
-            {
-                if (maybe == null) return null;
-                if (maybe is IEnumerable<PlayerStats> direct) return direct;
-
-                if (maybe is IEnumerable en)
-                {
-                    var list = new List<PlayerStats>();
-                    foreach (var item in en)
-                    {
-                        if (item is PlayerStats ps) { list.Add(ps); continue; }
-
-                        var t = item?.GetType();
-                        var valueProp = t?.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public);
-                        var val = valueProp?.GetValue(item);
-                        if (val is PlayerStats ps2) { list.Add(ps2); continue; }
-
-                        var inner = t?.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                                     .Select(p => p.GetValue(item))
-                                     .FirstOrDefault(v => v is PlayerStats) as PlayerStats;
-                        if (inner != null) list.Add(inner);
-                    }
-                    return list;
-                }
-
-                var props = maybe.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                foreach (var p in props)
-                {
-                    var val = p.GetValue(maybe);
-                    var extracted = ExtractPlayers(val);
-                    if (extracted != null) return extracted;
-                }
-                return null;
-            }
         }
 
         // --------------- INotifyPropertyChanged ---------------

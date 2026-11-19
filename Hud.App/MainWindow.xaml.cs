@@ -39,6 +39,24 @@ namespace Hud.App
         private readonly List<TableSessionStats> _allTables = new();
         private bool _isCashMode = true;
 
+        /// <summary>Cada mano del heroe en orden, con su resultado y la suerte del all-in (grafica mano a mano).</summary>
+        private IReadOnlyList<HandPoint> _handSeries = Array.Empty<HandPoint>();
+        private sealed record HandPoint(DateTime At, string SourcePath, bool IsCash, double NetBb, double LuckBb);
+
+        private string _heroSummarySentence = "";
+
+        /// <summary>El perfil y el resultado en una frase, bajo el nombre del heroe.</summary>
+        public string HeroSummarySentence
+        {
+            get => _heroSummarySentence;
+            private set
+            {
+                if (_heroSummarySentence == value) return;
+                _heroSummarySentence = value;
+                OnPropertyChanged(nameof(HeroSummarySentence));
+            }
+        }
+
         public bool IsCashMode
         {
             get => _isCashMode;
@@ -48,6 +66,8 @@ namespace Hud.App
                 _isCashMode = value;
                 OnPropertyChanged(nameof(IsCashMode));
                 RefreshFilteredData();
+                // La retroalimentacion de las etiquetas cambia con el modo (ficticio o dinero real).
+                UpdatePlayerTags();
             }
         }
 
@@ -127,6 +147,28 @@ namespace Hud.App
         {
             InitializeComponent();
             DataContext = this;
+
+            // La tabla de mesas recientes, al cargarse, pedia "traerse a la vista" y el panel se
+            // abria desplazado hacia abajo, sin los indicadores de arriba.
+            RecentTablesGrid.RequestBringIntoView += (_, e) => e.Handled = true;
+
+            // Volver como en un navegador: boton "atras" del raton o Alt + flecha izquierda.
+            PreviewMouseDown += (_, e) =>
+            {
+                if (e.ChangedButton == MouseButton.XButton1 && BackButton.Visibility == Visibility.Visible)
+                {
+                    GoBack();
+                    e.Handled = true;
+                }
+            };
+            PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == Key.System && e.SystemKey == Key.Left && BackButton.Visibility == Visibility.Visible)
+                {
+                    GoBack();
+                    e.Handled = true;
+                }
+            };
             Title = LocalizationManager.Text("App.Title");
             FitHeightToScreen();
             InitializePokerRoomSelector();
@@ -140,8 +182,11 @@ namespace Hud.App
         {
             var workArea = SystemParameters.WorkArea;
             MinHeight = Math.Min(MinHeight, workArea.Height);
+            MinWidth = Math.Min(MinWidth, workArea.Width);
             MaxHeight = workArea.Height;
             Height = workArea.Height;
+            // Las paginas de analisis viven dentro de esta ventana: se aprovecha casi todo el ancho.
+            Width = Math.Min(1680, workArea.Width);
             Top = workArea.Top;
             Left = workArea.Left + Math.Max(0, (workArea.Width - Width) / 2);
         }
@@ -161,6 +206,8 @@ namespace Hud.App
 
         private void ThemePaletteManager_PaletteApplied(object? sender, EventArgs e)
         {
+            _paletteChanged = true;
+            Dispatcher.BeginInvoke(() => RefreshBindings(DashboardPage), System.Windows.Threading.DispatcherPriority.Background);
             UpdatePlayerTags();
             Dispatcher.BeginInvoke(DrawPerformanceChart);
         }
@@ -230,7 +277,7 @@ namespace Hud.App
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH close sync failed: {ex.Message}");
+                AppLog.Warn($"close sync failed: {ex.Message}");
             }
             finally
             {
@@ -238,6 +285,15 @@ namespace Hud.App
                 Close();
             }
         }
+
+        private Dictionary<string, TableSessionStats> SnapshotKnownTables() =>
+            _allTables
+                .Where(table => !string.IsNullOrWhiteSpace(table.SourcePath))
+                .GroupBy(table => table.SourcePath, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderByDescending(table => table.LastPlayedAt).First(),
+                    StringComparer.OrdinalIgnoreCase);
 
         private void BackupConfiguredHandHistoryFolders()
         {
@@ -248,21 +304,30 @@ namespace Hud.App
                 if (folders.Count == 0)
                     return;
 
-                var knownTables = _allTables
-                    .Where(table => !string.IsNullOrWhiteSpace(table.SourcePath))
-                    .GroupBy(table => table.SourcePath, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.OrderByDescending(table => table.LastPlayedAt).First(),
-                        StringComparer.OrdinalIgnoreCase);
-                var heroName = DashboardPlayers.FirstOrDefault()?.Name;
+                // _allTables y DashboardPlayers pertenecen al hilo de UI y este metodo tambien
+                // corre en Task.Run: hay que copiarlas dentro del Dispatcher antes de tocarlas.
+                Dictionary<string, TableSessionStats> knownTables;
+                string? heroName;
+
+                if (Dispatcher.CheckAccess())
+                {
+                    knownTables = SnapshotKnownTables();
+                    heroName = DashboardPlayers.FirstOrDefault()?.Name;
+                }
+                else
+                {
+                    var snapshot = Dispatcher.Invoke(() =>
+                        (Tables: SnapshotKnownTables(), Hero: DashboardPlayers.FirstOrDefault()?.Name));
+                    knownTables = snapshot.Tables;
+                    heroName = snapshot.Hero;
+                }
 
                 foreach (var (room, folder) in folders)
                     AphBackupDatabaseService.BackupFolder(folder, room, heroName, knownTables);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"APH automatic backup failed: {ex.Message}");
+                AppLog.Warn($"automatic backup failed: {ex.Message}");
             }
         }
 
@@ -281,128 +346,114 @@ namespace Hud.App
             }
         }
 
+        // Las funciones de analisis ya no abren ventanas sueltas: se muestran como paginas dentro de
+        // esta ventana (MainWindow.Navigation.cs). Sin manos cargadas, se pide la carpeta como antes.
+        private bool EnsureTablesLoaded(object sender, RoutedEventArgs e, string statusKey)
+        {
+            if (RecentTables.Count > 0)
+                return true;
+
+            InfoText.Text = LocalizationManager.Text(statusKey);
+            SyncNavSelection();
+            BtnPickFolder_Click(sender, e);
+            return false;
+        }
+
         private void BtnAll_Click(object sender, RoutedEventArgs e)
         {
-            if (RecentTables.Count == 0)
-            {
-                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderGlobal");
-                BtnPickFolder_Click(sender, e);
+            if (!EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderGlobal"))
                 return;
-            }
 
-            var window = new GlobalAnalysisWindow(_allTables, "")
-            {
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("tables", NavTables, () => new GlobalAnalysisWindow(_allTables, ""));
             InfoText.Text = LocalizationManager.Text("Common.StatusGlobalOpen");
         }
 
         private void BtnOne_Click(object sender, RoutedEventArgs e)
         {
-            if (RecentTables.Count == 0)
-            {
-                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderTables");
-                BtnPickFolder_Click(sender, e);
+            if (!EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderTables"))
                 return;
-            }
 
-            var window = new MisTablasWindow(_allTables, "")
-            {
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("mytables", NavMyTables, () => new MisTablasWindow(_allTables, ""));
             InfoText.Text = LocalizationManager.Text("Common.StatusTablesOpen");
         }
 
         private void BtnGain_Click(object sender, RoutedEventArgs e)
         {
-            if (RecentTables.Count == 0)
-            {
-                InfoText.Text = LocalizationManager.Text("Main.GainFolderRequired");
-                BtnPickFolder_Click(sender, e);
+            if (!EnsureTablesLoaded(sender, e, "Main.GainFolderRequired"))
                 return;
-            }
 
-            var window = new GainAnalysisWindow(_allTables)
-            {
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("gain", NavGain, () => new GainAnalysisWindow(_allTables));
             InfoText.Text = LocalizationManager.Text("Main.RailGain");
         }
 
         private void BtnBestWorst_Click(object sender, RoutedEventArgs e)
         {
-            if (RecentTables.Count == 0)
-            {
-                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderVillains");
-                BtnPickFolder_Click(sender, e);
+            if (!EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderVillains"))
                 return;
-            }
 
-            var window = new DataVillainsWindow(_allTables, "")
-            {
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("villains", NavVillains, () => new DataVillainsWindow(_allTables, ""));
             InfoText.Text = LocalizationManager.Text("Common.StatusVillainsOpen");
         }
 
         private void BtnLeakFinder_Click(object sender, RoutedEventArgs e)
         {
-            if (RecentTables.Count == 0)
-            {
-                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderLeaks");
-                BtnPickFolder_Click(sender, e);
+            if (!EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderLeaks"))
                 return;
-            }
 
-            var window = new LeakFinderWindow(_allTables, "")
-            {
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("leaks", NavLeaks, () => new LeakFinderWindow(_allTables, ""));
             InfoText.Text = LocalizationManager.Text("Common.StatusLeaksOpen");
+        }
+
+        private void BtnPreflop_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage("preflop", NavPreflop, () => new PreflopChartsWindow(_allTables.Select(t => t.SourcePath)));
+        }
+
+        private void BtnPractice_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage("practice", NavPractice, () => new PreflopPracticeWindow(_allTables.Select(t => t.SourcePath)));
+        }
+
+        private void BtnSimulator_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage("simulator", NavSimulator, () => new SimulatorWindow());
+        }
+
+        private void BtnPushFold_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage("push-fold", NavPushFold, () => new PushFoldWindow());
         }
 
         private void BtnSessions_Click(object sender, RoutedEventArgs e)
         {
-            var window = new SessionsWindow
-            {
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                ShowInTaskbar = true
-            };
-
-            window.Show();
+            NavigateToPage("sessions", NavSessions, () => new SessionsWindow(_allTables.Where(t => t.IsCash == IsCashMode).ToList()));
             InfoText.Text = LocalizationManager.Text("Main.SessionsOpened");
         }
 
         private void BtnHeroProfile_Click(object sender, RoutedEventArgs e)
         {
             var hero = DashboardPlayers.FirstOrDefault();
-            if (hero is null || RecentTables.Count == 0)
+            if (hero is null)
             {
-                InfoText.Text = LocalizationManager.Text("Common.StatusSelectFolderHero");
-                BtnPickFolder_Click(sender, e);
+                EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderHero");
                 return;
             }
 
-            var window = new HeroProfileWindow(hero, _allTables, DashboardStake, "")
-            {
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                ShowInTaskbar = true
-            };
+            if (!EnsureTablesLoaded(sender, e, "Common.StatusSelectFolderHero"))
+                return;
 
-            window.Show();
+            NavigateToPage("hero", NavHeroProfile, () => new HeroProfileWindow(hero, _allTables, DashboardStake, ""));
             InfoText.Text = string.Format(LocalizationManager.Text("Common.StatusHeroOpen"), hero.Name);
+        }
+
+        private void NavDashboard_Click(object sender, RoutedEventArgs e) => ShowDashboardPage();
+
+        private void BackButton_Click(object sender, RoutedEventArgs e) => GoBack();
+
+        private void RecentTablesGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if ((sender as DataGrid)?.SelectedItem is TableSessionStats table)
+                OpenDetailPage(new TableDetailWindow(table));
         }
 
         private void BtnRT_Click(object sender, RoutedEventArgs e)
@@ -486,9 +537,11 @@ namespace Hud.App
 
         private void ClearDashboardForRoom(string room)
         {
+            ResetPageCache();
             DashboardPlayers.Clear();
             RecentTables.Clear();
             _allTables.Clear();
+            _handSeries = Array.Empty<HandPoint>();
             DashboardStake = StakeProfile.Low;
             UpdatePerformanceSummary();
             UpdatePlayerTags();
@@ -503,6 +556,7 @@ namespace Hud.App
                 ShowInTaskbar = false
             };
 
+            _paletteChanged = false;
             if (window.ShowDialog() == true)
             {
                 RefreshLocalizedDashboardText();
@@ -512,9 +566,18 @@ namespace Hud.App
             {
                 RefreshLocalizedDashboardText();
             }
+
+            // Si cambio el aspecto, las paginas se rehacen con los colores nuevos.
+            if (_paletteChanged)
+            {
+                _paletteChanged = false;
+                RebuildPagesAfterPaletteChange();
+            }
         }
 
-        private void BtnLogout_Click(object sender, RoutedEventArgs e)
+        private bool _paletteChanged;
+
+        private async void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show(
                 this,
@@ -525,6 +588,57 @@ namespace Hud.App
 
             if (result != MessageBoxResult.Yes)
                 return;
+
+            // Antes se borraba la base local sin subir antes el respaldo: lo importado desde el
+            // ultimo cierre de la app se perdia, aunque el aviso prometia recuperarlo desde Drive.
+            // Ahora: 1) copia local de seguridad, 2) subida a Drive si esta activo, 3) borrado.
+            IsEnabled = false;
+            string? safetyCopy = null;
+            string? uploadError = null;
+            try
+            {
+                safetyCopy = await Task.Run(() => AphBackupDatabaseService.KeepSafetyCopy("antes_cerrar_sesion"));
+
+                var syncSettings = AppSettingsService.Load();
+                if (syncSettings.GoogleSyncEnabled &&
+                    GoogleDriveBackupService.HasCredentialsFile &&
+                    GoogleDriveBackupService.HasStoredToken &&
+                    File.Exists(AphBackupDatabaseService.DatabasePath))
+                {
+                    InfoText.Text = LocalizationManager.Text("Settings.UploadingDrive");
+                    var upload = await GoogleDriveBackupService.UploadDatabaseAsync();
+                    if (!upload.Success)
+                        uploadError = upload.Message;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("Respaldo previo al cierre de sesion", ex);
+                uploadError = ex.Message;
+            }
+
+            if (safetyCopy is null && uploadError is not null && File.Exists(AphBackupDatabaseService.DatabasePath))
+            {
+                // Sin copia local ni respaldo en Drive no se borra nada.
+                IsEnabled = true;
+                MessageBox.Show(
+                    this,
+                    string.Format(LocalizationManager.Text("Common.LoadFailed"), uploadError, AppLog.LogFolder),
+                    "APH",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            if (uploadError is not null)
+            {
+                MessageBox.Show(
+                    this,
+                    string.Format(LocalizationManager.Text("Main.LogoutUploadFailed"), uploadError, safetyCopy),
+                    "APH",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
 
             try
             {
@@ -539,6 +653,9 @@ namespace Hud.App
             }
             catch (Exception ex)
             {
+                IsEnabled = true;
+                _isClosingAfterSync = false;
+                AppLog.Error("No se pudo completar el cierre de sesion", ex);
                 MessageBox.Show(
                     this,
                     $"No se pudo completar el log out: {ex.Message}",
@@ -611,9 +728,11 @@ namespace Hud.App
 
         private async Task AnalyzeAndLoadFolderAsync(string folder, string pokerRoom, string successMessage)
         {
+            ResetPageCache();
             DashboardPlayers.Clear();
             RecentTables.Clear();
             _allTables.Clear();
+            _handSeries = Array.Empty<HandPoint>();
             UpdatePerformanceSummary();
             UpdatePlayerTags();
 
@@ -636,7 +755,23 @@ namespace Hud.App
                 foreach (var table in result.Tables)
                     _allTables.Add(table);
 
+                // El panel arrancaba siempre en CASH: con un historial solo de dinero ficticio
+                // mostraba 0 manos, 0 mesas y "Sin datos" aunque hubiera manos. Si el modo
+                // actual no tiene mesas y el otro si, se cambia solo.
+                var hasCurrentMode = _allTables.Any(t => t.IsCash == IsCashMode);
+                var hasOtherMode = _allTables.Any(t => t.IsCash != IsCashMode);
+                if (!hasCurrentMode && hasOtherMode && GameModeSwitch.Visibility == Visibility.Visible)
+                    _isCashMode = !_isCashMode;
+                OnPropertyChanged(nameof(IsCashMode));
+                UpdatePlayerTags();
+
                 RefreshFilteredData();
+
+                // La grafica mano a mano (con la linea sin suerte) se calcula aparte: lee cada mano.
+                var tablesForSeries = result.Tables.ToList();
+                _handSeries = await Task.Run(() => BuildHandSeries(tablesForSeries));
+                UpdateHeroSummary();
+                DrawPerformanceChart();
 
                 await Task.Run(() => VillainHistoryStore.RebuildFromTables(result.Tables));
 
@@ -658,6 +793,7 @@ namespace Hud.App
 
         private void UpdatePerformanceSummary()
         {
+            UpdateHeroSummary();
             var recent = RecentTables.ToList();
             if (recent.Count == 0)
             {
@@ -690,6 +826,64 @@ namespace Hud.App
             DrawPerformanceChart();
         }
 
+        /// <summary>
+        /// Cada mano del heroe de cada mesa, en orden de hora: lo que gano o perdio y la suerte en un
+        /// all-in con showdown antes del river (lo que cobro menos lo que le tocaba con su equity).
+        /// </summary>
+        private static IReadOnlyList<HandPoint> BuildHandSeries(IReadOnlyList<TableSessionStats> tables)
+        {
+            var points = new List<HandPoint>();
+            foreach (var table in tables)
+            {
+                if (!File.Exists(table.SourcePath) || table.BigBlind <= 0 || string.IsNullOrWhiteSpace(table.HeroName))
+                    continue;
+                try
+                {
+                    foreach (var hand in PokerStarsHandHistory.SplitHands(File.ReadLines(table.SourcePath)))
+                    {
+                        if (!PokerStarsHandHistory.TryGetDealtCards(hand, table.HeroName, out _))
+                            continue;
+                        var net = PokerStarsHandHistory.EstimateNetForPlayer(hand, table.HeroName) / table.BigBlind;
+                        var luck = 0.0;
+                        if (hand.Any(line => line.Contains("all-in", StringComparison.OrdinalIgnoreCase)) &&
+                            hand.Any(line => line.StartsWith("*** SHOW", StringComparison.OrdinalIgnoreCase)) &&
+                            Hud.App.Services.Trainer.TrainerHandParser.Parse(hand, table.HeroName) is { } parsed)
+                            luck = HandTypeProfit.AllInLuckBb(parsed);
+                        points.Add(new HandPoint(PokerStarsHandHistory.ExtractTimestamp(hand) ?? table.LastPlayedAt,
+                            table.SourcePath, table.IsCash, net, luck));
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Una mesa que no se puede leer ahora solo falta en la grafica mano a mano.
+                }
+            }
+
+            return points.OrderBy(point => point.At).ToList();
+        }
+
+        /// <summary>Perfil y resultado en una frase, con el winrate sin la suerte de los all-in si ya se calculo.</summary>
+        private void UpdateHeroSummary()
+        {
+            var hero = DashboardPlayers.FirstOrDefault();
+            var tables = _allTables.Where(t => t.IsCash == _isCashMode).ToList();
+            var hands = tables.Sum(t => t.HandsReceived);
+            if (hero is null || hands == 0)
+            {
+                HeroSummarySentence = "";
+                return;
+            }
+
+            var net = tables.Sum(t => t.NetBb);
+            var profile = ClassifyProfile(hero.HandsReceived, hero.VPIPPct, hero.PFRPct, hero.ThreeBetPct, hero.AF);
+            var points = _handSeries.Where(point => point.IsCash == _isCashMode).ToList();
+            HeroSummarySentence = points.Count > 0
+                ? string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Main.Summary"),
+                    hero.VPIPPct, hero.PFRPct, profile, hands, net * 100 / hands, (net - points.Sum(point => point.LuckBb)) * 100 / hands)
+                : string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Main.SummaryNoLuck"),
+                    hero.VPIPPct, hero.PFRPct, profile, hands, net * 100 / hands);
+        }
+
         private void UpdatePlayerTags()
         {
             HeroTags.Clear();
@@ -701,11 +895,11 @@ namespace Hud.App
                 return;
             }
 
-            foreach (var tag in BuildHeroProfileTags(hero).Take(8))
+            foreach (var tag in BuildHeroProfileTags(hero, !IsCashMode, DashboardStake).Take(8))
                 HeroTags.Add(tag);
         }
 
-        private static IEnumerable<DashboardTagViewModel> BuildHeroProfileTags(PlayerStats hero)
+        private static IEnumerable<DashboardTagViewModel> BuildHeroProfileTags(PlayerStats hero, bool playMoney, StakeProfile stake)
         {
             yield return BuildTag(
                 ClassifyProfile(hero.HandsReceived, hero.VPIPPct, hero.PFRPct, hero.ThreeBetPct, hero.AF),
@@ -714,58 +908,21 @@ namespace Hud.App
 
             if (hero.HandsReceived < 30)
                 yield return BuildTag(LocalizationManager.Text("Tag.NoSample"), LocalizationManager.Text("Tag.NoSample.Short"), Neutral());
-            if (hero.VPIPPct >= 35)
-                yield return BuildTag(LocalizationManager.Text("Tag.PlaysManyHands"), $"VPIP {hero.VPIPPct:0.#}%.", Danger());
-            if (hero.AF >= 4 || hero.AFqPct >= 65)
-                yield return BuildTag(LocalizationManager.Text("Tag.Aggressor"), $"AF {hero.AF:0.#} | AFq {hero.AFqPct:0.#}%.", Danger());
-            if (hero.ThreeBetPct >= 10)
-                yield return BuildTag(LocalizationManager.Text("Tag.High3Bet"), $"3Bet {hero.ThreeBetPct:0.#}%.", Danger());
-            if (hero.FoldVsCBetFlopPct >= 65)
-                yield return BuildTag(LocalizationManager.Text("Tag.FoldsCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Accent());
-            if (hero.FoldVsCBetFlopPct > 0 && hero.FoldVsCBetFlopPct <= 30)
-                yield return BuildTag(LocalizationManager.Text("Tag.NoFoldCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Danger());
-            if (hero.WTSDPct >= 35)
-                yield return BuildTag(LocalizationManager.Text("Tag.ShowdownOften"), $"WTSD {hero.WTSDPct:0.#}%.", Danger());
-            if (hero.VPIPPct >= 30 && hero.PFRPct < 12 && hero.AF < 1.5)
-                yield return BuildTag("Calling station", LocalizationManager.Text("Tag.CallingStation.Desc"), Accent());
-            if (hero.VPIPPct < 14 && hero.PFRPct < 10 && hero.HandsReceived >= 50)
-                yield return BuildTag(LocalizationManager.Text("Tag.Rock"), LocalizationManager.Text("Tag.Rock.Desc"), Neutral());
 
-            yield return BuildTag(
-                hero.VPIPPct >= 35 ? "Loose" : hero.VPIPPct <= 18 ? "Tight" : LocalizationManager.Text("Tag.MidRange"),
-                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Vpip.Dynamic"), hero.VPIPPct),
-                Accent());
-            yield return BuildTag(
-                hero.PFRPct >= 22 ? LocalizationManager.Text("Tag.AggressivePreflop") : hero.PFRPct <= 10 ? LocalizationManager.Text("Tag.LowPfr") : LocalizationManager.Text("Tag.StablePfr"),
-                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Pfr.Dynamic"), hero.PFRPct),
-                Neutral());
-            yield return BuildTag(
-                hero.FoldVsCBetFlopPct >= 65 ? "Overfold vs CBet" : LocalizationManager.Text("Tag.CBetDefenseOk"),
-                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.FoldCBet.Dynamic"), hero.FoldVsCBetFlopPct),
-                hero.FoldVsCBetFlopPct >= 65 ? Danger() : Neutral());
-            yield return BuildTag(
-                hero.CBetFlopPct >= 55 ? LocalizationManager.Text("Tag.FrequentCBet") : LocalizationManager.Text("Tag.SelectiveCBet"),
-                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.CBet.Dynamic"), hero.CBetFlopPct),
-                Neutral());
-            yield return BuildTag(
-                hero.WSDPct >= 55 ? LocalizationManager.Text("Tag.StrongShowdown") : LocalizationManager.Text("Tag.ReviewShowdown"),
-                string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Wsd.Dynamic"), hero.WSDPct),
-                hero.WSDPct >= 55 ? Accent() : Danger());
+            // Las mismas etiquetas que el perfil y el informe: salen de la retroalimentacion con semaforo.
+            var feedback = HeroStatCoach.Evaluate(new HeroStatInput(hero.HandsReceived, hero.VPIPPct, hero.PFRPct, hero.ThreeBetPct,
+                hero.AF, hero.AFqPct, hero.CBetFlopPct, hero.FoldVsCBetFlopPct, hero.WTSDPct, hero.WSDPct, hero.WWSFPct), playMoney, stake);
+            foreach (var tag in HeroStatCoach.Tags(feedback))
+                yield return BuildTag(tag.Text, tag.Description, tag.Verdict switch
+                {
+                    StatVerdict.Good => Accent(),
+                    StatVerdict.Adjust => Warning(),
+                    _ => Danger()
+                });
         }
 
-        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
-        {
-            if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
-            if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
-            if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-            if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
-            if (vpip >= 28 && pfr >= 20) return "LAG";
-            if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
-            if (vpip < 14 && pfr < 10) return "Nit";
-            if (vpip < 22 && pfr < 15) return "Tight";
-            if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
-            return LocalizationManager.Text("Tag.Regular");
-        }
+        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af) =>
+            Hud.App.Services.PlayerProfileClassifier.Classify(hands, vpip, pfr, threeBet, af);
 
         private static DashboardTagViewModel BuildTag(string text, string description, TagPalette palette) =>
             new(text, description, palette.Background, palette.Border, palette.Foreground);
@@ -776,8 +933,11 @@ namespace Hud.App
         private static TagPalette Danger() =>
             new(BrushFrom(55, 22, 30), BrushFrom(226, 78, 91), BrushFrom(255, 199, 204));
 
+        private static TagPalette Warning() =>
+            new(BrushFrom(56, 40, 12), BrushFrom(224, 160, 40), BrushFrom(255, 226, 170));
+
         private static TagPalette Neutral() =>
-            new(BrushFrom(18, 31, 45), BrushFrom(64, 92, 118), BrushFrom(203, 226, 245));
+            new(Hud.App.Services.ThemeBrushes.NeutralBackground, Hud.App.Services.ThemeBrushes.NeutralBorder, Hud.App.Services.ThemeBrushes.Text);
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
             new SolidColorBrush(Color.FromRgb(r, g, b));
@@ -812,6 +972,14 @@ namespace Hud.App
             if (orderedTables.Count == 0)
             {
                 AddChartLabel(LocalizationManager.Text("Main.NoData"), PerformanceChart.ActualWidth / 2 - 24, PerformanceChart.ActualHeight / 2 - 8, Brushes.White);
+                return;
+            }
+
+            // Con las manos ya leidas: grafica mano a mano con la linea sin suerte. Si no, por mesa.
+            var handPoints = _handSeries.Where(point => point.IsCash == IsCashMode).ToList();
+            if (handPoints.Count >= 2)
+            {
+                DrawHandChart(handPoints, orderedTables);
                 return;
             }
 
@@ -947,6 +1115,140 @@ namespace Hud.App
 
             AddChartLabel($"{max:0.#}", 2, plotTop - 2, Brushes.White);
             AddChartLabel($"{min:0.#}", 2, plotBottom - 12, Brushes.White);
+        }
+
+        /// <summary>
+        /// Ganancia acumulada mano a mano: la linea continua es lo que se gano y la discontinua lo mismo
+        /// sin la suerte de los all-in (si va por debajo, hubo buena suerte). Un punto al final de cada
+        /// mesa con su resumen; el eje de abajo cuenta manos.
+        /// </summary>
+        private void DrawHandChart(IReadOnlyList<HandPoint> points, IReadOnlyList<TableSessionStats> orderedTables)
+        {
+            var real = new double[points.Count + 1];
+            var adjusted = new double[points.Count + 1];
+            for (var i = 0; i < points.Count; i++)
+            {
+                real[i + 1] = real[i] + points[i].NetBb;
+                adjusted[i + 1] = adjusted[i] + points[i].NetBb - points[i].LuckBb;
+            }
+
+            var width = PerformanceChart.ActualWidth;
+            var height = PerformanceChart.ActualHeight;
+            const double padLeft = 46;
+            const double padTop = 26;
+            const double padRight = 14;
+            const double padBottom = 20;
+            var plotLeft = padLeft;
+            var plotTop = padTop;
+            var plotRight = Math.Max(plotLeft + 1, width - padRight);
+            var plotBottom = Math.Max(plotTop + 1, height - padBottom);
+            var min = Math.Min(0, Math.Min(real.Min(), adjusted.Min()));
+            var max = Math.Max(0, Math.Max(real.Max(), adjusted.Max()));
+            if (Math.Abs(max - min) < 0.001)
+            {
+                max += 1;
+                min -= 1;
+            }
+
+            double X(int i) => plotLeft + (plotRight - plotLeft) * i / (real.Length - 1);
+            double Y(double value) => plotBottom - (value - min) / (max - min) * (plotBottom - plotTop);
+
+            var gridBrush = new SolidColorBrush(Color.FromArgb(70, 43, 61, 82));
+            for (var i = 0; i <= 3; i++)
+            {
+                var y = plotTop + (plotBottom - plotTop) * i / 3;
+                PerformanceChart.Children.Add(new Line { X1 = plotLeft, X2 = plotRight, Y1 = y, Y2 = y, Stroke = gridBrush, StrokeThickness = 1 });
+                var value = max - (max - min) * i / 3;
+                AddChartLabel(value.ToString("+0;-0;0", CultureInfo.CurrentCulture), 4, y - 7, Brushes.White);
+            }
+
+            var zeroY = Y(0);
+            PerformanceChart.Children.Add(new Line
+            {
+                X1 = plotLeft, X2 = plotRight, Y1 = zeroY, Y2 = zeroY,
+                Stroke = new SolidColorBrush(Color.FromArgb(140, 158, 173, 188)), StrokeThickness = 1
+            });
+
+            var positiveColor = GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139));
+            var negativeColor = GetThemeColor("Brush.Negative", Color.FromRgb(240, 93, 108));
+            var chartColor = real[^1] >= 0 ? positiveColor : negativeColor;
+            var adjustedColor = Color.FromRgb(120, 172, 235);
+
+            var area = new Polygon { Fill = new SolidColorBrush(Color.FromArgb(40, chartColor.R, chartColor.G, chartColor.B)) };
+            area.Points.Add(new Point(X(0), zeroY));
+            for (var i = 0; i < real.Length; i++)
+                area.Points.Add(new Point(X(i), Y(real[i])));
+            area.Points.Add(new Point(X(real.Length - 1), zeroY));
+            PerformanceChart.Children.Add(area);
+
+            var adjustedLine = new Polyline
+            {
+                Stroke = new SolidColorBrush(adjustedColor),
+                StrokeThickness = 2,
+                StrokeDashArray = new DoubleCollection { 3, 2 },
+                StrokeLineJoin = PenLineJoin.Round
+            };
+            var realLine = new Polyline { Stroke = new SolidColorBrush(chartColor), StrokeThickness = 2.5, StrokeLineJoin = PenLineJoin.Round };
+            for (var i = 0; i < real.Length; i++)
+            {
+                adjustedLine.Points.Add(new Point(X(i), Y(adjusted[i])));
+                realLine.Points.Add(new Point(X(i), Y(real[i])));
+            }
+            PerformanceChart.Children.Add(adjustedLine);
+            PerformanceChart.Children.Add(realLine);
+
+            // Un punto al final de cada mesa, con su resumen al pasar el raton.
+            foreach (var table in orderedTables)
+            {
+                var last = -1;
+                for (var i = points.Count - 1; i >= 0; i--)
+                {
+                    if (string.Equals(points[i].SourcePath, table.SourcePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        last = i + 1;
+                        break;
+                    }
+                }
+                if (last < 0)
+                    continue;
+
+                var dot = new Ellipse
+                {
+                    Width = 8, Height = 8, Fill = Brushes.White,
+                    Stroke = new SolidColorBrush(chartColor), StrokeThickness = 2, Cursor = Cursors.Hand,
+                    ToolTip = new ToolTip
+                    {
+                        Content = BuildPerformanceChartToolTip(table, real[last], chartColor),
+                        Style = TryFindResource("ChartToolTipStyle") as Style
+                    }
+                };
+                ToolTipService.SetInitialShowDelay(dot, 0);
+                ToolTipService.SetBetweenShowDelay(dot, 0);
+                Canvas.SetLeft(dot, X(last) - 4);
+                Canvas.SetTop(dot, Y(real[last]) - 4);
+                PerformanceChart.Children.Add(dot);
+            }
+
+            // Eje de abajo: manos.
+            var total = points.Count;
+            foreach (var (index, align) in new[] { (0, 0.0), (total / 2, 0.5), (total, 1.0) })
+                AddChartLabel(string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Main.ChartHands"), index),
+                    Math.Clamp(X(index) - 40 * align, plotLeft, plotRight - 50), plotBottom + 3, Brushes.White);
+
+            // Leyenda: que es cada linea, con lo que vale al final.
+            void Legend(double left, Color color, bool dashed, string text)
+            {
+                PerformanceChart.Children.Add(new Line
+                {
+                    X1 = left, X2 = left + 18, Y1 = 11, Y2 = 11, Stroke = new SolidColorBrush(color), StrokeThickness = 2.5,
+                    StrokeDashArray = dashed ? new DoubleCollection { 3, 2 } : null
+                });
+                AddChartLabel(text, left + 22, 4, Brushes.White);
+            }
+            Legend(plotLeft, chartColor, false,
+                string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Main.ChartReal"), real[^1].ToString("+0.#;-0.#;0", CultureInfo.CurrentCulture)));
+            Legend(plotLeft + 170, adjustedColor, true,
+                string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Main.ChartAdjusted"), adjusted[^1].ToString("+0.#;-0.#;0", CultureInfo.CurrentCulture)));
         }
 
         private void AddChartLabel(string text, double left, double top, Brush foreground)
@@ -1144,7 +1446,9 @@ namespace Hud.App
             bool IsCash,
             string NetAmountLabel)
         {
-            public bool IsWin => NetBb >= 100;
+            // Antes solo contaba como ganada una mesa de 100 bb o mas: una mesa de +54 bb salia con
+            // la flecha roja hacia abajo, como si se hubiera perdido.
+            public bool IsWin => NetBb > 0;
             public bool IsProfitable => NetBb >= 0;
             public string TrendIcon => IsWin ? "\u25B2" : "\u25BC";
         }

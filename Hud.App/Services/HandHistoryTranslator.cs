@@ -94,26 +94,26 @@ namespace Hud.App.Services
         {
             var normalized = action.Trim();
             
-            var raise = Regex.Match(normalized, @"(?:raises|sube)\s+(?<from>\$?[\d,.]+)\s+(?:to|a|hasta)\s+(?<to>\$?[\d,.]+)", RegexOptions.IgnoreCase);
+            var raise = Regex.Match(normalized, @"(?:raises|sube)\s+(?<from>[$€£]?[\d,.]+)\s+(?:to|a|hasta)\s+(?<to>[$€£]?[\d,.]+)", RegexOptions.IgnoreCase);
             if (raise.Success) return $"sube {FormatAmountAsBb(raise.Groups["from"].Value, bigBlind)} hasta {FormatAmountAsBb(raise.Groups["to"].Value, bigBlind)}";
 
-            var smallBlind = Regex.Match(normalized, @"^posts small blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+            var smallBlind = Regex.Match(normalized, @"^posts small blind\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
             if (smallBlind.Success) return $"pone ciega chica {FormatAmountAsBb(smallBlind.Groups["amount"].Value, bigBlind)}";
 
-            var bigBlindPost = Regex.Match(normalized, @"^posts big blind\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+            var bigBlindPost = Regex.Match(normalized, @"^posts big blind\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
             if (bigBlindPost.Success) return $"pone ciega grande {FormatAmountAsBb(bigBlindPost.Groups["amount"].Value, bigBlind)}";
 
-            var smallAndBigBlind = Regex.Match(normalized, @"^posts (?:small & big blinds|small and big blinds)\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+            var smallAndBigBlind = Regex.Match(normalized, @"^posts (?:small & big blinds|small and big blinds)\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
             if (smallAndBigBlind.Success) return $"pone ciega chica y grande {FormatAmountAsBb(smallAndBigBlind.Groups["amount"].Value, bigBlind)}";
 
-            var ante = Regex.Match(normalized, @"^posts the ante\s+\$?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
+            var ante = Regex.Match(normalized, @"^posts the ante\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.IgnoreCase);
             if (ante.Success) return $"pone ante {FormatAmountAsBb(ante.Groups["amount"].Value, bigBlind)}";
 
-            var call = Regex.Match(normalized, @"^(?:calls|iguala|paga)\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+            var call = Regex.Match(normalized, @"^(?:calls|iguala|paga)\s+[$€£]?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
             if (call.Success)
                 return $"paga {FormatAmountAsBb(call.Groups["amount"].Value, bigBlind)}{TranslateAllInText(call.Groups["rest"].Value)}";
 
-            var bet = Regex.Match(normalized, @"^(?:bets|apuesta)\s+\$?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
+            var bet = Regex.Match(normalized, @"^(?:bets|apuesta)\s+[$€£]?(?<amount>[\d,.]+)(?<rest>.*)$", RegexOptions.IgnoreCase);
             if (bet.Success)
                 return $"apuesta {FormatAmountAsBb(bet.Groups["amount"].Value, bigBlind)}{TranslateAllInText(bet.Groups["rest"].Value)}";
 

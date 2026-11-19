@@ -55,7 +55,7 @@
                 Width="58"
                 Height="58"
                 CornerRadius="29"
-                Background="{DynamicResource Brush.Negative}"
+                Background="{DynamicResource Brush.Accent}"
                 BorderBrush="{DynamicResource Brush.Surface}"
                 BorderThickness="2"
                 Margin="0,0,16,0">
@@ -338,7 +338,7 @@
                   Margin="0,0,10,0"
                   Click="BtnCancel_Click"/>
           <Button Content="{DynamicResource Settings.Save}"
-                  Style="{StaticResource Btn.Primary}"
+                  Style="{StaticResource Btn.Accent}"
                   Width="130"
                   Click="BtnSave_Click"/>
         </StackPanel>

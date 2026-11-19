@@ -6,7 +6,7 @@ namespace Hud.App.Services
     public static class PokerStarsHandHistory
     {
         public static readonly Regex HandStartRx =
-            new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(HandReader.Core.Parsing.PokerStarsParser.HandStartPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex HeaderTimestampRx =
             new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -26,20 +26,23 @@ namespace Hud.App.Services
         public static readonly Regex ShowCardsRx =
             new(@"^(?<name>.+?):+\s+(?:shows|muestra)\s+\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        public static readonly Regex SummarySeatNameRx =
+            new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+(?<seat>\d+):\s+(?<rest>.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public static readonly Regex SummaryShownRx =
             new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+\d+:\s+(?<name>[^\s:]+).*\[(?<cards>[^\]]+)\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex CollectedRx =
-            new(@"^(?<name>.+?):?\s+(?:(?:collected|recoge|cobra|cobr[o\u00F3]|recaud[o\u00F3]|se llev[o\u00F3]|se lleva el bote)\s+\$?(?<amount>[\d,.]+)|recaud[o\u00F3]\s+\(\$?(?<amount2>[\d,.]+)\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?<name>.+?):?\s+(?:(?:collected|recoge|cobra|cobr[o\u00F3]|recaud[o\u00F3]|se llev[o\u00F3]|se lleva el bote)\s+[$€£]?(?<amount>[\d,.]+)|recaud[o\u00F3]\s+\([$€£]?(?<amount2>[\d,.]+)\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ReturnedRx =
-            new(@"^(?:(?:Uncalled bet|Apuesta no pagada|La apuesta no igualada)\s+\(\$?(?<amount>[\d,.]+)\)\s+(?:returned to|devuelta a|se ha devuelto a)\s+(?<name>.+)|(?<amount2>[\d,.]+)\s+devuelt[ao]\s+a\s+(?<name2>.+))$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"^(?:(?:Uncalled bet|Apuesta no pagada|La apuesta no igualada)\s+\([$€£]?(?<amount>[\d,.]+)\)\s+(?:returned to|devuelta a|se ha devuelto a)\s+(?<name>.+)|(?<amount2>[\d,.]+)\s+devuelt[ao]\s+a\s+(?<name2>.+))$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex RaiseToRx =
-            new(@"(?:raises|sube)\s+\$?[\d,.]+\s+(?:to|a|hasta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:raises|sube)\s+[$€£]?[\d,.]+\s+(?:to|a|hasta)\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static readonly Regex ActionAmountRx =
-            new(@":+\s+(?:posts (?:small blind|big blind|small & big blinds|small and big blinds|the ante)|pone ciega peque(?:\u00F1|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+\$?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@":+\s+(?:posts (?:small blind|big blind|small & big blinds|small and big blinds|the ante)|pone ciega peque(?:\u00F1|n)a(?: y grande)?|pone ciega chica(?: y grande)?|pone ciega grande|pone ante|calls|bets|iguala|paga|apuesta)\s+[$€£]?(?<amount>[\d,.]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static IEnumerable<IReadOnlyList<string>> SplitHands(IEnumerable<string> lines)
         {
@@ -62,6 +65,64 @@ namespace Hud.App.Services
 
         public static string NormalizeName(string raw) =>
             raw.Trim().TrimEnd(':').Trim();
+
+        /// <summary>
+        /// True si la linea del resumen habla de ese jugador exactamente.
+        /// line.Contains(nombre) no vale: un villano llamado "Hero2" contaminaba las lecturas
+        /// de "Hero". Con los asientos de la mano (BuildSeatRoster) el jugador sale del numero
+        /// de asiento; sin ellos, la linea tiene que empezar por el nombre completo, que puede
+        /// llevar espacios ("Big Fish").
+        /// </summary>
+        public static bool SummaryLineIsAbout(string line, string playerName, IReadOnlyDictionary<int, string>? seatRoster = null)
+        {
+            if (string.IsNullOrWhiteSpace(playerName)) return false;
+
+            var match = SummarySeatNameRx.Match(line);
+            if (!match.Success) return false;
+
+            if (seatRoster is not null &&
+                int.TryParse(match.Groups["seat"].Value, out var seatNumber) &&
+                seatRoster.TryGetValue(seatNumber, out var seatedName))
+            {
+                return SamePlayer(seatedName, playerName);
+            }
+
+            // Sin asiento conocido: nombre completo seguido de fin de linea, espacio, "(" o ":".
+            // Asi "Hero" no casa con "Hero2", aunque "Big" si casaria con "Big Fish".
+            var name = NormalizeName(playerName);
+            var rest = match.Groups["rest"].Value;
+            if (!rest.StartsWith(name, StringComparison.Ordinal)) return false;
+            if (rest.Length == name.Length) return true;
+
+            var next = rest[name.Length];
+            return char.IsWhiteSpace(next) || next == '(' || next == ':';
+        }
+
+        /// <summary>
+        /// Numero de asiento -> nombre normalizado, leido del bloque de asientos previo a las
+        /// cartas propias. Las lineas del resumen tambien empiezan por "Seat N:" y SeatRx se
+        /// llevaria el resultado como parte del nombre ("Hero folded before Flop"), por eso se
+        /// para en las cartas propias y se queda con la primera aparicion de cada asiento.
+        /// </summary>
+        public static Dictionary<int, string> BuildSeatRoster(IReadOnlyList<string> hand)
+        {
+            var roster = new Dictionary<int, string>();
+            foreach (var line in hand)
+            {
+                if (IsHoleCardsHeader(line))
+                    break;
+
+                var seat = SeatRx.Match(line);
+                if (seat.Success && int.TryParse(seat.Groups["seat"].Value, out var seatNumber))
+                    roster.TryAdd(seatNumber, NormalizeName(seat.Groups["name"].Value));
+            }
+
+            return roster;
+        }
+
+        private static bool IsHoleCardsHeader(string line) =>
+            line.StartsWith("*** HOLE CARDS", StringComparison.OrdinalIgnoreCase) ||
+            line.StartsWith("*** CARTAS PROPIAS", StringComparison.OrdinalIgnoreCase);
 
         public static bool SamePlayer(string left, string right) =>
             string.Equals(NormalizeName(left), NormalizeName(right), StringComparison.Ordinal);
@@ -155,8 +216,7 @@ namespace Hud.App.Services
 
             foreach (var line in hand)
             {
-                if (line.StartsWith("*** HOLE CARDS", StringComparison.OrdinalIgnoreCase) ||
-                    line.StartsWith("*** CARTAS PROPIAS", StringComparison.OrdinalIgnoreCase))
+                if (IsHoleCardsHeader(line))
                     break;
 
                 if (buttonSeat == 0)
@@ -166,8 +226,10 @@ namespace Hud.App.Services
                         int.TryParse(button.Groups["seat"].Value, out buttonSeat);
                 }
 
+                // Los ausentes ("is sitting out") estan en la lista de asientos pero no juegan la mano:
+                // contarlos corria las posiciones (la ciega pequena salia como ciega grande).
                 var seat = SeatRx.Match(line);
-                if (seat.Success && int.TryParse(seat.Groups["seat"].Value, out var seatNumber))
+                if (seat.Success && int.TryParse(seat.Groups["seat"].Value, out var seatNumber) && !IsSittingOut(line))
                     seats[seatNumber] = NormalizeName(seat.Groups["name"].Value);
             }
 
@@ -177,7 +239,12 @@ namespace Hud.App.Services
             var orderedSeats = seats.Keys.OrderBy(seat => seat).ToList();
             var buttonIndex = orderedSeats.IndexOf(buttonSeat);
             if (buttonIndex < 0)
-                return new Dictionary<string, string>(StringComparer.Ordinal);
+            {
+                // Boton muerto (en un asiento vacio o ausente): la ciega pequena es el primer asiento
+                // activo despues de el, y el boton efectivo el anterior.
+                var next = orderedSeats.FindIndex(s => s > buttonSeat);
+                buttonIndex = ((next < 0 ? 0 : next) - 1 + orderedSeats.Count) % orderedSeats.Count;
+            }
 
             var result = new Dictionary<string, string>(StringComparer.Ordinal);
             for (var i = 0; i < orderedSeats.Count; i++)
@@ -187,6 +254,19 @@ namespace Hud.App.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Asiento de alguien que no juega la mano: "Seat 2: nombre (0 in chips) is sitting out".
+        /// Solo se mira lo que va despues de las fichas, para no confundirse con el nombre.
+        /// </summary>
+        public static bool IsSittingOut(string seatLine)
+        {
+            var close = seatLine.LastIndexOf(')');
+            var rest = close >= 0 ? seatLine[(close + 1)..] : "";
+            return rest.Contains("sitting out", StringComparison.OrdinalIgnoreCase) ||
+                   rest.Contains("out of hand", StringComparison.OrdinalIgnoreCase) ||
+                   rest.Contains("ausente", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string NormalizeAction(string action)
@@ -265,12 +345,47 @@ namespace Hud.App.Services
                 var action = ActionAmountRx.Match(line);
                 if (action.Success && PokerAmountParser.TryParse(action.Groups["amount"].Value, out var amount))
                 {
-                    committedThisStreet += amount;
                     net -= amount;
+
+                    // El ante y la ciega pequena muerta son dinero muerto: salen del stack pero no
+                    // cuentan como apuesta de la calle. Si se sumaran, un "raises X to Y" posterior
+                    // descontaria de menos y el jugador apareceria ganando el ante de mas.
+                    if (AnteLineRx.IsMatch(line))
+                        continue;
+
+                    committedThisStreet += DeadAndLiveBlindRx.IsMatch(line)
+                        ? LiveBigBlind(hand, amount)
+                        : amount;
                 }
             }
 
             return net;
+        }
+
+        private static readonly Regex AnteLineRx =
+            new(@":+\s+(?:posts the ante|pone ante)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private static readonly Regex DeadAndLiveBlindRx =
+            new(@":+\s+(?:posts small (?:&|and) big blinds|pone ciega (?:peque(?:ñ|n)a|chica) y grande)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private static readonly Regex HeaderBlindsRx =
+            new(@"\(\s*[$€]?(?<sb>\d[\d.,]*)\s*/\s*[$€]?(?<bb>\d[\d.,]*)", RegexOptions.Compiled);
+
+        // "posts small & big blinds" junta la ciega pequena (muerta) y la grande (viva). Solo la
+        // grande cuenta como apuesta de la calle. Se toma de la cabecera "(SB/BB)"; si no se puede
+        // leer, se asume la estructura habitual SB = BB / 2.
+        private static double LiveBigBlind(IReadOnlyList<string> hand, double postedTotal)
+        {
+            if (hand.Count > 0)
+            {
+                var blinds = HeaderBlindsRx.Match(hand[0]);
+                if (blinds.Success &&
+                    PokerAmountParser.TryParse(blinds.Groups["bb"].Value, out var bigBlind) &&
+                    bigBlind > 0 && bigBlind <= postedTotal)
+                    return bigBlind;
+            }
+
+            return postedTotal * 2.0 / 3.0;
         }
 
         public static int FindStreetIndex(IReadOnlyList<string> hand, string street, int startAt = 0)
@@ -289,15 +404,51 @@ namespace Hud.App.Services
             return -1;
         }
 
-        private static string PositionFromOffset(int offset, int playerCount) =>
-            playerCount switch
+        /// <summary>
+        /// Posicion a partir del desplazamiento respecto al boton (0 = BTN, 1 = SB, 2 = BB...).
+        /// El caso general se calcula contando hacia atras desde el boton (el asiento previo al
+        /// boton siempre es el CO), no con una tabla fija de 6-max: en una mesa de 9 eso ponia
+        /// el CO tres asientos antes de donde esta. Es publico para que las ventanas no
+        /// mantengan su propia copia de la tabla.
+        /// </summary>
+        public static string PositionFromOffset(int offset, int playerCount)
+        {
+            if (playerCount <= 2) return offset == 0 ? "BTN/SB" : "BB";
+
+            switch (offset)
             {
-                <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
-            };
+                case 0: return "BTN";
+                case 1: return "SB";
+                case 2: return "BB";
+            }
+
+            if (offset >= playerCount) return "?";
+
+            // Distancia hasta el boton avanzando: 0 = ultimo en actuar antes del boton.
+            var toButton = playerCount - 1 - offset;
+
+            if (toButton == 0) return "CO";
+            if (offset == 3) return "UTG";   // primero tras la ciega grande
+            if (toButton == 1) return "HJ";
+
+            return "MP";
+        }
+
+        /// <summary>
+        /// Posicion a partir del orden de actuacion preflop (0 = el primero en hablar).
+        /// Heads-up habla primero el BTN/SB (desplazamiento 0); con 3 o mas jugadores, el que
+        /// esta 3 asientos despues del boton (el UTG; con 3 jugadores, el propio boton).
+        /// </summary>
+        public static string PositionFromPreflopIndex(int index, int playerCount)
+        {
+            if (playerCount <= 2)
+                return PositionFromOffset(index, playerCount);
+
+            if (index < 0 || index >= playerCount)
+                return "?";
+
+            return PositionFromOffset((index + 3) % playerCount, playerCount);
+        }
 
         public static (string Result, string Combination, string VillainName, string VillainCards, string VillainCombination) ExtractHandSummaryInfo(IReadOnlyList<string> hand, string heroName)
         {
@@ -375,9 +526,10 @@ namespace Hud.App.Services
             
             if (summaryIdx >= 0)
             {
+                var seatRoster = BuildSeatRoster(hand);
                 foreach (var line in hand.Skip(summaryIdx))
                 {
-                    if (line.Contains(heroName))
+                    if (SummaryLineIsAbout(line, heroName, seatRoster))
                     {
                         var comboMatch = Regex.Match(line, @"with\s+(?<combo>[^,\r\n(]+)", RegexOptions.IgnoreCase);
                         if (comboMatch.Success) combination = comboMatch.Groups["combo"].Value.Trim();
@@ -385,7 +537,7 @@ namespace Hud.App.Services
                         if (shownMatch.Success && string.IsNullOrEmpty(combination)) combination = shownMatch.Groups["combo"].Value.Trim();
                     }
 
-                    if (!string.IsNullOrEmpty(villainName) && line.Contains(villainName))
+                    if (!string.IsNullOrEmpty(villainName) && SummaryLineIsAbout(line, villainName, seatRoster))
                     {
                         var vCardsMatch = Regex.Match(line, @"\[(?<cards>[^\]]+)\]");
                         if (vCardsMatch.Success) villainCards = vCardsMatch.Groups["cards"].Value.Trim();
@@ -428,20 +580,32 @@ namespace Hud.App.Services
             return (flop, turn, river);
         }
 
+        // El orden importa: "flush" antes que "royal flush" dejaba "royal Color", y la regla de
+        // escalera real no llegaba a aplicarse nunca. Siempre de lo mas especifico a lo general.
+        private static readonly (string English, string Spanish)[] CombinationNames =
+        {
+            ("royal flush", "Escalera Real"),
+            ("straight flush", "Escalera de color"),
+            ("four of a kind", "Poker"),
+            ("full house", "Full"),
+            ("three of a kind", "Trio"),
+            ("two pair", "Doble pareja"),
+            ("one pair", "Pareja"),
+            ("high card", "Carta alta"),
+            ("straight", "Escalera"),
+            ("flush", "Color"),
+        };
+
         private static string TranslateCombination(string combo)
         {
             if (string.IsNullOrEmpty(combo)) return "";
-            return combo.Replace("high card", "Carta alta", StringComparison.OrdinalIgnoreCase)
-                        .Replace("one pair", "Pareja", StringComparison.OrdinalIgnoreCase)
-                        .Replace("two pair", "Doble pareja", StringComparison.OrdinalIgnoreCase)
-                        .Replace("three of a kind", "Trio", StringComparison.OrdinalIgnoreCase)
-                        .Replace("straight flush", "Escalera de color", StringComparison.OrdinalIgnoreCase)
-                        .Replace("straight", "Escalera", StringComparison.OrdinalIgnoreCase)
-                        .Replace("flush", "Color", StringComparison.OrdinalIgnoreCase)
-                        .Replace("full house", "Full", StringComparison.OrdinalIgnoreCase)
-                        .Replace("four of a kind", "Poker", StringComparison.OrdinalIgnoreCase)
-                        .Replace("royal flush", "Escalera Real", StringComparison.OrdinalIgnoreCase);
+
+            foreach (var (english, spanish) in CombinationNames)
+                combo = combo.Replace(english, spanish, StringComparison.OrdinalIgnoreCase);
+
+            return combo;
         }
+
     }
 }
 

@@ -11,8 +11,10 @@ namespace Hud.App.Services
 
     public static class PokerStarsWindowDetector
     {
+        // El cliente cambia la coletilla segun version e idioma: "Iniciaste sesion como X",
+        // "Sesion iniciada con el nombre de usuario X" o, en ingles, "Logged In as X".
         private static readonly Regex HeroFromTitleRx =
-            new(@"Iniciaste sesi\S*n como\s+(?<hero>.+?)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:Iniciaste sesi\S*n como|Sesi\S*n iniciada con el nombre de usuario|Logged in as)\s+(?<hero>.+?)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private static readonly Regex NonKeyCharsRx =
             new(@"[^a-z0-9]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -27,6 +29,10 @@ namespace Hud.App.Services
 
                 var title = GetWindowTitle(handle);
                 if (!LooksLikePokerStarsTable(title))
+                    return true;
+                // Solo ventanas del propio PokerStars: el titulo de VS Code con "PokerStarsParser.cs" abierto
+                // pasaba por una mesa (y se le buscaban cartas).
+                if (!IsPokerStarsProcess(handle))
                     return true;
 
                 var tableName = ExtractTableName(title);
@@ -49,15 +55,20 @@ namespace Hud.App.Services
             string? rootFolder = null,
             int maxAgeDays = 3)
         {
-            var root = string.IsNullOrWhiteSpace(rootFolder)
-                ? GetDefaultHandHistoryRoot()
-                : rootFolder;
+            var roots = string.IsNullOrWhiteSpace(rootFolder)
+                ? ResolveHandHistoryRoots()
+                : Directory.Exists(rootFolder) ? new[] { rootFolder } : Array.Empty<string>();
 
-            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            if (roots.Count == 0)
                 return Array.Empty<PokerStarsTableMatch>();
 
             var cutoff = DateTime.Now.AddDays(-Math.Max(1, maxAgeDays));
-            var files = Directory.EnumerateFiles(root, "*.txt", SearchOption.AllDirectories)
+            // IgnoreInaccessible: si se recorre Documentos entero, sus enlaces de sistema ("Mi
+            // musica"...) lanzaban UnauthorizedAccessException.
+            var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true };
+            var files = roots
+                .SelectMany(root => Directory.EnumerateFiles(root, "*.txt", options))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Where(path => File.GetLastWriteTime(path) >= cutoff)
                 .Select(path => new HandHistoryCandidate(path, NormalizeKey(Path.GetFileNameWithoutExtension(path)), File.GetLastWriteTime(path)))
                 .OrderByDescending(file => file.LastWriteTime)
@@ -81,6 +92,69 @@ namespace Hud.App.Services
             }
 
             return matches;
+        }
+
+        /// <summary>
+        /// Donde buscar los historiales: la carpeta de PokerStars de Configuracion de APH; si no, la
+        /// que usa el propio PokerStars ("SaveMyHandsPath" en su user.ini); si no, Documentos.
+        /// Antes se buscaba siempre en Documentos\manos poker o, si no existia, en todo Documentos.
+        /// </summary>
+        public static IReadOnlyList<string> ResolveHandHistoryRoots()
+        {
+            var roots = new List<string>();
+            void Add(string? folder)
+            {
+                if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+                    return;
+                var full = Path.GetFullPath(folder).TrimEnd('\\', '/');
+                if (!roots.Contains(full, StringComparer.OrdinalIgnoreCase))
+                    roots.Add(full);
+            }
+
+            try
+            {
+                var settings = AppSettingsService.Load();
+                Add(settings.PokerRoomFolders.TryGetValue("PokerStars", out var configured) ? configured : null);
+                Add(settings.PokerStarsHandHistoryFolder);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Tiempo real: no se pudo leer la carpeta de manos de Configuracion", ex);
+            }
+
+            // La de PokerStars tambien: si no coincide con la de APH, las mesas igual se encuentran.
+            Add(PokerStarsSaveFolder());
+            if (roots.Count == 0)
+                Add(GetDefaultHandHistoryRoot());
+            return roots;
+        }
+
+        /// <summary>La carpeta donde PokerStars guarda las manos, leida de su user.ini (PokerStars, PokerStars.MX...).</summary>
+        public static string? PokerStarsSaveFolder()
+        {
+            try
+            {
+                var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                foreach (var dir in Directory.EnumerateDirectories(local, "PokerStars*"))
+                {
+                    var ini = Path.Combine(dir, "user.ini");
+                    if (!File.Exists(ini))
+                        continue;
+                    foreach (var line in File.ReadLines(ini))
+                    {
+                        if (!line.StartsWith("SaveMyHandsPath=", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        var path = line["SaveMyHandsPath=".Length..].Trim();
+                        if (path.Length > 0 && Directory.Exists(path))
+                            return path;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Tiempo real: no se pudo leer la carpeta de manos de PokerStars", ex);
+            }
+            return null;
         }
 
         public static string? GetDefaultHandHistoryRoot()
@@ -125,7 +199,9 @@ namespace Hud.App.Services
             return looksLikePokerGame &&
                 (title.Contains("PokerStars", StringComparison.OrdinalIgnoreCase) ||
                  title.Contains("Dinero ficticio", StringComparison.OrdinalIgnoreCase) ||
-                 title.Contains("Iniciaste sesi", StringComparison.OrdinalIgnoreCase));
+                 title.Contains("Play Money", StringComparison.OrdinalIgnoreCase) ||
+                 title.Contains("Iniciaste sesi", StringComparison.OrdinalIgnoreCase) ||
+                 title.Contains("iniciada con el nombre de usuario", StringComparison.OrdinalIgnoreCase));
         }
 
         private static string ExtractTableName(string title)
@@ -192,6 +268,24 @@ namespace Hud.App.Services
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetWindowTextLength(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        /// <summary>La ventana es de un proceso de PokerStars (si no se puede saber, se acepta por el titulo).</summary>
+        private static bool IsPokerStarsProcess(IntPtr handle)
+        {
+            try
+            {
+                GetWindowThreadProcessId(handle, out var processId);
+                using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+                return process.ProcessName.Contains("PokerStars", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                return true;
+            }
+        }
     }
 }
 

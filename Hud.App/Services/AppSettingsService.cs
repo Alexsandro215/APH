@@ -63,7 +63,17 @@ namespace Hud.App.Services
             {
                 Directory.CreateDirectory(SettingsDirectory);
                 var json = JsonSerializer.Serialize(settings, JsonOptions);
-                File.WriteAllText(SettingsPath, json);
+
+                // Escritura atomica: si el proceso muere a mitad de un WriteAllText, el JSON
+                // queda truncado, Load() lo descarta en silencio y el usuario pierde la
+                // configuracion entera, contrasena local incluida.
+                var tempPath = SettingsPath + ".tmp";
+                File.WriteAllText(tempPath, json);
+
+                if (File.Exists(SettingsPath))
+                    File.Replace(tempPath, SettingsPath, destinationBackupFileName: null);
+                else
+                    File.Move(tempPath, SettingsPath);
             }
             catch
             {

@@ -16,7 +16,7 @@ namespace Hud.App.Views
 {
     public partial class HeroProfileWindow : Window
     {
-        private readonly HeroProfileViewModel _viewModel;
+        private HeroProfileViewModel? _viewModel;
 
         public HeroProfileWindow(
             PlayerStats hero,
@@ -26,8 +26,13 @@ namespace Hud.App.Views
         {
             InitializeComponent();
             FitToWorkArea();
-            _viewModel = HeroProfileViewModel.Build(hero, tables.ToList(), stake, summary);
-            DataContext = _viewModel;
+            // Construir el perfil lee todos los historiales: en segundo plano.
+            var tableList = tables.ToList();
+            BackgroundLoad.Run(this, () => HeroProfileViewModel.Build(hero, tableList, stake, summary), viewModel =>
+            {
+                _viewModel = viewModel;
+                DataContext = viewModel;
+            });
             Title = $"APH - Perfil de {hero.Name}";
         }
 
@@ -48,6 +53,9 @@ namespace Hud.App.Views
             if ((sender as DataGrid)?.SelectedItem is not HeroHandRow row)
                 return;
 
+            if (_viewModel is null)
+                return;
+
             var table = _viewModel.Tables.FirstOrDefault(t =>
                 string.Equals(t.SourcePath, row.SourcePath, StringComparison.OrdinalIgnoreCase));
             if (table is null)
@@ -59,7 +67,7 @@ namespace Hud.App.Views
                 ShowInTaskbar = true
             };
 
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void BtnDictionary_Click(object sender, RoutedEventArgs e)
@@ -116,7 +124,32 @@ namespace Hud.App.Views
                 WorstPositionLabel = PositionRows.Where(row => row.Hands > 0)
                     .OrderBy(row => row.TotalBb)
                     .FirstOrDefault()?.Position ?? "-";
-                Tags = BuildTags(hero, PositionRows, TopCombos).ToList();
+                HandTypeRows = HandTypeProfit.Build(hands.Where(hand => hand.IsVpip)
+                        .Select(hand => new HandTypeSample(hand.Combo, hand.Position, hand.NetBb, hand.LuckBb)))
+                    .Select(row => new HandTypeViewRow(row))
+                    .ToList();
+                HandTypeBars = HandTypeRows
+                    .OrderByDescending(row => row.Row.AdjustedPerHand)
+                    .Select(row => new Charts.BarDatum(row.Row.Name, row.Row.AdjustedPerHand, row.Row.PerHandLabel + " bb",
+                        string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Hands"), row.Row.Hands) + " · " + row.SampleLabel,
+                        row.Tooltip))
+                    .ToList();
+                HandTypeNotes = BuildHandTypeNotes(HandTypeRows, hands).ToList();
+
+                // Retroalimentacion con semaforo: la misma del informe PDF (en ficticio, cerrado y por valor).
+                var playMoney = tables.Count == 0 || tables.All(table => !table.IsCash);
+                var feedback = HeroStatCoach.Evaluate(new HeroStatInput(hero.HandsReceived, hero.VPIPPct, hero.PFRPct, hero.ThreeBetPct,
+                    hero.AF, hero.AFqPct, hero.CBetFlopPct, hero.FoldVsCBetFlopPct, hero.WTSDPct, hero.WSDPct, hero.WWSFPct), playMoney, stake);
+                Feedback = feedback.Select(item => new FeedbackRow(item)).ToList();
+                FeedbackIntro = LocalizationManager.Text(playMoney ? "HeroFeedback.IntroPlay" : "HeroFeedback.IntroReal");
+                FeedbackFocus = feedback.Count == 0 ? LocalizationManager.Text("HeroFeedback.Empty") : HeroStatCoach.Focus(feedback);
+                FeedbackSummary = feedback.Count == 0
+                    ? ""
+                    : string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HeroFeedback.Summary"),
+                        feedback.Count(item => item.Verdict == StatVerdict.Good),
+                        feedback.Count(item => item.Verdict == StatVerdict.Adjust),
+                        feedback.Count(item => item.Verdict == StatVerdict.Bad));
+                Tags = BuildTags(hero, feedback, PositionRows, TopCombos).ToList();
                 Notes = BuildNotes(hero, PositionRows, ActionRows, TopCombos).ToList();
             }
 
@@ -137,6 +170,26 @@ namespace Hud.App.Views
             public IReadOnlyList<PositionRow> PositionRows { get; }
             public IReadOnlyList<ComboRow> TopCombos { get; }
             public IReadOnlyList<ActionRow> ActionRows { get; }
+            public IReadOnlyList<HandTypeViewRow> HandTypeRows { get; }
+            public IReadOnlyList<Charts.BarDatum> HandTypeBars { get; }
+            public IReadOnlyList<string> HandTypeNotes { get; }
+            public IReadOnlyList<FeedbackRow> Feedback { get; }
+            public string FeedbackIntro { get; }
+            public string FeedbackFocus { get; }
+            public string FeedbackSummary { get; }
+
+            // EV por accion en barras: rojo donde la accion pierde, verde donde gana.
+            public IReadOnlyList<Charts.BarDatum> ActionBars => ActionRows
+                .OrderBy(row => row.TotalBb)
+                .Select(row => new Charts.BarDatum(
+                    row.Action,
+                    row.TotalBb,
+                    row.TotalBbLabel,
+                    $"{row.Count} {Hud.App.Services.LocalizationManager.Text("Visual.Hands")}",
+                    $"{row.Action}: {row.Count} {Hud.App.Services.LocalizationManager.Text("Visual.Hands")}\n" +
+                    $"{Hud.App.Services.LocalizationManager.Text("Common.Average")}: {row.AverageBbLabel}\n" +
+                    $"{Hud.App.Services.LocalizationManager.Text("Common.WorstHand")}: {row.WorstHand}"))
+                .ToList();
             public IReadOnlyList<HeroHandRow> BestHands { get; }
             public IReadOnlyList<HeroHandRow> WorstHands { get; }
             public IReadOnlyList<string> Notes { get; }
@@ -156,6 +209,37 @@ namespace Hud.App.Views
                     .ToList();
 
                 return new HeroProfileViewModel(hero, tables, stake, summary, hands);
+            }
+
+            /// <summary>Lectura del reporte por tipo de mano en frases: lo claro, lo que aun es suerte y la suerte total.</summary>
+            private static IEnumerable<string> BuildHandTypeNotes(IReadOnlyList<HandTypeViewRow> rows, IReadOnlyList<HeroHandRow> hands)
+            {
+                if (rows.Count == 0)
+                {
+                    yield return LocalizationManager.Text("HandTypes.Empty");
+                    yield break;
+                }
+
+                string Bb(double value) => value.ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture);
+                var clear = rows.Where(row => row.Row.IsClear).ToList();
+                var best = clear.Where(row => row.Row.AdjustedPerHand > 0).OrderByDescending(row => row.Row.AdjustedPerHand).FirstOrDefault();
+                var worst = clear.Where(row => row.Row.AdjustedPerHand < 0).OrderBy(row => row.Row.AdjustedPerHand).FirstOrDefault();
+                if (best is not null)
+                    yield return string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Note.Best"), best.Row.Name, Bb(best.Row.AdjustedPerHand), best.Row.Hands);
+                if (worst is not null)
+                    yield return string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Note.Worst"), worst.Row.Name, Bb(worst.Row.AdjustedPerHand), worst.Row.Hands);
+                if (clear.Count == 0)
+                    yield return LocalizationManager.Text("HandTypes.Note.NoClear");
+
+                var played = rows.Sum(row => row.Row.Hands);
+                var most = rows.OrderByDescending(row => row.Row.Hands).First();
+                yield return string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Note.MostPlayed"),
+                    most.Row.Name, most.Row.Hands, Math.Round(most.Row.Hands * 100.0 / Math.Max(1, played)));
+
+                var luck = hands.Where(hand => hand.IsVpip).Sum(hand => hand.LuckBb);
+                if (Math.Abs(luck) >= 1)
+                    yield return string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Note.Luck"), luck.ToString("+0;-0;0", CultureInfo.CurrentCulture));
+                yield return LocalizationManager.Text("HandTypes.Note.Position");
             }
 
             private static IEnumerable<StatMetricRow> BuildStatMetrics(PlayerStats hero, StakeProfile stake)
@@ -211,6 +295,7 @@ namespace Hud.App.Views
 
             private static IEnumerable<TagViewModel> BuildTags(
                 PlayerStats hero,
+                IReadOnlyList<StatFeedback> feedback,
                 IReadOnlyList<PositionRow> positions,
                 IReadOnlyList<ComboRow> combos)
             {
@@ -221,43 +306,15 @@ namespace Hud.App.Views
 
                 if (hero.HandsReceived < 30)
                     yield return Tag(LocalizationManager.Text("Tag.NoSample"), LocalizationManager.Text("Tag.NoSample.Short"), Neutral());
-                if (hero.VPIPPct >= 35)
-                    yield return Tag(LocalizationManager.Text("Tag.PlaysManyHands"), $"VPIP {hero.VPIPPct:0.#}%.", Danger());
-                if (hero.AF >= 4 || hero.AFqPct >= 65)
-                    yield return Tag(LocalizationManager.Text("Tag.Aggressor"), $"AF {hero.AF:0.#} | AFq {hero.AFqPct:0.#}%.", Danger());
-                if (hero.ThreeBetPct >= 10)
-                    yield return Tag(LocalizationManager.Text("Tag.High3Bet"), $"3Bet {hero.ThreeBetPct:0.#}%.", Danger());
-                if (hero.FoldVsCBetFlopPct >= 65)
-                    yield return Tag(LocalizationManager.Text("Tag.FoldsCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Accent());
-                if (hero.FoldVsCBetFlopPct > 0 && hero.FoldVsCBetFlopPct <= 30)
-                    yield return Tag(LocalizationManager.Text("Tag.NoFoldCBet"), $"FvCB {hero.FoldVsCBetFlopPct:0.#}%.", Danger());
-                if (hero.WTSDPct >= 35)
-                    yield return Tag(LocalizationManager.Text("Tag.ShowdownOften"), $"WTSD {hero.WTSDPct:0.#}%.", Danger());
-                if (hero.VPIPPct >= 30 && hero.PFRPct < 12 && hero.AF < 1.5)
-                    yield return Tag("Calling station", LocalizationManager.Text("Tag.CallingStation.Desc"), Accent());
-                if (hero.VPIPPct < 14 && hero.PFRPct < 10 && hero.HandsReceived >= 50)
-                    yield return Tag(LocalizationManager.Text("Tag.Rock"), LocalizationManager.Text("Tag.Rock.Desc"), Neutral());
 
-                yield return Tag(
-                    hero.VPIPPct >= 35 ? "Loose" : hero.VPIPPct <= 18 ? "Tight" : LocalizationManager.Text("Tag.MidRange"),
-                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Vpip.Dynamic"), hero.VPIPPct),
-                    Accent());
-                yield return Tag(
-                    hero.PFRPct >= 22 ? LocalizationManager.Text("Tag.AggressivePreflop") : hero.PFRPct <= 10 ? LocalizationManager.Text("Tag.LowPfr") : LocalizationManager.Text("Tag.StablePfr"),
-                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Pfr.Dynamic"), hero.PFRPct),
-                    Neutral());
-                yield return Tag(
-                    hero.FoldVsCBetFlopPct >= 65 ? "Overfold vs CBet" : LocalizationManager.Text("Tag.CBetDefenseOk"),
-                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.FoldCBet.Dynamic"), hero.FoldVsCBetFlopPct),
-                    hero.FoldVsCBetFlopPct >= 65 ? Danger() : Neutral());
-                yield return Tag(
-                    hero.CBetFlopPct >= 55 ? LocalizationManager.Text("Tag.FrequentCBet") : LocalizationManager.Text("Tag.SelectiveCBet"),
-                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.CBet.Dynamic"), hero.CBetFlopPct),
-                    Neutral());
-                yield return Tag(
-                    hero.WSDPct >= 55 ? LocalizationManager.Text("Tag.StrongShowdown") : LocalizationManager.Text("Tag.ReviewShowdown"),
-                    string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Tag.Wsd.Dynamic"), hero.WSDPct),
-                    hero.WSDPct >= 55 ? Accent() : Danger());
+                // Las mismas etiquetas que el panel y el informe: salen de la retroalimentacion con semaforo.
+                foreach (var tag in HeroStatCoach.Tags(feedback))
+                    yield return Tag(tag.Text, tag.Description, tag.Verdict switch
+                    {
+                        StatVerdict.Good => Accent(),
+                        StatVerdict.Adjust => Warning(),
+                        _ => Danger()
+                    });
 
                 var worst = positions.Where(position => position.Hands > 0).OrderBy(position => position.TotalBb).FirstOrDefault();
                 if (worst is not null)
@@ -306,19 +363,8 @@ namespace Hud.App.Views
                     yield return Tag(LocalizationManager.Text("Tag.Mixed"), LocalizationManager.Text("Tag.MixedHero.Desc"), Neutral());
             }
 
-            private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
-            {
-                if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
-                if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
-                if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-                if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
-                if (vpip >= 28 && pfr >= 20) return "LAG";
-                if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
-                if (vpip < 14 && pfr < 10) return "Nit";
-                if (vpip < 22 && pfr < 15) return "Tight";
-                if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
-                return LocalizationManager.Text("Tag.Regular");
-            }
+            private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af) =>
+                Hud.App.Services.PlayerProfileClassifier.Classify(hands, vpip, pfr, threeBet, af);
 
             private static bool IsPremium(string handCode) =>
                 handCode is "AA" or "KK" or "QQ" or "JJ" or "TT" or "AKs" or "AKo" or "AQs";
@@ -410,6 +456,7 @@ namespace Hud.App.Views
                     var action = DetectHeroAction(hand, table.HeroName);
                     var combo = NormalizeCombo(cards);
                     var playedAt = ExtractHandDateTime(hand, table.LastPlayedAt);
+                    var luckBb = action.IsVpip ? AllInLuck(hand, table.HeroName) : 0;
 
                     yield return new HeroHandRow(
                         table.TableName,
@@ -423,7 +470,26 @@ namespace Hud.App.Views
                         action.IsVpip,
                         action.IsPfr,
                         action.IsThreeBet,
-                        netBb);
+                        netBb,
+                        luckBb);
+                }
+            }
+
+            /// <summary>Suerte del heroe en un all-in con showdown antes del river (0 si no lo hubo).</summary>
+            private static double AllInLuck(IReadOnlyList<string> hand, string heroName)
+            {
+                if (!hand.Any(line => line.Contains("all-in", StringComparison.OrdinalIgnoreCase)) ||
+                    !hand.Any(line => line.StartsWith("*** SHOW", StringComparison.OrdinalIgnoreCase)))
+                    return 0;
+                try
+                {
+                    return Hud.App.Services.Trainer.TrainerHandParser.Parse(hand, heroName) is { } parsed
+                        ? HandTypeProfit.AllInLuckBb(parsed)
+                        : 0;
+                }
+                catch
+                {
+                    return 0;
                 }
             }
 
@@ -441,9 +507,15 @@ namespace Hud.App.Views
             {
                 var positions = BuildPositions(hand);
                 return positions.TryGetValue(heroName, out var position)
-                    ? position
+                    ? AsProfilePosition(position)
                     : "?";
             }
+
+            // La tabla comun llama HJ al asiento previo al CO; este perfil lo agrupa como MP,
+            // igual que su antigua copia de la tabla: PositionOrder no tiene HJ y esas manos se
+            // quedaban fuera de la tabla de posiciones.
+            private static string AsProfilePosition(string position) =>
+                position == "HJ" ? "MP" : position;
 
             private static Dictionary<string, string> BuildPositions(IReadOnlyList<string> hand)
             {
@@ -470,16 +542,6 @@ namespace Hud.App.Views
                         positions[name] = "BB";
                 }
             }
-
-            private static string PositionFromOffset(int offset, int playerCount) =>
-                playerCount switch
-                {
-                    <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                    3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                    4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                    5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                    _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "MP", 5 => "CO", _ => "UTG" }
-                };
 
             private static HeroActionInfo DetectHeroAction(IReadOnlyList<string> hand, string heroName)
             {
@@ -628,11 +690,14 @@ namespace Hud.App.Views
             private static TagPalette Danger() =>
                 new(BrushFrom(55, 22, 30), BrushFrom(226, 78, 91), BrushFrom(255, 199, 204));
 
+            private static TagPalette Warning() =>
+                new(BrushFrom(56, 40, 12), BrushFrom(224, 160, 40), BrushFrom(255, 226, 170));
+
             private static TagPalette Neutral() =>
-                new(BrushFrom(18, 31, 45), BrushFrom(64, 92, 118), BrushFrom(203, 226, 245));
+                new(Hud.App.Services.ThemeBrushes.NeutralBackground, Hud.App.Services.ThemeBrushes.NeutralBorder, Hud.App.Services.ThemeBrushes.Text);
 
             private static Brush BrushFrom(byte r, byte g, byte b) =>
-                new SolidColorBrush(Color.FromRgb(r, g, b));
+                BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
         }
 
         private sealed record HeroActionInfo(string Label, bool IsVpip, bool IsPfr, bool IsThreeBet);
@@ -644,7 +709,45 @@ namespace Hud.App.Views
             Brush Border,
             Brush Foreground,
             IReadOnlyList<CardChipViewModel> CardChips);
-        private sealed record StatMetricRow(string Key, string Label, double Value, string DisplayValue, int Hands, StakeProfile Stake);
+        private sealed record StatMetricRow(string Key, string Label, double Value, string DisplayValue, int Hands, StakeProfile Stake)
+        {
+            /// <summary>
+            /// Tooltip de la caja: primero que nivel es su color (la escala de todo APH) y luego que
+            /// significa la stat, la referencia de 6-max y el valor del heroe.
+            /// </summary>
+            public string Help => StatScale.Describe(Key, Value, Hands, Stake) + Environment.NewLine + Environment.NewLine +
+                string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HeroStats.Help"),
+                LocalizationManager.Text(Key switch
+                {
+                    "VPIP" => "Metric.VPIP.Desc.Hero",
+                    "PFR" => "Metric.PFR.Desc.Hero",
+                    "THREEBET" => "Metric.ThreeBet.Desc",
+                    "AF" => "Metric.AF.Desc",
+                    "AFQ" => "Metric.AFq.Desc.Hero",
+                    "CBF" => "Metric.CBet.Desc.Hero",
+                    "FVCBF" => "Metric.FvCBet.Desc.Hero",
+                    "WTSD" => "Metric.WTSD.Desc.Hero",
+                    "WSD" => "Metric.WSD.Desc",
+                    _ => "Metric.WWSF.Desc.Hero"
+                }),
+                LocalizationManager.Text("StatRef." + Key), DisplayValue, Hands);
+        }
+
+        /// <summary>Una fila de la retroalimentacion: veredicto con su color, stat, nivel (color de la escala) y que hacer.</summary>
+        private sealed record FeedbackRow(StatFeedback Item)
+        {
+            public string Name => Item.Name;
+            public string ValueLabel => Item.ValueLabel;
+            public string LevelLabel => Item.LevelLabel;
+            public string VerdictText => $"{Item.VerdictIcon}  {Item.VerdictLabel}";
+            public string Advice => Item.Advice;
+            public string LevelTip => StatScale.RangeOf(Item.Level);
+            public Brush VerdictBrush => BackgroundLoad.Frozen(new SolidColorBrush(HeroStatCoach.ColorOf(Item.Verdict)));
+            public Brush LevelBrush => StatScale.ColorOf(Item.Level) is { } color
+                ? BackgroundLoad.Frozen(new SolidColorBrush(color))
+                : ThemeBrushes.NeutralBackground;
+            public Brush LevelInk => BackgroundLoad.Frozen(new SolidColorBrush(StatScale.InkOf(Item.Level)));
+        }
 
         private sealed record HeroHandRow(
             string TableName,
@@ -658,7 +761,8 @@ namespace Hud.App.Views
             bool IsVpip,
             bool IsPfr,
             bool IsThreeBet,
-            double NetBb)
+            double NetBb,
+            double LuckBb = 0)
         {
             public string NetBbLabel => $"{NetBb:+0.#;-0.#;0} bb";
             public string NetBbTrendIcon => TrendIcon(NetBb);
@@ -738,6 +842,37 @@ namespace Hud.App.Views
             }
         }
 
+        /// <summary>Fila del reporte por tipo de mano para la tabla: textos, colores y la explicacion del tooltip.</summary>
+        private sealed record HandTypeViewRow(HandTypeRow Row)
+        {
+            public string Name => Row.Name;
+            public int Hands => Row.Hands;
+            public string PerHandLabel => Row.PerHandLabel;
+            public string RawPerHandLabel => Row.RawPerHandLabel;
+            public string MarginLabel => Row.MarginLabel;
+            public string LateLabel => Row.GroupLabel("Late");
+            public string EarlyLabel => Row.GroupLabel("Early");
+            public string BlindsLabel => Row.GroupLabel("Blinds");
+            public string SampleLabel => LocalizationManager.Text("HandTypes.Sample." + Row.SampleKey);
+            public string PerHandTrendIcon => TrendIcon(Row.AdjustedPerHand);
+            public Brush PerHandTrendBrush => TrendBrush(Row.AdjustedPerHand);
+
+            /// <summary>En negrita las filas con un resultado claro (mas que su margen de error).</summary>
+            public FontWeight Weight => Row.IsClear ? FontWeights.Bold : FontWeights.Normal;
+
+            /// <summary>Muestra: gris si es muy poca, ambar poca, azul media, verde buena.</summary>
+            public Brush SampleBrush => Row.SampleKey switch
+            {
+                "VeryLow" => BrushFrom(135, 145, 156),
+                "Low" => BrushFrom(224, 170, 60),
+                "Medium" => BrushFrom(79, 143, 214),
+                _ => BrushFrom(33, 192, 122)
+            };
+
+            public string Tooltip => string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Tooltip"),
+                Row.Name, Row.Hands, Row.PerHandLabel, Row.MarginLabel, Row.RawPerHandLabel, Row.TotalLabel);
+        }
+
         private sealed record ActionRow(string Action, int Count, double TotalBb, string WorstHand)
         {
             public string TotalBbLabel => $"{TotalBb:+0.#;-0.#;0} bb";
@@ -776,7 +911,7 @@ namespace Hud.App.Views
             };
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
     }
 }
 

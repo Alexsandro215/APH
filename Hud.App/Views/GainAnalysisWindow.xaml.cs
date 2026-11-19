@@ -16,7 +16,7 @@ namespace Hud.App.Views
     public partial class GainAnalysisWindow : Window
     {
         private readonly IReadOnlyList<MainWindow.TableSessionStats> _tables;
-        private readonly IReadOnlyList<GainHand> _hands;
+        private IReadOnlyList<GainHand> _hands = Array.Empty<GainHand>();
         private IReadOnlyList<GainGroup> _groups = Array.Empty<GainGroup>();
         private string _mode = "Street";
 
@@ -31,10 +31,17 @@ namespace Hud.App.Views
                 .OrderBy(table => table.LastPlayedAt)
                 .ThenBy(table => table.TableName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            _hands = BuildHands(_tables).ToList();
-            SummaryText.Text = string.Format(LocalizationManager.Text("Gain.AnalyzedHands"), _hands.Count);
             RefreshMode();
-            DrawCurve();
+
+            // Leer y procesar todos los historiales congelaba la ventana: va en segundo plano.
+            BackgroundLoad.Run(this, () => BuildHands(_tables).ToList(), hands =>
+            {
+                _hands = hands;
+                SummaryText.Text = string.Format(LocalizationManager.Text("Gain.AnalyzedHands"), _hands.Count);
+                RefreshMode();
+                DrawCurve();
+                DrawBars();
+            });
         }
 
         private void GainAnalysisWindow_Loaded(object sender, RoutedEventArgs e)
@@ -124,7 +131,7 @@ namespace Hud.App.Views
 
         private void UpdateSummaryCards()
         {
-            var total = _tables.Sum(table => table.NetAmount);
+            var total = _tables.Sum(table => table.NetBb);
             var average = _hands.Count == 0 ? 0 : total / _hands.Count;
             var best = _groups.OrderByDescending(group => group.TotalAmount).FirstOrDefault();
             var worst = _groups.OrderBy(group => group.TotalAmount).FirstOrDefault();
@@ -269,7 +276,7 @@ namespace Hud.App.Views
             foreach (var group in ordered)
             {
                 var hands = group.ToList();
-                var totalAmount = hands.Sum(hand => hand.NetAmount);
+                var totalAmount = hands.Sum(hand => hand.NetBb);
                 var totalBb = hands.Sum(hand => hand.NetBb);
                 yield return new GainGroup(
                     group.Key,
@@ -294,14 +301,14 @@ namespace Hud.App.Views
             var ordered = mode switch
             {
                 "Table" => groups.OrderBy(group => group.Min(table => table.LastPlayedAt)),
-                _ => groups.OrderByDescending(group => Math.Abs(group.Sum(table => table.NetAmount)))
+                _ => groups.OrderByDescending(group => Math.Abs(group.Sum(table => table.NetBb)))
             };
 
             foreach (var group in ordered)
             {
                 var tables = group.ToList();
                 var hands = tables.Sum(table => table.HandsReceived);
-                var totalAmount = tables.Sum(table => table.NetAmount);
+                var totalAmount = tables.Sum(table => table.NetBb);
                 var totalBb = tables.Sum(table => table.NetBb);
                 var axisLabel = mode == "Table"
                     ? tables.OrderBy(table => table.LastPlayedAt).First().LastPlayedAt.ToString("MM-dd", CultureInfo.InvariantCulture)
@@ -434,7 +441,7 @@ namespace Hud.App.Views
 
         private void DrawCurve()
         {
-            if (!IsLoaded || CurveCanvas.ActualWidth <= 1 || CurveCanvas.ActualHeight <= 1)
+            if (!CurveCanvas.IsLoaded || CurveCanvas.ActualWidth <= 1 || CurveCanvas.ActualHeight <= 1)
                 return;
 
             CurveCanvas.Children.Clear();
@@ -452,7 +459,7 @@ namespace Hud.App.Views
             var running = 0d;
             foreach (var table in ordered)
             {
-                running += table.NetAmount;
+                running += table.NetBb;
                 cumulative.Add(running);
             }
 
@@ -502,7 +509,7 @@ namespace Hud.App.Views
 
         private void DrawBars()
         {
-            if (!IsLoaded || BarsCanvas.ActualWidth <= 1 || BarsCanvas.ActualHeight <= 1)
+            if (!BarsCanvas.IsLoaded || BarsCanvas.ActualWidth <= 1 || BarsCanvas.ActualHeight <= 1)
                 return;
 
             BarsCanvas.Children.Clear();
@@ -788,7 +795,7 @@ namespace Hud.App.Views
             double cumulativeAmount,
             Color chartColor)
         {
-            var isWin = table.NetAmount >= 0;
+            var isWin = table.NetBb >= 0;
             var resultColor = isWin
                 ? GetThemeColor("Brush.Accent", Color.FromRgb(48, 217, 139))
                 : GetThemeColor("Brush.Negative", Color.FromRgb(240, 93, 108));
@@ -853,7 +860,7 @@ namespace Hud.App.Views
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             metrics.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var result = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipResult"), FormatChips(table.NetAmount), borderBrush);
+            var result = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipResult"), FormatChips(table.NetBb), borderBrush);
             var total = BuildTooltipMetric(LocalizationManager.Text("Gain.TooltipTotal"), FormatChips(cumulativeAmount), new SolidColorBrush(chartColor));
             Grid.SetColumn(total, 1);
             metrics.Children.Add(result);
@@ -923,8 +930,10 @@ namespace Hud.App.Views
                 ? GetThemeBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(48, 217, 139)))
                 : GetThemeBrush("Brush.Negative", new SolidColorBrush(Color.FromRgb(240, 93, 108)));
 
+        // En ciegas grandes: en dinero ficticio las fichas no dicen nada (100/200 o 250/500 dan cifras
+        // distintas para el mismo juego). Las fichas siguen en el detalle de cada mesa.
         private static string FormatChips(double value) =>
-            $"{value:+0.#;-0.#;0} {LocalizationManager.Text("Gain.ChipsUnit")}";
+            $"{value:+0.#;-0.#;0} bb";
 
         private static string FormatCompactChips(double value)
         {

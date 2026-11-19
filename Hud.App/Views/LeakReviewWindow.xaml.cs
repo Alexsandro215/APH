@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -173,6 +174,7 @@ namespace Hud.App.Views
 
             var handLines = handsRaw[_selectedHand.HandIndex - 1];
             var positions = BuildBestPositionMap(handLines);
+            var seatRoster = PokerStarsHandHistory.BuildSeatRoster(handLines);
             var hero = _selectedHand.Table.HeroName;
             var bigBlind = _selectedHand.Table.BigBlind > 0 ? _selectedHand.Table.BigBlind : 1;
             var dealerButtonSeat = FindDealerButtonSeat(handLines);
@@ -242,7 +244,7 @@ namespace Hud.App.Views
 
                 ApplyNonActorPotUpdate(line, ref currentPot);
 
-                ApplyRevealedCards(line, players);
+                ApplyRevealedCards(line, players, seatRoster);
 
                 var actorMatch = PokerStarsHandHistory.ActorRx.Match(line);
                 if (actorMatch.Success)
@@ -345,15 +347,21 @@ namespace Hud.App.Views
 
         private static bool HeroReachedShowdown(IReadOnlyList<string> handLines, string hero)
         {
+            Dictionary<int, string>? seatRoster = null;
             foreach (var line in handLines)
             {
                 var shown = PokerStarsHandHistory.ShowCardsRx.Match(line);
                 if (shown.Success && PokerStarsHandHistory.SamePlayer(shown.Groups["name"].Value, hero))
                     return true;
 
-                var summaryShown = PokerStarsHandHistory.SummaryShownRx.Match(line);
-                if (summaryShown.Success && PokerStarsHandHistory.SamePlayer(summaryShown.Groups["name"].Value, hero))
-                    return true;
+                // El grupo name de SummaryShownRx se corta en el primer espacio: el jugador de la
+                // linea del resumen se saca de su asiento.
+                if (PokerStarsHandHistory.SummaryShownRx.IsMatch(line))
+                {
+                    seatRoster ??= PokerStarsHandHistory.BuildSeatRoster(handLines);
+                    if (PokerStarsHandHistory.SummaryLineIsAbout(line, hero, seatRoster))
+                        return true;
+                }
             }
 
             return false;
@@ -383,7 +391,17 @@ namespace Hud.App.Views
             return $"Showdown neutral: la linea cerro practicamente even ({amount}). La decision depende del precio del bote y de repeticion futura del spot.";
         }
 
-        private static string BuildHeroGlobalHandWinrateLabel(
+        private sealed record ComboStat(int Total, int Wins, double TotalBb);
+
+        // Estadistica global del heroe por combo, calculada una vez por carpeta y reutilizada.
+        // Antes, cada vez que se elegia una mano, se releian y procesaban TODOS los historiales
+        // de la carpeta en el hilo de la interfaz: con miles de manos, cada clic congelaba la ventana.
+        // La clave incluye cuantos archivos hay, cuanto pesan y su ultima modificacion: si llegan
+        // manos nuevas se recalcula.
+        private static readonly ConcurrentDictionary<string, Lazy<IReadOnlyDictionary<string, ComboStat>>> HeroComboStatsCache =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        private string BuildHeroGlobalHandWinrateLabel(
             string sourcePath,
             string hero,
             string heroCards,
@@ -396,10 +414,83 @@ namespace Hud.App.Views
             if (string.IsNullOrWhiteSpace(targetCombo))
                 return "";
 
-            var total = 0;
-            var wins = 0;
-            var totalBb = 0.0;
-            var files = EnumerateKnownHandHistoryFiles(sourcePath);
+            var stats = GetHeroComboStats(sourcePath, hero, fallbackBigBlind);
+            if (stats.IsValueCreated)
+                return FormatHeroWinrateLabel(targetCombo, stats.Value);
+
+            // Primera vez: se calcula en segundo plano y la etiqueta se actualiza al terminar.
+            var pendingLabel = $"WR global de tu {targetCombo}: calculando...";
+            var requestedHand = _selectedHand;
+            var dispatcher = Application.Current?.Dispatcher;
+            _ = Task.Run(() => stats.Value).ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    AppLog.Warn("No se pudo calcular el WR global del combo", task.Exception?.GetBaseException());
+                    return;
+                }
+
+                dispatcher?.InvokeAsync(() =>
+                {
+                    if (!ReferenceEquals(_selectedHand, requestedHand))
+                        return;
+
+                    var finalLabel = FormatHeroWinrateLabel(targetCombo, task.Result);
+                    _heroHandWinrateLabel = finalLabel;
+                    foreach (var step in _handSteps)
+                    {
+                        if (step.AphReference is { } reference && reference.HeroHandWinrateLabel == pendingLabel)
+                            reference.HeroHandWinrateLabel = finalLabel;
+                    }
+
+                    // Volver a asignar el paso actual refresca lo que muestra la ventana.
+                    var current = CurrentStep;
+                    CurrentStep = null;
+                    CurrentStep = current;
+                });
+            }, TaskScheduler.Default);
+
+            return pendingLabel;
+        }
+
+        private static Lazy<IReadOnlyDictionary<string, ComboStat>> GetHeroComboStats(string sourcePath, string hero, double fallbackBigBlind)
+        {
+            var files = EnumerateKnownHandHistoryFiles(sourcePath).ToList();
+            long totalSize = 0;
+            long lastWrite = 0;
+            foreach (var file in files)
+            {
+                try
+                {
+                    var info = new FileInfo(file);
+                    totalSize += info.Length;
+                    lastWrite = Math.Max(lastWrite, info.LastWriteTimeUtc.Ticks);
+                }
+                catch
+                {
+                    // Un archivo que desaparece entre la lista y la lectura simplemente no cuenta.
+                }
+            }
+
+            var key = string.Join("|",
+                Path.GetDirectoryName(sourcePath) ?? sourcePath,
+                hero,
+                fallbackBigBlind.ToString(CultureInfo.InvariantCulture),
+                files.Count,
+                totalSize,
+                lastWrite);
+
+            return HeroComboStatsCache.GetOrAdd(key, _ => new Lazy<IReadOnlyDictionary<string, ComboStat>>(
+                () => ComputeHeroComboStats(files, hero, fallbackBigBlind),
+                LazyThreadSafetyMode.ExecutionAndPublication));
+        }
+
+        private static IReadOnlyDictionary<string, ComboStat> ComputeHeroComboStats(
+            IReadOnlyList<string> files,
+            string hero,
+            double fallbackBigBlind)
+        {
+            var totals = new Dictionary<string, (int Total, int Wins, double TotalBb)>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var file in files)
             {
@@ -419,23 +510,30 @@ namespace Hud.App.Views
                     if (!PokerStarsHandHistory.TryGetDealtCards(hand, hero, out var cards))
                         continue;
 
-                    if (!string.Equals(NormalizeCardsToCombo(cards), targetCombo, StringComparison.OrdinalIgnoreCase))
+                    var combo = NormalizeCardsToCombo(cards);
+                    if (string.IsNullOrWhiteSpace(combo))
                         continue;
 
                     var net = PokerStarsHandHistory.EstimateNetForPlayer(hand, hero) / Math.Max(1, bigBlind);
-                    total++;
-                    totalBb += net;
-                    if (net > 0.0001)
-                        wins++;
+                    totals.TryGetValue(combo, out var current);
+                    totals[combo] = (current.Total + 1, current.Wins + (net > 0.0001 ? 1 : 0), current.TotalBb + net);
                 }
             }
 
-            if (total == 0)
+            return totals.ToDictionary(
+                pair => pair.Key,
+                pair => new ComboStat(pair.Value.Total, pair.Value.Wins, pair.Value.TotalBb),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string FormatHeroWinrateLabel(string targetCombo, IReadOnlyDictionary<string, ComboStat> stats)
+        {
+            if (!stats.TryGetValue(targetCombo, out var stat) || stat.Total == 0)
                 return $"WR global de tu {targetCombo}: sin muestra suficiente.";
 
-            var winrate = wins * 100.0 / total;
-            var avg = totalBb / total;
-            return $"WR global de tu {targetCombo}: {wins}/{total} ({winrate:0.#}%), media {avg:+0.#;-0.#;0} bb.";
+            var winrate = stat.Wins * 100.0 / stat.Total;
+            var avg = stat.TotalBb / stat.Total;
+            return $"WR global de tu {targetCombo}: {stat.Wins}/{stat.Total} ({winrate:0.#}%), media {avg:+0.#;-0.#;0} bb.";
         }
 
         private static IEnumerable<string> EnumerateKnownHandHistoryFiles(string sourcePath)
@@ -523,17 +621,30 @@ namespace Hud.App.Views
             return 0;
         }
 
-        private static void ApplyRevealedCards(string line, List<PlayerReplayState> players)
+        private static void ApplyRevealedCards(string line, List<PlayerReplayState> players, IReadOnlyDictionary<int, string> seatRoster)
         {
+            PlayerReplayState? player;
             var shown = PokerStarsHandHistory.ShowCardsRx.Match(line);
-            if (!shown.Success)
+            if (shown.Success)
+            {
+                var name = PokerStarsHandHistory.NormalizeName(shown.Groups["name"].Value);
+                player = players.FirstOrDefault(p => PokerStarsHandHistory.SamePlayer(p.Name, name));
+            }
+            else
+            {
                 shown = PokerStarsHandHistory.SummaryShownRx.Match(line);
+                if (!shown.Success)
+                    return;
 
-            if (!shown.Success)
-                return;
+                // El grupo name de SummaryShownRx se corta en el primer espacio ("Big Fish" -> "Big").
+                // Manda el asiento; si no esta en la lista, el nombre mas largo que encaje, para
+                // que "Big" no se quede las cartas de "Big Fish".
+                player = players
+                    .Where(p => PokerStarsHandHistory.SummaryLineIsAbout(line, p.Name, seatRoster))
+                    .OrderByDescending(p => p.Name.Length)
+                    .FirstOrDefault();
+            }
 
-            var name = PokerStarsHandHistory.NormalizeName(shown.Groups["name"].Value);
-            var player = players.FirstOrDefault(p => PokerStarsHandHistory.SamePlayer(p.Name, name));
             if (player != null)
                 player.Cards = shown.Groups["cards"].Value.Trim();
         }
@@ -1182,7 +1293,7 @@ namespace Hud.App.Views
             for (var i = 0; i < activeSeats.Count; i++)
             {
                 var offset = (i - buttonIndex + activeSeats.Count) % activeSeats.Count;
-                result[seats[activeSeats[i]]] = PositionFromOffset(offset, activeSeats.Count);
+                result[seats[activeSeats[i]]] = PokerStarsHandHistory.PositionFromOffset(offset, activeSeats.Count);
             }
 
             return result;
@@ -1195,16 +1306,6 @@ namespace Hud.App.Views
                    actionText.Contains("shows", StringComparison.OrdinalIgnoreCase) ||
                    actionText.Contains("muestra", StringComparison.OrdinalIgnoreCase);
         }
-
-        private static string PositionFromOffset(int offset, int playerCount) =>
-            playerCount switch
-            {
-                <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
-            };
 
         private static double ExtractSeatStack(string line)
         {

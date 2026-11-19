@@ -73,13 +73,11 @@ namespace Hud.App.Views
             private static IEnumerable<ColorLegendRow> BuildMetricColorRows()
             {
                 yield return new ColorLegendRow(FindBrush("BgDark"), T("Color.Neutral"), T("Color.Neutral.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudBlueDark"), T("Color.DarkBlue"), T("Color.DarkBlue.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudBlue"), T("Color.Blue"), T("Color.Blue.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudGreenSoft"), T("Color.Green"), T("Color.Green.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudYellow"), T("Color.Yellow"), T("Color.Yellow.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudOrange"), T("Color.Orange"), T("Color.Orange.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudRedSoft"), T("Color.SoftRed"), T("Color.SoftRed.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudRed"), T("Color.Red"), T("Color.Red.Desc"));
+                // La escala unica de APH (StatScale): azul = menos que lo normal, verde = normal,
+                // naranja y rojo = mas que lo normal. El color ya no se invierte en ninguna stat.
+                foreach (var level in StatScale.Scale)
+                    yield return new ColorLegendRow(BackgroundLoad.Frozen(new SolidColorBrush(StatScale.ColorOf(level)!.Value)),
+                        StatScale.LabelOf(level), StatScale.RangeOf(level) + ". " + LocalizationManager.Text("StatLegend.Short." + level));
             }
 
             private static IEnumerable<ColorLegendRow> BuildRangeColorRows()
@@ -120,7 +118,7 @@ namespace Hud.App.Views
                 new(text, description, BrushFrom(98, 21, 32), BrushFrom(226, 78, 91), Brushes.White);
 
             private static DictionaryTagRow Neutral(string text, string description) =>
-                new(text, description, BrushFrom(28, 40, 54), BrushFrom(86, 108, 132), Brushes.White);
+                new(text, description, Hud.App.Services.ThemeBrushes.NeutralBackground, Hud.App.Services.ThemeBrushes.NeutralBorder, Hud.App.Services.ThemeBrushes.Text);
 
             private static SolidColorBrush FindBrush(string key)
             {

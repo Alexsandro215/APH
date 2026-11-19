@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using HandReader.Core.Models;
 using HandReader.Core.Parsing;
@@ -19,13 +20,13 @@ namespace Hud.App
         private static readonly Regex TableRx =
             new(@"(?:Table\s+'(?<table>[^']+)'|Mesa\s+(?<table>.+?)\s+\d+-max)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex HeaderGameRx =
-            new(@"(?:PokerStars Hand #\d+|Mano #\d+ de PokerStars):\s+(?<game>.+?)\s+\(", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(@"(?:PokerStars(?:\s+[\w'-]+)*?\s+(?:Hand|Game)\s+#\d+|Mano #\d+ de PokerStars):\s+(?<game>.+?)\s+\(", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex MaxTableRx =
             new(@"(?<max>\d+)-max", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex SeatRx =
             new(@"^(?:Seat|Asiento(?:\s+n\.?\s*(?:\u00BA|\u00B0|o|ro|&ordm;))?)\s+(?<seat>\d+):", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex HandStartRx =
-            new(@"^(?:PokerStars Hand #|Mano #)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            new(HandReader.Core.Parsing.PokerStarsParser.HandStartPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex DealtToRx =
             new(@"^(?:Dealt to|Repartido a)\s+(?<hero>.+?)\s+\[", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex CollectedRx =
@@ -36,8 +37,10 @@ namespace Hud.App
             PokerStarsHandHistory.RaiseToRx;
         private static readonly Regex ActionAmountRx =
             PokerStarsHandHistory.ActionAmountRx;
+        // Compartido con el resto del parseo: acepta horas de uno o dos digitos.
+        // Con \d{2} fijo, "9:05:00" no casaba y la mesa acababa fechada en 0001-01-01.
         private static readonly Regex HeaderTimestampRx =
-            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
+            PokerStarsHandHistory.HeaderTimestampRx;
 
         private static DashboardResult AnalyzeFolder(string folder, string pokerRoom)
         {
@@ -58,11 +61,46 @@ namespace Hud.App
             var agg = new StatsAggregator();
             var parser = new PokerStarsParser(agg);
             var stakeVotes = new Dictionary<StakeProfile, int>();
+            var tables = new List<TableSessionStats>();
+            var dealtHandsByHero = new Dictionary<string, int>(StringComparer.Ordinal);
+            var filesWithoutHero = new List<string>();
 
+            // Una unica lectura de disco por archivo: antes cada .txt se leia cuatro veces
+            // (stake, stats globales, stats por mesa y respaldo).
             foreach (var file in files)
             {
-                VoteStake(stakeVotes, DetectStakeFromFile(file));
-                parser.FeedLines(File.ReadLines(file), () => { });
+                string[] lines;
+                try
+                {
+                    lines = File.ReadAllLines(file);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn($"no pudo leer {file}: {ex.Message}");
+                    continue;
+                }
+
+                VoteStake(stakeVotes, DetectStakeFromLines(lines));
+                parser.FeedLines(lines, () => { });
+
+                // Cada archivo tiene su propio heroe ("Dealt to"): la carpeta de PokerStars guarda
+                // una subcarpeta por cuenta y, con un unico heroe global, se perdian las mesas de
+                // las demas cuentas y sus respaldos quedaban con el heroe equivocado.
+                var (fileHero, dealtHands) = DetectHeroFromLines(lines);
+                if (fileHero is null)
+                {
+                    // Sin "Dealt to" su heroe depende del resto de archivos: se procesa al final.
+                    filesWithoutHero.Add(file);
+                    continue;
+                }
+
+                dealtHandsByHero.TryGetValue(fileHero, out var heroHands);
+                dealtHandsByHero[fileHero] = heroHands + dealtHands;
+
+                var table = AnalyzeTableLines(file, lines, fileHero, pokerRoom);
+                AphBackupDatabaseService.BackupHandHistoryFile(file, lines, pokerRoom, fileHero, table);
+                if (table is not null)
+                    tables.Add(table);
             }
 
             var stake = stakeVotes.Count == 0
@@ -74,18 +112,36 @@ namespace Hud.App
                 .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var hero = players.FirstOrDefault();
+            // El heroe del panel es la cuenta con mas manos repartidas; sin ningun "Dealt to" se
+            // recupera la heuristica antigua (jugador con mas manos).
+            var heroName = dealtHandsByHero.Count == 0
+                ? null
+                : dealtHandsByHero
+                    .OrderByDescending(kv => kv.Value)
+                    .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                    .First().Key;
 
-            var tables = new List<TableSessionStats>();
-            foreach (var file in files)
+            var hero = heroName is not null && agg.Players.TryGetValue(heroName, out var heroStats)
+                ? heroStats
+                : players.FirstOrDefault();
+
+            // Solo se releen los archivos sin "Dealt to" y cada uno se respalda una unica vez:
+            // con el heroe resuelto arriba, o sin heroe ni mesa si no hay ninguno.
+            var fallbackHero = heroName ?? hero?.Name;
+            foreach (var file in filesWithoutHero)
             {
-                var table = hero is null
-                    ? null
-                    : AnalyzeTableFile(file, hero.Name, pokerRoom);
-
-                AphBackupDatabaseService.BackupHandHistoryFile(file, pokerRoom, hero?.Name, table);
-                if (table is not null)
-                    tables.Add(table);
+                try
+                {
+                    var lines = File.ReadAllLines(file);
+                    var table = fallbackHero is null ? null : AnalyzeTableLines(file, lines, fallbackHero, pokerRoom);
+                    AphBackupDatabaseService.BackupHandHistoryFile(file, lines, pokerRoom, fallbackHero, table);
+                    if (table is not null)
+                        tables.Add(table);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn($"segunda pasada fallo en {file}: {ex.Message}");
+                }
             }
 
             tables = tables
@@ -96,41 +152,59 @@ namespace Hud.App
             return new DashboardResult(files.Count, stake, hero, tables);
         }
 
+        /// <summary>
+        /// Heroe de un archivo y sus manos repartidas: el nombre que mas se repite en
+        /// "Dealt to &lt;nombre&gt; [". Se cuenta en vez de tomar el primero por si el formato
+        /// lista tambien cartas de rivales.
+        /// </summary>
+        private static (string? HeroName, int DealtHands) DetectHeroFromLines(IReadOnlyList<string> lines)
+        {
+            var dealtByName = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var line in lines)
+            {
+                var match = DealtToRx.Match(line);
+                if (!match.Success) continue;
+
+                var name = PokerStarsHandHistory.NormalizeName(match.Groups["hero"].Value);
+                dealtByName.TryGetValue(name, out var count);
+                dealtByName[name] = count + 1;
+            }
+
+            if (dealtByName.Count == 0)
+                return (null, 0);
+
+            var top = dealtByName.OrderByDescending(kv => kv.Value).First();
+            return (top.Key, top.Value);
+        }
+
         private static void VoteStake(Dictionary<StakeProfile, int> votes, StakeProfile stake)
         {
             votes.TryGetValue(stake, out var count);
             votes[stake] = count + 1;
         }
 
-        private static StakeProfile DetectStakeFromFile(string path)
+        private static StakeProfile DetectStakeFromLines(IReadOnlyList<string> lines)
         {
-            try
+            foreach (var line in lines.Take(200))
             {
-                foreach (var line in File.ReadLines(path).Take(200))
-                {
-                    var match = BlindsRx.Match(line);
-                    if (!match.Success) continue;
+                var match = BlindsRx.Match(line);
+                if (!match.Success) continue;
 
-                    if (!TryParseAmount(match.Groups["bb"].Value, out var bb))
-                        continue;
+                if (!PokerAmountParser.TryParse(match.Groups["bb"].Value, out var bb))
+                    continue;
 
-                    if (bb <= 0.10) return StakeProfile.Low;
-                    if (bb >= 2.00) return StakeProfile.High;
-                    return StakeProfile.Mid;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Silenced exception replaced with proper debug logging
-                System.Diagnostics.Debug.WriteLine($"Error DetectStakeFromFile {path}: {ex.Message}");
+                return GetStakeFromBigBlind(bb, match.Groups["bb"].Value);
             }
 
             return StakeProfile.Low;
         }
 
-        private static TableSessionStats? AnalyzeTableFile(string path, string heroName, string pokerRoom)
+        private static TableSessionStats? AnalyzeTableLines(
+            string path,
+            IReadOnlyList<string> lines,
+            string heroName,
+            string pokerRoom)
         {
-            var lines = File.ReadLines(path).ToList();
             var agg = new StatsAggregator();
             var parser = new PokerStarsParser(agg);
             parser.FeedLines(lines, () => { });
@@ -142,7 +216,7 @@ namespace Hud.App
             var lastPlayedAt = DetectLastPlayedAt(lines);
             var netAmount = EstimateHeroNet(lines, heroName);
             var netBb = bigBlind > 0 ? netAmount / bigBlind : 0;
-            var isCash = blindsLabel.Contains('$');
+            var isCash = IsCashBlind(blindsLabel);
 
             return new TableSessionStats(
                 $"{tableName} ({blindsLabel})",
@@ -153,7 +227,7 @@ namespace Hud.App
                 pokerRoom,
                 heroName,
                 bigBlind,
-                GetStakeFromBigBlind(bigBlind),
+                GetStakeFromBigBlind(bigBlind, blindsLabel),
                 heroStats.HandsReceived,
                 heroStats.VPIPPct,
                 heroStats.PFRPct,
@@ -168,7 +242,7 @@ namespace Hud.App
                 netBb,
                 netAmount,
                 isCash,
-                FormatNetAmount(netAmount, isCash));
+                FormatNetAmount(netAmount, isCash, blindsLabel));
         }
 
         private static (string TableName, string BlindsLabel, double BigBlind) DetectTableInfo(string path, IReadOnlyList<string> lines)
@@ -200,12 +274,8 @@ namespace Hud.App
             return (tableName, blindsLabel, bigBlind);
         }
 
-        private static StakeProfile GetStakeFromBigBlind(double bigBlind)
-        {
-            if (bigBlind <= 0.10) return StakeProfile.Low;
-            if (bigBlind >= 2.00) return StakeProfile.High;
-            return StakeProfile.Mid;
-        }
+        private static StakeProfile GetStakeFromBigBlind(double bigBlind, string blindsText) =>
+            StakeProfileRules.FromBigBlind(bigBlind, blindsText);
 
         private static DateTime DetectLastPlayedAt(IReadOnlyList<string> lines)
         {
@@ -216,7 +286,7 @@ namespace Hud.App
 
                 if (DateTime.TryParseExact(
                     match.Groups["stamp"].Value,
-                    "yyyy/MM/dd HH:mm:ss",
+                    "yyyy/MM/dd H:mm:ss",
                     CultureInfo.InvariantCulture,
                     DateTimeStyles.None,
                     out var timestamp))
@@ -263,32 +333,49 @@ namespace Hud.App
         {
             raw = raw.Trim();
 
-            if (raw.Contains("Hold'em", StringComparison.OrdinalIgnoreCase))
+            // PokerStars en espanol escribe "Sin Limite" con tilde y "Limite" tampoco contiene
+            // "limit". Comparar sin acentos evita que NLH se detecte como una simple "H".
+            var plain = RemoveDiacritics(raw);
+
+            bool Has(string needle) => plain.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+            var noLimit = Has("No Limit") || Has("sin limite");
+            var potLimit = Has("Pot Limit") || Has("limite de bote");
+            var anyLimit = Has("limit");
+
+            if (Has("Hold'em") || Has("Holdem"))
             {
-                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return "NLH";
-                if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return "PLH";
-                if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return "LH";
+                if (noLimit) return "NLH";
+                if (potLimit) return "PLH";
+                if (anyLimit) return "LH";
                 return "H";
             }
 
-            if (raw.Contains("Omaha", StringComparison.OrdinalIgnoreCase))
+            if (Has("Omaha"))
             {
-                var suffix = raw.Contains("Hi/Lo", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("H/L", StringComparison.OrdinalIgnoreCase)
-                        ? "8"
-                        : "";
+                var suffix = Has("Hi/Lo") || Has("H/L") ? "8" : "";
 
-                if (raw.Contains("Pot Limit", StringComparison.OrdinalIgnoreCase)) return $"PLO{suffix}";
-                if (raw.Contains("No Limit", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase) ||
-                    raw.Contains("sin limite", StringComparison.OrdinalIgnoreCase)) return $"NLO{suffix}";
-                if (raw.Contains("Limit", StringComparison.OrdinalIgnoreCase)) return $"LO{suffix}";
+                if (potLimit) return $"PLO{suffix}";
+                if (noLimit) return $"NLO{suffix}";
+                if (anyLimit) return $"LO{suffix}";
                 return $"O{suffix}";
             }
 
             return raw;
+        }
+
+        private static string RemoveDiacritics(string value)
+        {
+            var normalized = value.Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder(normalized.Length);
+
+            foreach (var ch in normalized)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                    builder.Append(ch);
+            }
+
+            return builder.ToString().Normalize(NormalizationForm.FormC);
         }
 
         private static double EstimateHeroNet(IReadOnlyList<string> lines, string heroName)
@@ -327,37 +414,27 @@ namespace Hud.App
             return PokerStarsHandHistory.EstimateNetForPlayer(hand, heroName);
         }
 
-        private static bool TryParseAmount(string raw, out double value)
-        {
-            if (PokerAmountParser.TryParse(raw, out value))
-                return true;
-
-            raw = raw.Replace("$", "")
-                .Replace("EUR", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("US", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("\u00A0", "")
-                .Replace(" ", "")
-                .Replace(",", ".");
-            return double.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
-        }
+        private static bool TryParseAmount(string raw, out double value) =>
+            PokerAmountParser.TryParse(raw, out value);
 
         private static string FormatBlind(string raw) =>
             PokerAmountParser.FormatBlind(raw);
 
-        private static bool IsCashBlind(string raw) =>
-            raw.Contains('$') ||
-            raw.Contains("€", StringComparison.Ordinal) ||
-            raw.Contains("US", StringComparison.OrdinalIgnoreCase) ||
-            raw.Contains('.') ||
-            raw.Contains(',');
+        // Solo la moneda decide si es cash. Un separador decimal no sirve: "1,000/2,000" en
+        // fichas de torneo lo tiene y no es dinero.
+        private static bool IsCashBlind(string raw) => PokerAmountParser.HasCurrency(raw);
 
-        private static string FormatNetAmount(double amount, bool isCash)
+        private static string FormatNetAmount(double amount, bool isCash, string blindsLabel)
         {
             var sign = amount >= 0 ? "+" : "-";
             var absolute = Math.Abs(amount);
+            // La moneda de la mesa: antes las mesas en euros (PokerStars.es) salian con "$".
+            var currency = blindsLabel.Contains('\u20AC') || blindsLabel.Contains("EUR", StringComparison.OrdinalIgnoreCase) ? "\u20AC"
+                : blindsLabel.Contains('\u00A3') || blindsLabel.Contains("GBP", StringComparison.OrdinalIgnoreCase) ? "\u00A3"
+                : "$";
 
             return isCash
-                ? $"{sign}${absolute.ToString("0.00", CultureInfo.InvariantCulture)}"
+                ? $"{sign}{currency}{absolute.ToString("0.00", CultureInfo.InvariantCulture)}"
                 : $"{sign}{absolute.ToString("0", CultureInfo.InvariantCulture)} {LocalizationManager.Text("Common.Chips").ToLowerInvariant()}";
         }
     }

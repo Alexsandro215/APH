@@ -104,7 +104,6 @@
           <TextBlock Text="{DynamicResource Login.Password}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,5"/>
           <PasswordBox x:Name="PasswordBox"
                        Height="34"
-                       IsEnabled="False"
                        KeyDown="PasswordBox_KeyDown"
                        Margin="0,0,0,10"/>
 
@@ -112,16 +111,14 @@
             <TextBlock Text="{DynamicResource Login.ConfirmPassword}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,5"/>
             <PasswordBox x:Name="ConfirmPasswordBox"
                          Height="34"
-                         IsEnabled="False"
                          KeyDown="PasswordBox_KeyDown"
                          Margin="0,0,0,10"/>
           </StackPanel>
 
           <Button x:Name="ContinueButton"
                   Content="Entrar a APH"
-                  Style="{StaticResource Btn.Primary}"
+                  Style="{StaticResource Btn.Accent}"
                   Height="44"
-                  IsEnabled="False"
                   Click="ContinueButton_Click"/>
           <TextBlock x:Name="PasswordStatusText"
                      Foreground="{DynamicResource Brush.TextDim}"

@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Hud.App.Services;
+using Hud.App.Services.Trainer;
 using HandReader.Core.Models;
 
 namespace Hud.App.Views
@@ -19,9 +20,6 @@ namespace Hud.App.Views
     {
         private static readonly Regex BlindsInHeaderRx =
             new(@"\((?<sb>" + PokerAmountParser.BlindAmountPattern + @")\s*/\s*(?<bb>" + PokerAmountParser.BlindAmountPattern + @")(?:\s+[A-Z]{3})?\)",
-                RegexOptions.Compiled);
-        private static readonly Regex HeaderTimestampRx =
-            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)",
                 RegexOptions.Compiled);
         private static readonly Regex TableNameRx =
             new(@"(?:Table\s+'(?<table>[^']+)'|Mesa\s+(?<table>.+?)\s+\d+-max)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -40,6 +38,21 @@ namespace Hud.App.Views
             InitializeComponent();
             DataContext = _service; // binding directo al servicio (Players, HeroName)
             AddStartTimeLabel();
+            Action<string> bluffChanged = _ => Dispatcher.InvokeAsync(RefreshBluff);
+            Loaded += (_, _) => { TableBluffModes.Changed += bluffChanged; RefreshBluff(); };
+            Unloaded += (_, _) => TableBluffModes.Changed -= bluffChanged;
+        }
+
+        /// <summary>Nombre de la mesa (como en la ventana de PokerStars), para el farol por mesa.</summary>
+        private string? _tableName;
+
+        private void Bluff_Click(object sender, RoutedEventArgs e) =>
+            TableBluffModes.Set(_tableName, BtnBluff.IsChecked == true);
+
+        private void RefreshBluff()
+        {
+            BtnBluff.IsEnabled = !string.IsNullOrWhiteSpace(_tableName);
+            BtnBluff.IsChecked = TableBluffModes.IsOn(_tableName);
         }
 
         private void Pick_Click(object sender, RoutedEventArgs e)
@@ -53,6 +66,8 @@ namespace Hud.App.Views
             {
                 _path = dlg.FileName;
                 PathText.Text = ExtractTableLabelFromFile(_path);
+                _tableName = ExtractTableNameFromFile(_path);
+                RefreshBluff();
             }
         }
 
@@ -73,10 +88,10 @@ namespace Hud.App.Views
 
             _path = path;
             PathText.Text = tableName;
-            if (!string.IsNullOrWhiteSpace(heroName))
-                _service.HeroName = heroName.Trim().TrimEnd(':').Trim();
+            _tableName = tableName;
+            RefreshBluff();
 
-            Start(path);
+            Start(path, heroName);
         }
 
         public bool IsRunning => _cts is not null;
@@ -95,6 +110,10 @@ namespace Hud.App.Views
 
         public IReadOnlyList<PlayerStats> GetPlayersSnapshot() =>
             _service.Players.ToList();
+
+        /// <summary>Para el HUD sobre la mesa: jugadores, asientos de la ultima mano y tamano de la mesa.</summary>
+        public HudTableSnapshot GetHudSnapshot() =>
+            new(_service.Players.ToList(), _service.Seats, _service.TableSize, _service.Stake, _service.LastHandLines, _service.LastHandAt, _path);
 
         public RealTimeTableReportRow GetReportSnapshot() =>
             new(
@@ -116,13 +135,28 @@ namespace Hud.App.Views
             Stop();
             _path = null;
             PathText.Text = "(mesa)";
+            _tableName = null;
+            RefreshBluff();
         }
 
         private void Stop_Click(object sender, RoutedEventArgs e) => Stop();
 
+        /// <summary>Nota y color del jugador de esa fila.</summary>
+        private void NoteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement { Tag: string name } || string.IsNullOrWhiteSpace(name))
+                return;
+            var window = new PlayerNoteWindow(name) { Owner = Window.GetWindow(this) };
+            window.ShowDialog();
+            e.Handled = true;
+        }
+
         private void PlayersGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (sender is not DataGrid grid)
+                return;
+            // El boton "Nota" tiene su propia accion: no abre la ficha del jugador.
+            if (FindAncestor<Button>(e.OriginalSource as DependencyObject) is not null)
                 return;
             var row = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject);
             if (row?.Item is not PlayerStats player)
@@ -170,7 +204,7 @@ namespace Hud.App.Views
             return null;
         }
 
-        private void Start(string path)
+        private void Start(string path, string? heroName = null)
         {
             Stop();
             _lines = 0;
@@ -183,6 +217,12 @@ namespace Hud.App.Views
 
             // Muestra solo el nombre de mesa (o filename si no se detecta)
             PathText.Text = ExtractTableLabelFromFile(path);
+
+            // El heroe conocido se fija despues de Stop(), que lo borra, y antes de arrancar el
+            // servicio: asignado antes, Stop() lo descartaba siempre. Sin heroe se sigue
+            // autodetectando con el primer "Dealt to" del archivo.
+            if (!string.IsNullOrWhiteSpace(heroName))
+                _service.HeroName = heroName.Trim().TrimEnd(':').Trim();
 
             _service.Start(path);
 
@@ -302,14 +342,19 @@ namespace Hud.App.Views
         private static bool TryParseHandTimestamp(string line, out DateTime timestamp)
         {
             timestamp = default;
-            var match = HeaderTimestampRx.Match(line);
-            return match.Success
-                && DateTime.TryParseExact(
-                    match.Groups["stamp"].Value,
-                    "yyyy/MM/dd HH:mm:ss",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out timestamp);
+
+            // Corre por cada linea leida: IsMatch descarta sin asignar memoria las que no son
+            // cabecera y solo estas van al parseo compartido, que acepta horas de un digito
+            // ("9:05:00") que el formato "HH" local rechazaba.
+            if (!PokerStarsHandHistory.HeaderTimestampRx.IsMatch(line))
+                return false;
+
+            var parsed = PokerStarsHandHistory.ExtractTimestamp(new[] { line });
+            if (parsed is null)
+                return false;
+
+            timestamp = parsed.Value;
+            return true;
         }
 
         private static string FormatTimestamp(DateTime? timestamp) =>

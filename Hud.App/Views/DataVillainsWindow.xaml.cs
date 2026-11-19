@@ -18,8 +18,6 @@ namespace Hud.App.Views
     public partial class DataVillainsWindow : Window
     {
         private static readonly Regex HandStartRx = PokerStarsHandHistory.HandStartRx;
-        private static readonly Regex HeaderTimestampRx =
-            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
         private static readonly Regex SeatRx =
             PokerStarsHandHistory.SeatRx;
         private static readonly Regex ActionNameRx =
@@ -49,9 +47,22 @@ namespace Hud.App.Views
             DataContext = this;
             SummaryText.Text = summary;
 
-            LoadVillains();
-            ConfigureFilters();
-            ApplyFilters();
+            // Reconstruir el historial de villanos lee todos los archivos: en segundo plano.
+            Villains.Clear();
+            _allVillains.Clear();
+            BackgroundLoad.Run(this,
+                () =>
+                {
+                    var rows = BuildHistory(_tables, out var sourceTables);
+                    return (Rows: rows, SourceTables: sourceTables);
+                },
+                result =>
+                {
+                    _allVillains.AddRange(result.Rows);
+                    VillainHistoryStore.Replace(_allVillains, result.SourceTables);
+                    ConfigureFilters();
+                    ApplyFilters();
+                });
         }
 
         private void FitToWorkArea()
@@ -66,16 +77,6 @@ namespace Hud.App.Views
             Left = workArea.Width > Width
                 ? workArea.Left + (workArea.Width - Width) / 2
                 : workArea.Left;
-        }
-
-        private void LoadVillains()
-        {
-            Villains.Clear();
-            _allVillains.Clear();
-
-            var rows = BuildHistory(_tables, out var sourceTables);
-            _allVillains.AddRange(rows);
-            VillainHistoryStore.Replace(_allVillains, sourceTables);
         }
 
         public static IReadOnlyList<DataVillainRow> BuildHistory(
@@ -245,6 +246,53 @@ namespace Hud.App.Views
                 ApplyFilters();
         }
 
+        // "De un vistazo": los rivales contra los que mas ganas (verde) y los que mas te ganan
+        // (rojo), y cuantos hay de cada perfil. Se recalcula con los filtros.
+        private void UpdateVisualSummary()
+        {
+            var text = Hud.App.Services.LocalizationManager.Text;
+            var withResult = Villains.Where(row => Math.Abs(row.TotalNetBb) >= 0.05).ToList();
+
+            // Con muchos rivales, solo los extremos: los 7 que mas te dan y los 7 que mas te quitan.
+            var selected = withResult.Count <= 14
+                ? withResult
+                : withResult.OrderByDescending(row => row.TotalNetBb).Take(7)
+                    .Concat(withResult.OrderBy(row => row.TotalNetBb).Take(7))
+                    .ToList();
+
+            VillainResultBars.Items = selected
+                .OrderByDescending(row => row.TotalNetBb)
+                .Select(row => new Charts.BarDatum(
+                    row.Name,
+                    row.TotalNetBb,
+                    $"{row.TotalNetBb.ToString("+0.#;-0.#;0", CultureInfo.InvariantCulture)} bb",
+                    $"{row.Profile}  ·  {row.TotalHandsVsHero} {text("Visual.Hands")}",
+                    $"{row.Name}  ({row.Profile})\n" +
+                    $"{row.TotalHandsVsHero} {text("Visual.Hands")}  ·  {row.RecentTable}\n" +
+                    $"VPIP {row.VPIPPct:0.#}%  ·  PFR {row.PFRPct:0.#}%  ·  3Bet {row.ThreeBetPct:0.#}%  ·  AF {row.AF:0.#}\n" +
+                    $"WTSD {row.WTSDPct:0.#}%  ·  W$SD {row.WSDPct:0.#}%",
+                    row))
+                .ToList();
+
+            VillainTypeBars.Items = Villains
+                .GroupBy(row => row.Profile)
+                .OrderByDescending(group => group.Count())
+                .Select(group => new Charts.BarDatum(
+                    group.Key,
+                    group.Count(),
+                    $"{group.Count()}",
+                    null,
+                    $"{group.Key}: {group.Count()} {text("Visual.Opponents")}\n" +
+                    string.Join(", ", group.Take(8).Select(row => row.Name)) + (group.Count() > 8 ? "..." : "")))
+                .ToList();
+        }
+
+        private void VillainResultBars_ItemClicked(object sender, RoutedEventArgs e)
+        {
+            if (VillainResultBars.LastClicked?.Payload is DataVillainRow row)
+                AppNavigator.Open(new DataVillainDetailWindow(row, _tables));
+        }
+
         private void VillainsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (VillainsGrid.SelectedItem is not DataVillainRow row)
@@ -257,7 +305,7 @@ namespace Hud.App.Views
             };
 
             VillainsGrid.SelectedItem = null;
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void ApplyFilters()
@@ -286,7 +334,8 @@ namespace Hud.App.Views
             foreach (var row in query)
                 Villains.Add(row);
 
-            SummaryText.Text = $"{SummaryBaseText()} | {Hud.App.Services.LocalizationManager.Text("Common.TotalVillains")}: {Villains.Count}/{_allVillains.Count}";
+            SummaryText.Text = string.Join(" | ", new[] { SummaryBaseText(), $"{Hud.App.Services.LocalizationManager.Text("Common.TotalVillains")}: {Villains.Count}/{_allVillains.Count}" }.Where(part => !string.IsNullOrWhiteSpace(part)));
+            UpdateVisualSummary();
         }
 
         private string SummaryBaseText()
@@ -480,25 +529,10 @@ namespace Hud.App.Views
             return PokerStarsHandHistory.HandHasPlayerActivity(hand, playerName);
         }
 
+        // Sin copia local de la regex: la que habia no aceptaba horas de un digito ("9:05:00").
         private static DateTime? ExtractTimestamp(IReadOnlyList<string> hand)
         {
-            foreach (var line in hand)
-            {
-                var match = HeaderTimestampRx.Match(line);
-                if (!match.Success) continue;
-
-                if (DateTime.TryParseExact(
-                    match.Groups["stamp"].Value,
-                    "yyyy/MM/dd HH:mm:ss",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var timestamp))
-                {
-                    return timestamp;
-                }
-            }
-
-            return null;
+            return PokerStarsHandHistory.ExtractTimestamp(hand);
         }
 
         private static double EstimateHeroNetForHand(IReadOnlyList<string> hand, string heroName)
@@ -599,19 +633,8 @@ namespace Hud.App.Views
                 : new SolidColorBrush(Color.FromRgb(226, 78, 91));
         }
 
-        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
-        {
-            if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
-            if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
-            if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-                if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
-            if (vpip >= 28 && pfr >= 20) return "LAG";
-            if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
-            if (vpip < 14 && pfr < 10) return "Nit";
-            if (vpip < 22 && pfr < 15) return "Tight";
-                if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
-                return LocalizationManager.Text("Tag.Regular");
-        }
+        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af) =>
+            Hud.App.Services.PlayerProfileClassifier.Classify(hands, vpip, pfr, threeBet, af);
     }
 }
 

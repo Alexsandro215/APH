@@ -26,7 +26,7 @@
     </Style>
 
     <Style x:Key="ValueText" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="FontSize" Value="16"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
@@ -41,7 +41,7 @@
     </Style>
 
     <Style x:Key="HandListItem" TargetType="ListBoxItem">
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="Background" Value="{Binding ResultBackground}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
       <Setter Property="BorderThickness" Value="0,0,0,1"/>
@@ -59,7 +59,7 @@
     </Style>
 
     <Style x:Key="ActionText" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
       <Setter Property="Padding" Value="6,3"/>
       <Setter Property="Margin" Value="0,0,0,3"/>
@@ -201,6 +201,22 @@
               <Binding Source="VPIP"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="VPIPPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="VPIP"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="VPIPPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="VPIP"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding PFRPct, StringFormat=PFR {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -211,6 +227,22 @@
               <Binding Source="PFR"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="PFRPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="PFR"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="PFRPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="PFR"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding ThreeBetPct, StringFormat=3Bet {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -221,6 +253,22 @@
               <Binding Source="THREEBET"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="ThreeBetPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="THREEBET"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="ThreeBetPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="THREEBET"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding AF, StringFormat=AF {0:0.#}}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -231,6 +279,22 @@
               <Binding Source="AF"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="AF"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="AF"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="AF"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="AF"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding AFqPct, StringFormat=AFq {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -241,6 +305,22 @@
               <Binding Source="AFQ"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="AFqPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="AFQ"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="AFqPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="AFQ"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding CBetFlopPct, StringFormat=CBet {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -251,6 +331,22 @@
               <Binding Source="CBF"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="CBetFlopPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="CBF"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="CBetFlopPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="CBF"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat=FvCB {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -261,6 +357,22 @@
               <Binding Source="FVCBF"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="FoldVsCBetFlopPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="FVCBF"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="FoldVsCBetFlopPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="FVCBF"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding WTSDPct, StringFormat=WTSD {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -271,6 +383,22 @@
               <Binding Source="WTSD"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="WTSDPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WTSD"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="WTSDPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WTSD"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding WSDPct, StringFormat=W$SD {0:0.#}%}" Style="{StaticResource StatCellText}" Margin="0,0,2,0">
           <TextBlock.Background>
@@ -281,6 +409,22 @@
               <Binding Source="WSD"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="WSDPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WSD"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="WSDPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WSD"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
         <TextBlock Text="{Binding WWSFPct, StringFormat=WWSF {0:0.#}%}" Style="{StaticResource StatCellText}">
           <TextBlock.Background>
@@ -291,6 +435,22 @@
               <Binding Source="WWSF"/>
             </MultiBinding>
           </TextBlock.Background>
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+              <Binding Path="WWSFPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WWSF"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+          <TextBlock.ToolTip>
+            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+              <Binding Path="WWSFPct"/>
+              <Binding Path="HandsReceived"/>
+              <Binding Path="Stake"/>
+              <Binding Source="WWSF"/>
+            </MultiBinding>
+          </TextBlock.ToolTip>
         </TextBlock>
       </UniformGrid>
     </Border>
@@ -320,7 +480,7 @@
                    ItemsSource="{Binding Hands}"
                    SelectedItem="{Binding SelectedHand, Mode=TwoWay}"
                    ItemContainerStyle="{StaticResource HandListItem}"
-                   Background="{StaticResource BgDark}"
+                   Background="{DynamicResource BgDark}"
                    BorderThickness="0"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
@@ -355,7 +515,7 @@
                   </Viewbox>
 
                   <StackPanel Panel.ZIndex="1">
-                    <TextBlock Text="{Binding HandNumberLabel}" FontWeight="SemiBold" Foreground="{StaticResource FgLight}"/>
+                    <TextBlock Text="{Binding HandNumberLabel}" FontWeight="SemiBold" Foreground="{DynamicResource FgLight}"/>
                     <ContentControl Content="{Binding CardChips}"
                                     ContentTemplate="{StaticResource CardChipListTemplate}"
                                     Margin="0,2,0,0"/>
@@ -417,25 +577,25 @@
         </Grid.RowDefinitions>
         <Grid Margin="0,0,0,8">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-            <TextBlock Text="{Binding SelectedHand.HandNumberLabel}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource FgLight}"/>
-            <TextBlock Text=" | " FontSize="16" FontWeight="Bold" Foreground="{StaticResource FgLight}"/>
+            <TextBlock Text="{Binding SelectedHand.HandNumberLabel}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource FgLight}"/>
+            <TextBlock Text=" | " FontSize="16" FontWeight="Bold" Foreground="{DynamicResource FgLight}"/>
             <ContentControl Content="{Binding SelectedHand.CardChips}"
                             ContentTemplate="{StaticResource CardChipListTemplate}"
                             VerticalAlignment="Center"/>
-            <TextBlock Text="{Binding SelectedHandTitleSuffix}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource FgLight}"/>
+            <TextBlock Text="{Binding SelectedHandTitleSuffix}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource FgLight}"/>
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
             <TextBlock Text="{Binding SelectedHand.ResultSummary}" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" FontSize="14"/>
             <TextBlock Text=" | " FontWeight="Bold" Foreground="{DynamicResource Brush.TextDim}" Margin="5,0"/>
-            <TextBlock Text="{Binding SelectedHand.MadeHand}" FontWeight="Bold" Foreground="{StaticResource FgLight}" FontSize="14"/>
+            <TextBlock Text="{Binding SelectedHand.MadeHand}" FontWeight="Bold" Foreground="{DynamicResource FgLight}" FontSize="14"/>
 
             <StackPanel Orientation="Horizontal" Visibility="{Binding SelectedHand.HasVillainCards, Converter={StaticResource BoolToVisibility}}" Margin="15,0,0,0">
               <TextBlock Text=" vs " Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
               <TextBlock Text="{Binding SelectedHand.VillainName}" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" VerticalAlignment="Center" Margin="0,0,8,0"/>
               <ContentControl Content="{Binding SelectedHand.VillainCardChips}" ContentTemplate="{StaticResource CardChipListTemplate}" VerticalAlignment="Center"/>
               <TextBlock Text=" (" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
-              <TextBlock Text="{Binding SelectedHand.VillainCombination}" Foreground="{StaticResource FgLight}" VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding SelectedHand.VillainCombination}" Foreground="{DynamicResource FgLight}" VerticalAlignment="Center"/>
               <TextBlock Text=")" Foreground="{DynamicResource Brush.TextDim}" VerticalAlignment="Center"/>
             </StackPanel>
           </StackPanel>

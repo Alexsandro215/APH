@@ -28,9 +28,9 @@ namespace Hud.App.Services
             new ThemePalette(
                 "classic",
                 "Classic Poker",
-                "Mesa tradicional verde con acentos azulados.",
-                ColorFrom("#0C1016"), ColorFrom("#0F141C"), ColorFrom("#141B24"), ColorFrom("#223040"),
-                ColorFrom("#E7EEF5"), ColorFrom("#A4B8CB"), ColorFrom("#21C07A"), ColorFrom("#1AA1D1"),
+                "Pano verde clasico con esmeralda y oro.",
+                ColorFrom("#06120C"), ColorFrom("#0B1D14"), ColorFrom("#10281B"), ColorFrom("#1F4A33"),
+                ColorFrom("#EAF7EF"), ColorFrom("#9CC3AD"), ColorFrom("#34D399"), ColorFrom("#229A5E"),
                 ColorFrom("#E24E5B"), ColorFrom("#E3B341")),
             new ThemePalette(
                 "midnight",
@@ -210,11 +210,53 @@ namespace Hud.App.Services
             SetBrush(resources, "FgAccent", palette.Secondary);
             SetBrush(resources, "BtnBg", palette.Secondary);
             SetBrush(resources, "BtnBgHover", Darken(palette.Secondary, 0.75));
+            // Fila del heroe en Tiempo real: la tarjeta tenida con el acento (antes verde fijo).
+            SetBrush(resources, "HeroRow", Mix(palette.Card, palette.Accent, 0.16));
+            SetBrush(resources, "HeroRowSelected", Mix(palette.Card, palette.Accent, 0.28));
+            SetBrush(resources, "HeroRowAccent", palette.Accent);
             SetBrush(resources, "Brush.Glow", WithAlpha(palette.Accent, 0x45));
             SetBrush(resources, "Brush.GlowTransparent", WithAlpha(palette.Accent, 0x00));
             SetColor(resources, "Col.Glow", WithAlpha(palette.Accent, 0x45));
             SetColor(resources, "Col.GlowTransparent", WithAlpha(palette.Accent, 0x00));
+            // El fondo de las ventanas se rehace con los colores nuevos. Antes era un VisualBrush del
+            // XAML cuyo contenido no esta en ninguna ventana: no se enteraba del cambio de aspecto y
+            // se quedaba verde hasta reiniciar APH.
+            resources["Brush.AppShell"] = BuildShellBrush(palette);
             PaletteApplied?.Invoke(null, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Fondo de las ventanas: degradado del tema y un brillo suave del color de acento abajo a la
+        /// derecha. Sin el logo de marca de agua: quedaba tapado por las tarjetas y solo se veia "PH".
+        /// </summary>
+        private static Brush BuildShellBrush(ThemePalette palette)
+        {
+            var area = new Rect(0, 0, 1440, 900);
+            var gradient = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new(palette.Background, 0),
+                    new(palette.Panel, 0.58),
+                    new(palette.Card, 1)
+                },
+                new Point(0, 0),
+                new Point(1, 1));
+
+            var glowColor = WithAlpha(palette.Accent, 0x1D);
+            var glow = new RadialGradientBrush(new GradientStopCollection
+            {
+                new(glowColor, 0),
+                new(glowColor, 0.36),
+                new(WithAlpha(palette.Accent, 0), 1)
+            });
+
+            var drawing = new DrawingGroup { ClipGeometry = new RectangleGeometry(area) };
+            drawing.Children.Add(new GeometryDrawing(gradient, null, new RectangleGeometry(area)));
+            drawing.Children.Add(new GeometryDrawing(glow, null, new EllipseGeometry(new Point(1413, 941), 437, 328)));
+
+            var brush = new DrawingBrush(drawing) { Stretch = Stretch.Fill, Viewbox = area, ViewboxUnits = BrushMappingMode.Absolute };
+            brush.Freeze();
+            return brush;
         }
 
         private static void SetColor(ResourceDictionary resources, string key, Color color)
@@ -236,6 +278,12 @@ namespace Hud.App.Services
 
         private static Color WithAlpha(Color color, byte alpha) =>
             Color.FromArgb(alpha, color.R, color.G, color.B);
+
+        private static Color Mix(Color from, Color to, double amount) =>
+            Color.FromRgb(
+                (byte)Math.Round(from.R + (to.R - from.R) * amount),
+                (byte)Math.Round(from.G + (to.G - from.G) * amount),
+                (byte)Math.Round(from.B + (to.B - from.B) * amount));
 
         private static Color Darken(Color color, double factor) =>
             Color.FromRgb((byte)(color.R * factor), (byte)(color.G * factor), (byte)(color.B * factor));

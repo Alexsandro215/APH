@@ -96,19 +96,13 @@ namespace Hud.App.Views
             Binding.DoNothing;
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
 
+        // Los mismos colores que la capsula del HUD sobre la mesa (PlayerHistoryIndex.SampleColor).
         private static Brush SampleBrush(int hands) =>
-            hands switch
-            {
-                >= 10000 => BrushFrom(245, 247, 250),
-                >= 5000 => BrushFrom(109, 40, 217),
-                >= 1000 => BrushFrom(183, 144, 255),
-                >= 500 => BrushFrom(215, 198, 0),
-                >= 200 => BrushFrom(33, 192, 122),
-                >= 100 => BrushFrom(159, 232, 182),
-                _ => BrushFrom(18, 20, 24)
-            };
+            PlayerHistoryIndex.SampleColor(hands) is { } color
+                ? BackgroundLoad.Frozen(new SolidColorBrush(color))
+                : BrushFrom(18, 20, 24);
     }
 
     public sealed class PlayerHistoryTextBrushConverter : IValueConverter
@@ -127,6 +121,7 @@ namespace Hud.App.Views
                 >= 500 => Brushes.Black,
                 >= 200 => Brushes.Black,
                 >= 100 => Brushes.Black,
+                >= 30 => Brushes.Black,
                 _ => BrushFrom(242, 244, 248)
             };
         }
@@ -135,7 +130,7 @@ namespace Hud.App.Views
             Binding.DoNothing;
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
     }
 
     public sealed class PlayerStatsSummary
@@ -226,43 +221,38 @@ namespace Hud.App.Views
 
             if (hands < 30)
                 tags.Add(Neutral(LocalizationManager.Text("Tag.NoSample")));
-            if (vpip >= 35)
+
+            // Alto o bajo con la escala unica de APH (StatScale, la de los colores): "alto" es por encima del
+            // percentil 85 de los jugadores normales y "bajo" por debajo del 15. Antes eran numeros fijos.
+            bool High(string key, double value) => StatScale.Level(key, value, hands) >= StatLevel.High;
+            bool Low(string key, double value) => StatScale.Level(key, value, hands) is StatLevel.Low or StatLevel.VeryLow;
+
+            if (High("VPIP", vpip))
                 tags.Add(Negative(LocalizationManager.Text("Tag.PlaysManyHands")));
-            if (pfr >= 20)
+            if (High("PFR", pfr))
                 tags.Add(Neutral(LocalizationManager.Text("Tag.AggressivePreflop")));
-            if (pfr > 0 && pfr < 10)
+            if (Low("PFR", pfr))
                 tags.Add(Neutral(LocalizationManager.Text("Tag.LowPfr")));
-            if (threeBet >= 10)
+            if (High("THREEBET", threeBet))
                 tags.Add(Negative(LocalizationManager.Text("Tag.High3Bet")));
-            if (af >= 4 || afq >= 65)
+            if (High("AF", af) || High("AFQ", afq))
                 tags.Add(Negative(LocalizationManager.Text("Tag.Aggressor")));
-            if (foldVsCBet >= 65)
+            if (High("FVCBF", foldVsCBet))
                 tags.Add(Positive(LocalizationManager.Text("Tag.FoldsCBetShort")));
-            if (foldVsCBet > 0 && foldVsCBet <= 30)
+            if (Low("FVCBF", foldVsCBet))
                 tags.Add(Negative(LocalizationManager.Text("Tag.NoFoldCBet")));
-            if (wtsd >= 35)
+            if (High("WTSD", wtsd))
                 tags.Add(Negative(LocalizationManager.Text("Tag.GoesShowdown")));
-            if (wsd >= 55)
+            if (High("WSD", wsd))
                 tags.Add(Positive(LocalizationManager.Text("Tag.StrongShowdown")));
-            if (wsd > 0 && wsd < 45)
+            if (Low("WSD", wsd))
                 tags.Add(Negative(LocalizationManager.Text("Tag.WeakShowdown")));
 
             return tags;
         }
 
-        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af)
-        {
-            if (hands < 30) return LocalizationManager.Text("Tag.NoSample");
-            if (vpip >= 40 && pfr <= 10 && af < 1.5) return "Fish";
-            if (vpip >= 45 || af >= 5 || threeBet >= 15) return "Maniac";
-            if (vpip >= 35 && pfr < 15) return LocalizationManager.Text("Tag.LoosePassive");
-            if (vpip >= 28 && pfr >= 20) return "LAG";
-            if (vpip >= 18 && vpip < 29 && pfr >= 13 && pfr < 24) return "TAG";
-            if (vpip < 14 && pfr < 10) return "Nit";
-            if (vpip < 22 && pfr < 15) return "Tight";
-            if (af < 1.2) return LocalizationManager.Text("Tag.Passive");
-            return LocalizationManager.Text("Tag.Regular");
-        }
+        private static string ClassifyProfile(int hands, double vpip, double pfr, double threeBet, double af) =>
+            Hud.App.Services.PlayerProfileClassifier.Classify(hands, vpip, pfr, threeBet, af);
 
         private static PlayerTagSummary Positive(string text) =>
             new(text, BrushFrom(16, 76, 52), BrushFrom(33, 192, 122), Brushes.White);
@@ -271,10 +261,10 @@ namespace Hud.App.Views
             new(text, BrushFrom(98, 21, 32), BrushFrom(226, 78, 91), Brushes.White);
 
         private static PlayerTagSummary Neutral(string text) =>
-            new(text, BrushFrom(28, 40, 54), BrushFrom(86, 108, 132), Brushes.White);
+            new(text, Hud.App.Services.ThemeBrushes.NeutralBackground, Hud.App.Services.ThemeBrushes.NeutralBorder, Hud.App.Services.ThemeBrushes.Text);
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
 
     }
 

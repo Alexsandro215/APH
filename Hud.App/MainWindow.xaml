@@ -3,15 +3,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Hud.App.Views"
         Title="{DynamicResource App.Title}"
-        Height="880" Width="1250"
-        MinHeight="800" MinWidth="1150"
+        Height="900" Width="1600"
+        MinHeight="760" MinWidth="1180"
         WindowStartupLocation="CenterScreen">
+
+  <!--
+    Diseno de una sola ventana: menu lateral con secciones, barra superior con "Volver" y un
+    area de paginas. Las funciones de analisis se muestran aqui dentro (MainWindow.Navigation.cs);
+    Tiempo real y Modo Entrenador siguen en ventanas propias para ponerlas junto a las mesas.
+  -->
 
   <Window.Resources>
     <views:StatToBrushConverter x:Key="StatToBrush"/>
     <views:StatTextBrushConverter x:Key="StatTextBrush"/>
     <views:BoolToModeConverter x:Key="BoolToModeConverter"/>
-    
+
     <Style x:Key="ChartToolTipStyle" TargetType="ToolTip">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderBrush" Value="Transparent"/>
@@ -29,9 +35,9 @@
         <Setter.Value>
           <ControlTemplate TargetType="CheckBox">
             <StackPanel Orientation="Horizontal">
-              <Grid x:Name="SwitchRoot" Width="36" Height="18" Margin="0,0,8,0">
-                <Border x:Name="Background" CornerRadius="9" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"/>
-                <Border x:Name="Thumb" HorizontalAlignment="Left" Width="14" Height="14" Margin="2" CornerRadius="7" Background="{DynamicResource Brush.TextDim}"/>
+              <Grid x:Name="SwitchRoot" Width="40" Height="20" Margin="0,0,8,0">
+                <Border x:Name="Background" CornerRadius="10" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"/>
+                <Border x:Name="Thumb" HorizontalAlignment="Left" Width="14" Height="14" Margin="3" CornerRadius="7" Background="{DynamicResource Brush.TextDim}"/>
               </Grid>
               <ContentPresenter VerticalAlignment="Center"/>
             </StackPanel>
@@ -48,967 +54,1087 @@
       </Setter>
     </Style>
 
-    <Style TargetType="TextBlock">
+    <!-- Titulo de seccion del menu (PRINCIPAL, ANALISIS, EN VIVO) -->
+    <Style x:Key="NavSection" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="FontSize" Value="10.5"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Opacity" Value="0.75"/>
+      <Setter Property="Margin" Value="12,18,0,6"/>
+    </Style>
+
+    <!-- Elemento del menu que abre una pagina: queda marcado mientras la pagina esta abierta -->
+    <Style x:Key="NavItem" TargetType="RadioButton">
+      <Setter Property="GroupName" Value="MainNav"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Margin" Value="0,1"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Height="40" Padding="12,0">
+              <Grid>
+                <Border x:Name="Marker" Width="3" Height="18" CornerRadius="2" HorizontalAlignment="Left"
+                        Margin="-12,0,0,0" Background="{DynamicResource Brush.Accent}" Visibility="Collapsed"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <TextBlock x:Name="Icon" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                             Width="22" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                  <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.CardHover}"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.AccentSoft}"/>
+                <Setter TargetName="Marker" Property="Visibility" Value="Visible"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.CardHover}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Elemento del menu que hace una accion o abre una ventana aparte -->
+    <Style x:Key="NavAction" TargetType="Button">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Margin" Value="0,1"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Height="40" Padding="12,0">
+              <DockPanel VerticalAlignment="Center">
+                <TextBlock x:Name="Icon" DockPanel.Dock="Left" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Width="22" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+              </DockPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.CardHover}"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.CardHover}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.Inset}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Tarjeta del panel -->
+    <Style x:Key="DashCard" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource Brush.Panel}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="Padding" Value="20"/>
+    </Style>
+
+    <Style x:Key="CardTitle" TargetType="TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+
+    <Style x:Key="CardHint" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
+    </Style>
+
+    <!-- Indicador grande (Manos, Mesas, Ganancia, Winrate) -->
+    <Style x:Key="KpiTile" TargetType="Border" BasedOn="{StaticResource DashCard}">
+      <Setter Property="Margin" Value="0,0,14,0"/>
+      <Setter Property="Padding" Value="18,16"/>
+    </Style>
+
+    <Style x:Key="KpiIcon" TargetType="Border">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}"/>
+      <Setter Property="Margin" Value="0,0,14,0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="KpiLabel" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="KpiValue" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontSize" Value="26"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
+      <Setter Property="TextWrapping" Value="NoWrap"/>
+    </Style>
+
+    <!-- Casilla de estadistica del heroe -->
+    <Style x:Key="StatTile" TargetType="Border">
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,9"/>
+      <Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style x:Key="StatTileLabel" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Opacity" Value="0.85"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="StatTileLevel" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Opacity" Value="0.9"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="0,1,0,0"/>
+    </Style>
+
+    <Style x:Key="StatTileValue" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="19"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
     </Style>
   </Window.Resources>
 
   <Grid Background="{DynamicResource Brush.AppShell}">
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="72"/>
+      <ColumnDefinition Width="236"/>
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-    </Grid.RowDefinitions>
-    <Border Grid.RowSpan="2" Grid.Column="0" Style="{StaticResource CockpitRail}">
-      <Grid Margin="12,18">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-          <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
 
-        <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource Brush.AccentSoft}" BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1">
-          <Viewbox Stretch="Uniform" Margin="10">
-            <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="{DynamicResource Brush.Accent}" FontWeight="Bold"/>
-          </Viewbox>
+    <!-- ===================== MENU LATERAL ===================== -->
+    <Border Grid.Column="0"
+            Background="{DynamicResource Brush.Panel}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="0,0,1,0">
+      <DockPanel Margin="12,18,12,12">
+        <DockPanel.Resources>
+          <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+          </Style>
+        </DockPanel.Resources>
+
+        <!-- Marca -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,0,0,18">
+          <!-- Pica dibujada como figura: el caracter de la fuente quedaba bajo dentro del cuadro -->
+          <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Brush.Accent}">
+            <Path Width="20" Height="22" Stretch="Uniform" Fill="{DynamicResource Brush.Bg}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Data="M12,1 C12,1 2.5,8.2 2.5,13.6 C2.5,16.9 4.8,19.1 7.8,19.1 C9.4,19.1 10.7,18.4 11.3,17.3 C11.1,19.6 10,21.4 8.3,23 L15.7,23 C14,21.4 12.9,19.6 12.7,17.3 C13.3,18.4 14.6,19.1 16.2,19.1 C19.2,19.1 21.5,16.9 21.5,13.6 C21.5,8.2 12,1 12,1 Z"/>
+          </Border>
+          <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="APH" FontSize="20" FontWeight="Bold"/>
+            <TextBlock Text="Analyzer Poker Hands" FontSize="11" Foreground="{DynamicResource Brush.TextDim}"/>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Sala activa -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1" CornerRadius="10" Padding="10,8" Margin="0,0,0,4">
+          <StackPanel>
+            <TextBlock x:Name="ActiveRoomLabel" Text="{DynamicResource Main.ActiveRoom}" FontSize="11" FontWeight="Bold"
+                       Foreground="{DynamicResource Brush.TextDim}" Margin="2,0,0,6"/>
+            <ComboBox x:Name="PokerRoomCombo" Height="32" HorizontalAlignment="Stretch"
+                      SelectionChanged="PokerRoomCombo_SelectionChanged"
+                      AutomationProperties.Name="{DynamicResource Main.ActiveRoom}"/>
+          </StackPanel>
         </Border>
 
-        <StackPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,28,0,0">
-          <Button Style="{StaticResource RailIconButton}" Click="BtnHeroProfile_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailHeroProfile}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailHeroProfileDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+        <!-- Acciones de abajo -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+          <Border Height="1" Background="{DynamicResource Brush.Border}" Margin="6,0,6,8"/>
+          <Button Style="{StaticResource NavAction}" Tag="&#xE8B7;" Click="BtnPickFolder_Click"
+                  ToolTip="{DynamicResource Main.RailRoomsDesc}" AutomationProperties.Name="{DynamicResource Main.RailRooms}">
+            <TextBlock Text="{DynamicResource Main.RailRooms}"/>
           </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnRT_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailRealTime}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailRealTimeDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          <Button Style="{StaticResource NavAction}" Tag="&#xE713;" Click="BtnSettings_Click"
+                  ToolTip="{DynamicResource Settings.Subtitle}" AutomationProperties.Name="{DynamicResource Main.SettingsTip}">
+            <TextBlock Text="{DynamicResource Main.SettingsTip}"/>
           </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnAll_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailTables}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailTablesDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnGain_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailGain}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailGainDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnOne_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailMyTables}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailMyTablesDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnBestWorst_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailVillains}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailVillainsDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnLeakFinder_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailLeaks}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailLeaksDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnSessions_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailSessions}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailSessionsDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-        </StackPanel>
-
-        <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
-          <Button x:Name="LiteModeButton"
-                  Style="{StaticResource RailIconButton}"
-                  Click="BtnLiteMode_Click"
-                  Height="54">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailLiteMode}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailLiteModeDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <StackPanel>
-              <TextBlock x:Name="LiteModePrimaryText" Text="LITE" FontSize="10" FontWeight="Bold" TextAlignment="Center" Foreground="{DynamicResource Brush.Accent}"/>
-              <TextBlock x:Name="LiteModeSecondaryText" Text="MODE" FontSize="9" FontWeight="Bold" TextAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+          <Button x:Name="LiteModeButton" Style="{StaticResource NavAction}" Tag="&#xE8A9;" Click="BtnLiteMode_Click"
+                  ToolTip="{DynamicResource Main.RailLiteModeDesc}" AutomationProperties.Name="{DynamicResource Main.RailLiteMode}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock x:Name="LiteModePrimaryText" Text="LITE"/>
+              <TextBlock Text=" "/>
+              <TextBlock x:Name="LiteModeSecondaryText" Text="MODE"/>
             </StackPanel>
           </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnPickFolder_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailRooms}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailRoomsDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnSettings_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.SettingsTip}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Settings.Subtitle}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
-          </Button>
-          <Button Style="{StaticResource RailIconButton}" Click="BtnLogout_Click">
-            <Button.ToolTip>
-              <ToolTip Style="{StaticResource FunctionToolTipStyle}">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Main.RailLogout}" Style="{StaticResource FunctionTipTitle}"/>
-                  <TextBlock Text="{DynamicResource Main.RailLogoutDesc}" Style="{StaticResource FunctionTipDetail}"/>
-                </StackPanel>
-              </ToolTip>
-            </Button.ToolTip>
-            <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="19"/>
+          <Button Style="{StaticResource NavAction}" Tag="&#xE8AC;" Click="BtnLogout_Click"
+                  ToolTip="{DynamicResource Main.RailLogoutDesc}" AutomationProperties.Name="{DynamicResource Main.RailLogout}">
+            <TextBlock Text="{DynamicResource Main.RailLogout}"/>
           </Button>
         </StackPanel>
-      </Grid>
+
+        <!-- Navegacion -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="{DynamicResource Main.NavSectionMain}" Style="{StaticResource NavSection}"/>
+            <RadioButton x:Name="NavDashboard" Style="{StaticResource NavItem}" Tag="&#xE80F;" IsChecked="True"
+                         Click="NavDashboard_Click" AutomationProperties.Name="{DynamicResource Main.NavDashboard}">
+              <TextBlock Text="{DynamicResource Main.NavDashboard}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavHeroProfile" Style="{StaticResource NavItem}" Tag="&#xE77B;"
+                         Click="BtnHeroProfile_Click" ToolTip="{DynamicResource Main.RailHeroProfileDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailHeroProfile}">
+              <TextBlock Text="{DynamicResource Main.RailHeroProfile}"/>
+            </RadioButton>
+
+            <TextBlock Text="{DynamicResource Main.NavSectionAnalysis}" Style="{StaticResource NavSection}"/>
+            <RadioButton x:Name="NavTables" Style="{StaticResource NavItem}" Tag="&#xE9D2;"
+                         Click="BtnAll_Click" ToolTip="{DynamicResource Main.RailTablesDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailTables}">
+              <TextBlock Text="{DynamicResource Main.RailTables}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavMyTables" Style="{StaticResource NavItem}" Tag="&#xE8A5;"
+                         Click="BtnOne_Click" ToolTip="{DynamicResource Main.RailMyTablesDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailMyTables}">
+              <TextBlock Text="{DynamicResource Main.RailMyTables}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavGain" Style="{StaticResource NavItem}" Tag="&#xE8A1;"
+                         Click="BtnGain_Click" ToolTip="{DynamicResource Main.RailGainDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailGain}">
+              <TextBlock Text="{DynamicResource Main.RailGain}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavVillains" Style="{StaticResource NavItem}" Tag="&#xE716;"
+                         Click="BtnBestWorst_Click" ToolTip="{DynamicResource Main.RailVillainsDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailVillains}">
+              <TextBlock Text="{DynamicResource Main.RailVillains}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavLeaks" Style="{StaticResource NavItem}" Tag="&#xE9D9;"
+                         Click="BtnLeakFinder_Click" ToolTip="{DynamicResource Main.RailLeaksDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailLeaks}">
+              <TextBlock Text="{DynamicResource Main.RailLeaks}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavSessions" Style="{StaticResource NavItem}" Tag="&#xE8A7;"
+                         Click="BtnSessions_Click" ToolTip="{DynamicResource Main.RailSessionsDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailSessions}">
+              <TextBlock Text="{DynamicResource Main.RailSessions}"/>
+            </RadioButton>
+
+            <TextBlock Text="{DynamicResource Main.NavSectionLive}" Style="{StaticResource NavSection}"/>
+            <RadioButton x:Name="NavPreflop" Style="{StaticResource NavItem}" Tag="&#xE80A;"
+                         Click="BtnPreflop_Click" ToolTip="{DynamicResource Main.RailPreflopDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailPreflop}">
+              <TextBlock Text="{DynamicResource Main.RailPreflop}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavPractice" Style="{StaticResource NavItem}" Tag="&#xE9D5;"
+                         Click="BtnPractice_Click" ToolTip="{DynamicResource Main.RailPracticeDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailPractice}">
+              <TextBlock Text="{DynamicResource Main.RailPractice}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavSimulator" Style="{StaticResource NavItem}" Tag="&#xE7FC;"
+                         Click="BtnSimulator_Click" ToolTip="{DynamicResource Main.RailSimulatorDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailSimulator}">
+              <TextBlock Text="{DynamicResource Main.RailSimulator}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavPushFold" Style="{StaticResource NavItem}" Tag="&#xE945;"
+                         Click="BtnPushFold_Click" ToolTip="{DynamicResource Main.RailPushFoldDesc}"
+                         AutomationProperties.Name="{DynamicResource Main.RailPushFold}">
+              <TextBlock Text="{DynamicResource Main.RailPushFold}"/>
+            </RadioButton>
+            <Button Style="{StaticResource NavAction}" Tag="&#xE916;" Click="BtnRT_Click"
+                    ToolTip="{DynamicResource Main.RailRealTimeDesc}" AutomationProperties.Name="{DynamicResource Main.RailRealTime}">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                <TextBlock Text="{DynamicResource Main.RailRealTime}"/>
+              </DockPanel>
+            </Button>
+            <Button Style="{StaticResource NavAction}" Tag="&#xE7BE;" Click="BtnTrainer_Click"
+                    ToolTip="Lector de cartas en vivo y correccion de decisiones. Solo dinero ficticio." AutomationProperties.Name="Modo Entrenador">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                <TextBlock Text="Modo Entrenador"/>
+              </DockPanel>
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
     </Border>
 
-    <!-- HERO -->
-    <Border Grid.Column="1" Style="{StaticResource HeroCard}" Margin="18,24,24,6">
-      <Grid>
-        <DockPanel HorizontalAlignment="Left">
-          <Border Width="52" Height="52" CornerRadius="12" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Margin="0,0,14,0">
-            <Viewbox Stretch="Uniform">
-              <TextBlock Text="&#x2660;" FontFamily="Segoe UI Symbol" Foreground="{DynamicResource Brush.Accent}" FontWeight="Bold"/>
-            </Viewbox>
-          </Border>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="{DynamicResource App.Title}" FontSize="26" FontWeight="Bold"/>
-            <TextBlock Text="{DynamicResource Main.Subtitle}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
-            <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{DynamicResource Brush.Accent}" FontSize="12" Margin="0,5,0,0" Visibility="Collapsed"/>
-          </StackPanel>
-        </DockPanel>
-
-        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0">
-          <TextBlock x:Name="LastSessionText" Text="{DynamicResource Main.LastSession}" FontSize="13" FontWeight="SemiBold" Foreground="White" TextAlignment="Right"/>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <TextBlock x:Name="ActiveRoomLabel"
-                       Text="{DynamicResource Main.ActiveRoom}"
-                       Foreground="{DynamicResource Brush.TextDim}"
-                       FontSize="11"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0"/>
-            <ComboBox x:Name="PokerRoomCombo"
-                      Width="148"
-                      Height="30"
-                      SelectionChanged="PokerRoomCombo_SelectionChanged"/>
-          </StackPanel>
-        </StackPanel>
-      </Grid>
-    </Border>
-
-    <!-- Acciones -->
-    <ScrollViewer Grid.Row="1"
-                  Grid.Column="1"
-                  VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  PanningMode="VerticalOnly">
-    <Grid Margin="24,6,24,24">
+    <!-- ===================== AREA DE PAGINAS ===================== -->
+    <Grid Grid.Column="1">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
-      <!-- Dashboard -->
-      <Grid Grid.Row="0" Style="{StaticResource GlowPanelShell}">
-      <Border Style="{StaticResource PanelBackGlow}"/>
-      <Border Style="{StaticResource PanelCard}" Margin="0">
-        <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-          </Grid.RowDefinitions>
-
-          <Grid x:Name="GlobalStatsProHeader" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-              <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Accent}" Margin="0,0,10,0"/>
-              <StackPanel>
-                <TextBlock Text="{DynamicResource Main.PlayerIntel}" Style="{StaticResource SectionEyebrow}"/>
-                <TextBlock Text="{DynamicResource Main.GlobalStats}" Style="{StaticResource SectionHeading}"/>
-              </StackPanel>
+      <!-- Barra superior: volver, titulo de la pagina y estado -->
+      <Border Grid.Row="0" Padding="24,14,24,12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1"
+              Background="{DynamicResource Brush.Bg}">
+        <DockPanel>
+          <DockPanel.Resources>
+            <Style TargetType="TextBlock">
+              <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+              <Setter Property="TextWrapping" Value="NoWrap"/>
+            </Style>
+          </DockPanel.Resources>
+          <Button x:Name="BackButton" DockPanel.Dock="Left" Visibility="Collapsed" Click="BackButton_Click"
+                  Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center"
+                  AutomationProperties.Name="{DynamicResource Main.NavBack}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <TextBlock Text="{DynamicResource Main.NavBack}" VerticalAlignment="Center"/>
             </StackPanel>
-            <ItemsControl ItemsSource="{Binding HeroTags}" HorizontalAlignment="Right" VerticalAlignment="Center" MaxWidth="650">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel HorizontalAlignment="Right"/>
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Background="{Binding Background}"
-                          BorderBrush="{Binding Border}"
-                          BorderThickness="1"
-                          CornerRadius="6"
-                          Padding="8,4"
-                          Margin="4"
-                          ToolTip="{Binding Description}">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{Binding Foreground}"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               TextWrapping="NoWrap"/>
+          </Button>
+          <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" MaxWidth="460">
+            <TextBlock x:Name="LastSessionText" Text="{DynamicResource Main.LastSession}" HorizontalAlignment="Right"
+                       Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+            <TextBlock x:Name="InfoText" Text="{DynamicResource Main.Waiting}" Foreground="{DynamicResource Brush.Accent}"
+                       FontSize="12" Margin="0,3,0,0" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock x:Name="PageTitleText" Text="{DynamicResource Main.NavDashboard}" FontSize="22" FontWeight="Bold"/>
+            <TextBlock x:Name="PageSubtitleText" Text="{DynamicResource Main.Subtitle}" Foreground="{DynamicResource Brush.TextDim}"
+                       FontSize="12.5" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <ContentControl x:Name="PageHost" Grid.Row="1" Focusable="False" IsTabStop="False">
+
+        <!-- ===================== PAGINA: PANEL ===================== -->
+        <ScrollViewer x:Name="DashboardPage" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      PanningMode="VerticalOnly">
+          <ScrollViewer.Resources>
+            <Style TargetType="TextBlock">
+              <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+              <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+          </ScrollViewer.Resources>
+
+          <StackPanel Margin="24,20,24,28">
+
+            <!-- Heroe: nombre, etiquetas y modo CASH / PLAY -->
+            <Border Style="{StaticResource DashCard}" Margin="0,0,0,16">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource Brush.AccentSoft}"
+                        BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1.5" VerticalAlignment="Top">
+                  <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="{DynamicResource Brush.Accent}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="16,0,16,0" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Main.PlayerIntel}" Foreground="{DynamicResource Brush.Accent}" FontSize="11" FontWeight="Bold"/>
+                  <TextBlock Text="{Binding DashboardPlayers[0].Name, FallbackValue=-}" FontSize="24" FontWeight="Bold" TextWrapping="NoWrap"/>
+                  <Grid x:Name="GlobalStatsProHeader" Margin="-4,6,0,0">
+                    <ItemsControl ItemsSource="{Binding HeroTags}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border Background="{Binding Background}" BorderBrush="{Binding Border}" BorderThickness="1"
+                                  CornerRadius="12" Padding="10,3" Margin="4" ToolTip="{Binding Description}">
+                            <TextBlock Text="{Binding Text}" Foreground="{Binding Foreground}" FontSize="12"
+                                       FontWeight="SemiBold" TextWrapping="NoWrap"/>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Grid>
+                  <TextBlock Text="{Binding HeroSummarySentence}" Foreground="{DynamicResource Brush.TextDim}" FontSize="13"
+                             TextWrapping="Wrap" Margin="0,8,0,0"/>
+                  <TextBlock x:Name="GlobalStatsLiteHeader" Text="{DynamicResource Main.GlobalStats}" Visibility="Collapsed"
+                             Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Border Grid.Column="2" Background="{DynamicResource Brush.Inset}" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" CornerRadius="10" Padding="14,10" VerticalAlignment="Center">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource Common.Type}" Style="{StaticResource KpiLabel}" Margin="0,0,0,6"/>
+                    <CheckBox x:Name="GameModeSwitch" Style="{StaticResource ModernSwitch}" IsChecked="{Binding IsCashMode}"
+                              AutomationProperties.Name="CASH / PLAY">
+                      <TextBlock Text="{Binding IsCashMode, Converter={StaticResource BoolToModeConverter}, ConverterParameter='CASH|PLAY'}"
+                                 FontSize="13" FontWeight="Bold"/>
+                    </CheckBox>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+
+            <!-- Indicadores -->
+            <Grid x:Name="DashboardMetricsPanel" Margin="0,0,-14,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Border Grid.Column="0" Style="{StaticResource KpiTile}">
+                <DockPanel>
+                  <Border Style="{StaticResource KpiIcon}">
+                    <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Accent}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                   </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Grid>
-          <Grid x:Name="GlobalStatsLiteHeader" Margin="0,4,0,10" Visibility="Collapsed">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Main.GlobalStats}" FontSize="20" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"/>
-            </StackPanel>
-          </Grid>
-
-          <UniformGrid x:Name="DashboardMetricsPanel" Grid.Row="1" Columns="4" Margin="0,0,0,14">
-            <Border Style="{StaticResource DashboardMetricCard}">
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="{DynamicResource Grid.Hands}" Style="{StaticResource SectionEyebrow}"/>
-                  <TextBlock Text="{Binding TotalHandsCount, TargetNullValue=0}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
-                </StackPanel>
-              </Grid>
-            </Border>
-            <Border Style="{StaticResource DashboardMetricCard}">
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Club}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="{DynamicResource Main.TotalTables}" Style="{StaticResource SectionEyebrow}"/>
-                  <TextBlock Text="{Binding TotalTablesCount}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
-                </StackPanel>
-              </Grid>
-            </Border>
-            <Border Style="{StaticResource DashboardMetricCard}">
-              <Grid>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Warning}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="{DynamicResource Main.TotalGain}" Style="{StaticResource SectionEyebrow}"/>
-                  <TextBlock Text="{Binding TotalEarningsLabel}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
-                </StackPanel>
-                <CheckBox x:Name="GameModeSwitch"
-                          Grid.Row="1" Grid.Column="1" 
-                          Style="{StaticResource ModernSwitch}" 
-                          IsChecked="{Binding IsCashMode}" 
-                          Margin="0,4,0,0">
-                  <TextBlock Text="{Binding IsCashMode, Converter={StaticResource BoolToModeConverter}, ConverterParameter='CASH|PLAY'}" FontSize="10" FontWeight="Bold" Opacity="0.8"/>
-                </CheckBox>
-              </Grid>
-            </Border>
-            <Border Style="{StaticResource DashboardMetricCard}" Margin="0">
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="WINRATE" Style="{StaticResource SectionEyebrow}"/>
-                  <TextBlock Text="{Binding WinrateLabel}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}"/>
-                </StackPanel>
-              </Grid>
-            </Border>
-          </UniformGrid>
-
-          <Grid Grid.Row="2" Margin="0,0,0,0" Height="26">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="2.4*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="0.85*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1.15*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Player}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Hands}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="2" Text="VPIP%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="3" Text="PFR%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="4" Text="3Bet%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="5" Text="AF" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="6" Text="AFq%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="7" Text="CBet%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="8" Text="FvCBet%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="9" Text="WTSD%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="10" Text="W$SD%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="11" Text="WWSF%" Style="{StaticResource GridHeaderText}"/>
-          </Grid>
-
-          <DataGrid x:Name="DashboardGrid"
-                    Grid.Row="3"
-                    ItemsSource="{Binding DashboardPlayers}"
-                    AutoGenerateColumns="False"
-                    CanUserAddRows="False"
-                    CanUserDeleteRows="False"
-                    CanUserReorderColumns="False"
-                    CanUserResizeColumns="False"
-                    CanUserResizeRows="False"
-                    CanUserSortColumns="False"
-                    IsReadOnly="True"
-                    HeadersVisibility="None"
-                    RowHeaderWidth="0"
-                    RowHeight="30"
-                    MaxHeight="32"
-                    VerticalScrollBarVisibility="Disabled"
-                    GridLinesVisibility="None"
-                    Background="{DynamicResource Brush.Inset}"
-                    RowBackground="{DynamicResource Brush.Inset}"
-                    AlternatingRowBackground="{DynamicResource Brush.Inset}"
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    Foreground="{DynamicResource Brush.Text}">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="{DynamicResource Grid.Player}" Binding="{Binding Name}" Width="2.4*" IsReadOnly="True"/>
-              <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="1*" IsReadOnly="True">
-                <DataGridTextColumn.ElementStyle>
-                  <Style TargetType="TextBlock">
-                    <Setter Property="TextAlignment" Value="Center"/>
-                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                  </Style>
-                </DataGridTextColumn.ElementStyle>
-              </DataGridTextColumn>
-
-              <DataGridTemplateColumn Header="VPIP%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="VPIPPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="VPIP"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="PFR%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="PFRPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="PFR"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="3Bet%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="ThreeBetPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="THREEBET"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="AF" Width="0.85*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="AF"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="AF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="AFq%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="AFqPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="AFQ"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="CBet%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="CBetFlopPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="CBF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="FvCBet%" Width="1.15*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="FoldVsCBetFlopPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="FVCBF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="WTSD%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WTSDPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="WTSD"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="W$SD%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WSDPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="WSD"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="WWSF%" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WWSFPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
-                          <Binding Source="WWSF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-            </DataGrid.Columns>
-          </DataGrid>
-
-          <Grid x:Name="PerformanceSummaryPanel" Grid.Row="4" Margin="0,14,0,0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="1.45*"/>
-              <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Border Background="{DynamicResource Brush.Inset}"
-                    BorderBrush="{DynamicResource Brush.HeaderBorder}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="12"
-                    Margin="0,0,10,0">
-              <Grid>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="105"/>
-                </Grid.RowDefinitions>
-                <Border Grid.RowSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
-                <DockPanel Margin="0,0,0,8">
-                  <TextBlock Text="{DynamicResource Main.AccumulatedGain}" Style="{StaticResource SectionEyebrow}" DockPanel.Dock="Left"/>
-                  <TextBlock x:Name="PerformanceTotalText" Text="0 bb" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" HorizontalAlignment="Right"/>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Grid.Hands}" Style="{StaticResource KpiLabel}"/>
+                    <TextBlock Text="{Binding TotalHandsCount, TargetNullValue=0}" Style="{StaticResource KpiValue}"/>
+                  </StackPanel>
                 </DockPanel>
-                <Canvas x:Name="PerformanceChart"
-                        Grid.Row="1"
-                        ClipToBounds="True"
-                        Background="#05090D"
-                        SizeChanged="PerformanceChart_SizeChanged"/>
-              </Grid>
-            </Border>
-
-            <Grid Grid.Column="1">
-              <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="10"/>
-                <RowDefinition Height="*"/>
-              </Grid.RowDefinitions>
-
-              <Border Background="{DynamicResource Brush.Inset}"
-                      BorderBrush="{DynamicResource Brush.HeaderBorder}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="12">
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
-                  <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
-                  <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Accent}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                  <StackPanel Grid.Column="1">
-                    <TextBlock Text="{DynamicResource Main.BestRecentTen}" Style="{StaticResource SectionEyebrow}"/>
-                    <TextBlock Text="{Binding BestRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
-                    <TextBlock Text="{Binding BestRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
-                  </StackPanel>
-                </Grid>
               </Border>
-
-              <Border Grid.Row="2"
-                      Background="{DynamicResource Brush.Inset}"
-                      BorderBrush="{DynamicResource Brush.HeaderBorder}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="12">
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
-                  <Border Grid.ColumnSpan="2" Style="{StaticResource MiniCardBackGlow}"/>
-                  <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource Brush.Negative}" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                  <StackPanel Grid.Column="1">
-                    <TextBlock Text="{DynamicResource Main.WorstRecentTen}" Style="{StaticResource SectionEyebrow}"/>
-                    <TextBlock Text="{Binding WorstRecentTableSummary}" Foreground="{DynamicResource Brush.Text}" FontWeight="Bold" FontSize="15"/>
-                    <TextBlock Text="{Binding WorstRecentTableDetail}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+              <Border Grid.Column="1" Style="{StaticResource KpiTile}">
+                <DockPanel>
+                  <Border Style="{StaticResource KpiIcon}">
+                    <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Accent}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Main.TotalTables}" Style="{StaticResource KpiLabel}"/>
+                    <TextBlock Text="{Binding TotalTablesCount}" Style="{StaticResource KpiValue}"/>
                   </StackPanel>
-                </Grid>
+                </DockPanel>
+              </Border>
+              <Border Grid.Column="2" Style="{StaticResource KpiTile}">
+                <DockPanel>
+                  <Border Style="{StaticResource KpiIcon}">
+                    <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Warning}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Main.TotalGain}" Style="{StaticResource KpiLabel}"/>
+                    <TextBlock Text="{Binding TotalEarningsLabel}" Style="{StaticResource KpiValue}"/>
+                  </StackPanel>
+                </DockPanel>
+              </Border>
+              <Border Grid.Column="3" Style="{StaticResource KpiTile}">
+                <DockPanel>
+                  <Border Style="{StaticResource KpiIcon}">
+                    <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Accent}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="WINRATE" Style="{StaticResource KpiLabel}"/>
+                    <TextBlock Text="{Binding WinrateLabel}" Style="{StaticResource KpiValue}"/>
+                  </StackPanel>
+                </DockPanel>
               </Border>
             </Grid>
-          </Grid>
-        </Grid>
-      </Border>
-      </Grid>
 
-      <!-- Mesas recientes -->
-      <Grid Grid.Row="1" Style="{StaticResource GlowPanelShell}" Margin="6,0,6,16">
-      <Border Style="{StaticResource PanelBackGlow}"/>
-      <Border Style="{StaticResource PanelCard}" Margin="0">
-        <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-          </Grid.RowDefinitions>
-
-          <Grid x:Name="RecentTablesProHeader" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-              <Border Width="4" Height="34" CornerRadius="2" Background="{DynamicResource Brush.Club}" Margin="0,0,10,0"/>
+            <!-- Estadisticas del heroe -->
+            <Border Style="{StaticResource DashCard}" Margin="0,0,0,16">
               <StackPanel>
-                <TextBlock Text="{DynamicResource Main.SessionFlow}" Style="{StaticResource SectionEyebrow}"/>
-                <TextBlock Text="{DynamicResource Main.RecentTables}" Style="{StaticResource SectionHeading}"/>
+                <DockPanel Margin="0,0,0,12">
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding DashboardPlayers[0].HandsReceived, StringFormat='#{0}', FallbackValue=''}"
+                             Foreground="{DynamicResource Brush.TextDim}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource Main.GlobalStats}" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Text="{DynamicResource HeroStats.Hint}" Style="{StaticResource CardHint}"/>
+                  </StackPanel>
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding DashboardPlayers}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <UniformGrid Columns="10" Margin="0,0,-8,0">
+                        <UniformGrid.Resources>
+                          <Style TargetType="TextBlock" BasedOn="{StaticResource StatTileLabel}"/>
+                        </UniformGrid.Resources>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="VPIPPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="VPIP"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="VPIPPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="VPIP"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="VPIPPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="VPIP"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="VPIP"/>
+                            <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="VPIPPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="VPIP"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="PFRPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="PFR"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="PFRPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="PFR"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="PFRPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="PFR"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="PFR"/>
+                            <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="PFRPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="PFR"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="ThreeBetPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="THREEBET"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="ThreeBetPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="THREEBET"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="ThreeBetPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="THREEBET"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="3BET"/>
+                            <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="ThreeBetPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="THREEBET"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="AF"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AF"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="AF"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AF"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="AF"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AF"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="AF"/>
+                            <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="AF"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="AF"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="AFqPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AFQ"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="AFqPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AFQ"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="AFqPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="AFQ"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="AFQ"/>
+                            <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="AFqPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="AFQ"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="CBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="CBF"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="CBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="CBF"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="CBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="CBF"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="CBET"/>
+                            <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="CBetFlopPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="CBF"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="FoldVsCBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="FVCBF"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="FoldVsCBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="FVCBF"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="FoldVsCBetFlopPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="FVCBF"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="FvCBET"/>
+                            <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="FoldVsCBetFlopPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="FVCBF"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="WTSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WTSD"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="WTSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WTSD"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="WTSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WTSD"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="WTSD"/>
+                            <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="WTSDPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="WTSD"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="WSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WSD"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="WSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WSD"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="WSDPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WSD"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="W$SD"/>
+                            <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="WSDPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="WSD"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StatTile}">
+                          <Border.Background>
+                            <MultiBinding Converter="{StaticResource StatToBrush}">
+                              <Binding Path="WWSFPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WWSF"/>
+                            </MultiBinding>
+                          </Border.Background>
+                          <TextElement.Foreground>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="ink">
+                              <Binding Path="WWSFPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WWSF"/>
+                            </MultiBinding>
+                          </TextElement.Foreground>
+                          <Border.ToolTip>
+                            <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="tip">
+                              <Binding Path="WWSFPct"/><Binding Path="HandsReceived"/>
+                              <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                              <Binding Source="WWSF"/>
+                            </MultiBinding>
+                          </Border.ToolTip>
+                          <StackPanel>
+                            <TextBlock Text="WWSF"/>
+                            <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatTileValue}"/>
+                            <TextBlock Style="{StaticResource StatTileLevel}">
+                              <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource StatToBrush}" ConverterParameter="label">
+                                <Binding Path="WWSFPct"/><Binding Path="HandsReceived"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DashboardStake"/>
+                                <Binding Source="WWSF"/>
+                              </MultiBinding>
+                              </TextBlock.Text>
+                            </TextBlock>
+                          </StackPanel>
+                        </Border>
+                      </UniformGrid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <views:StatLegendStrip Margin="0,12,0,0"/>
               </StackPanel>
-            </StackPanel>
-            <Border HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource HeroMetricPill}" Margin="0">
-              <TextBlock Text="{DynamicResource Main.BbTracker}" Foreground="{DynamicResource Brush.TextDim}" FontSize="12" FontWeight="SemiBold"/>
             </Border>
-          </Grid>
-          <TextBlock x:Name="RecentTablesLiteHeader"
-                     Text="{DynamicResource Main.RecentTables}"
-                     FontSize="18"
-                     FontWeight="Bold"
-                     TextAlignment="Center"
-                     HorizontalAlignment="Center"
-                     Margin="0,0,0,8"
-                     Visibility="Collapsed"/>
 
-          <Grid Grid.Row="1" Height="26" Margin="0,0,18,0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="2.2*"/>
-              <ColumnDefinition Width="0.9*"/>
-              <ColumnDefinition Width="1.1*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.7*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.85*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="0.75*"/>
-              <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
+            <!-- Rendimiento: grafica y mejor/peor mesa -->
+            <Grid x:Name="PerformanceSummaryPanel" Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="{DynamicResource Grid.Table}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="1" Text="{DynamicResource Grid.Format}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="2" Text="{DynamicResource Grid.Date}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="3" Text="{DynamicResource Grid.Hands}" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="4" Text="VPIP%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="5" Text="PFR%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="6" Text="3Bet%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="7" Text="AF" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="8" Text="AFq%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="9" Text="CBet%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="10" Text="FvCB%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="11" Text="WTSD%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="12" Text="W$SD%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="13" Text="WWSF%" Style="{StaticResource GridHeaderText}"/>
-            <TextBlock Grid.Column="14" Text="{DynamicResource Grid.FinalBb}" Style="{StaticResource GridHeaderText}"/>
-          </Grid>
-
-          <DataGrid Grid.Row="2"
-                    ItemsSource="{Binding RecentTables}"
-                    AutoGenerateColumns="False"
-                    CanUserAddRows="False"
-                    CanUserDeleteRows="False"
-                    CanUserReorderColumns="False"
-                    CanUserResizeColumns="False"
-                    CanUserResizeRows="False"
-                    CanUserSortColumns="False"
-                    IsReadOnly="True"
-                    HeadersVisibility="None"
-                    RowHeaderWidth="0"
-                    RowHeight="30"
-                    MinHeight="305"
-                    VerticalScrollBarVisibility="Disabled"
-                    GridLinesVisibility="None"
-                    Background="{DynamicResource Brush.Inset}"
-                    RowBackground="{DynamicResource Brush.Inset}"
-                    AlternatingRowBackground="{DynamicResource Brush.Inset}"
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    Foreground="{DynamicResource Brush.Text}">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="{DynamicResource Grid.Table}" Binding="{Binding TableName}" Width="2.2*"/>
-              <DataGridTextColumn Header="{DynamicResource Grid.Format}" Binding="{Binding GameFormat}" Width="0.9*"/>
-              <DataGridTextColumn Header="{DynamicResource Grid.Date}" Binding="{Binding PlayedDate}" Width="1.1*"/>
-              <DataGridTextColumn Header="#Manos" Binding="{Binding HandsReceived}" Width="0.75*">
-                <DataGridTextColumn.ElementStyle>
-                  <Style TargetType="TextBlock">
-                    <Setter Property="TextAlignment" Value="Center"/>
-                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                  </Style>
-                </DataGridTextColumn.ElementStyle>
-              </DataGridTextColumn>
-
-              <DataGridTemplateColumn Header="VPIP%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="VPIPPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="VPIP"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="PFR%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding PFRPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="PFRPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="PFR"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="3Bet%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="ThreeBetPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="THREEBET"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="AF" Width="0.7*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding AF, StringFormat={}{0:0.#}}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="AF"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="AF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="AFq%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding AFqPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="AFqPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="AFQ"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="CBet%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="CBetFlopPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="CBF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="FvCBet%" Width="0.85*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding FoldVsCBetFlopPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="FoldVsCBetFlopPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="FVCBF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="WTSD%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WTSDPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="WTSD"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="W$SD%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WSDPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WSDPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="WSD"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="WWSF%" Width="0.75*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding WWSFPct, StringFormat={}{0:0.#}%}" Style="{StaticResource StatGlowText}" Foreground="{Binding HandsReceived, Converter={StaticResource StatTextBrush}}">
-                      <TextBlock.Background>
-                        <MultiBinding Converter="{StaticResource StatToBrush}">
-                          <Binding Path="WWSFPct"/>
-                          <Binding Path="HandsReceived"/>
-                          <Binding Path="Stake"/>
-                          <Binding Source="WWSF"/>
-                        </MultiBinding>
-                      </TextBlock.Background>
-                    </TextBlock>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-
-              <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="1*">
-                <DataGridTemplateColumn.CellTemplate>
-                  <DataTemplate>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                      <TextBlock Text="{Binding TrendIcon}" FontWeight="Bold" Margin="0,0,5,0">
-                        <TextBlock.Style>
-                          <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
-                            <Style.Triggers>
-                              <DataTrigger Binding="{Binding IsWin}" Value="True">
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
-                              </DataTrigger>
-                            </Style.Triggers>
-                          </Style>
-                        </TextBlock.Style>
-                      </TextBlock>
-                      <TextBlock Text="{Binding NetBb, StringFormat={}{0:0.#} bb}" Foreground="{DynamicResource Brush.Text}"/>
+              <Border Style="{StaticResource DashCard}">
+                <Grid>
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="230"/>
+                  </Grid.RowDefinitions>
+                  <DockPanel Margin="0,0,0,12">
+                    <TextBlock x:Name="PerformanceTotalText" DockPanel.Dock="Right" Text="0 bb" FontSize="18" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    <StackPanel>
+                      <TextBlock Text="{DynamicResource Main.AccumulatedGain}" Style="{StaticResource CardTitle}"/>
+                      <TextBlock Text="{DynamicResource Main.ChartHint}" Style="{StaticResource CardHint}" TextWrapping="Wrap"/>
                     </StackPanel>
-                  </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-              </DataGridTemplateColumn>
-            </DataGrid.Columns>
-          </DataGrid>
-        </Grid>
-      </Border>
-      </Grid>
+                  </DockPanel>
+                  <Border Grid.Row="1" CornerRadius="10" Background="{DynamicResource Brush.Bg}" ClipToBounds="True">
+                    <Canvas x:Name="PerformanceChart" ClipToBounds="True" Background="Transparent"
+                            SizeChanged="PerformanceChart_SizeChanged"/>
+                  </Border>
+                </Grid>
+              </Border>
 
+              <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="*"/>
+                  <RowDefinition Height="16"/>
+                  <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Style="{StaticResource DashCard}">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Left" Style="{StaticResource KpiIcon}" VerticalAlignment="Top">
+                      <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Accent}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel>
+                      <TextBlock Text="{DynamicResource Main.BestRecentTen}" Style="{StaticResource KpiLabel}"/>
+                      <TextBlock Text="{Binding BestRecentTableSummary}" FontWeight="Bold" FontSize="16" Margin="0,4,0,0"/>
+                      <TextBlock Text="{Binding BestRecentTableDetail}" Style="{StaticResource CardHint}"/>
+                    </StackPanel>
+                  </DockPanel>
+                </Border>
+                <Border Grid.Row="2" Style="{StaticResource DashCard}">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Left" Style="{StaticResource KpiIcon}" VerticalAlignment="Top">
+                      <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Brush.Negative}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel>
+                      <TextBlock Text="{DynamicResource Main.WorstRecentTen}" Style="{StaticResource KpiLabel}"/>
+                      <TextBlock Text="{Binding WorstRecentTableSummary}" FontWeight="Bold" FontSize="16" Margin="0,4,0,0"/>
+                      <TextBlock Text="{Binding WorstRecentTableDetail}" Style="{StaticResource CardHint}"/>
+                    </StackPanel>
+                  </DockPanel>
+                </Border>
+              </Grid>
+            </Grid>
+
+            <!-- Mesas recientes -->
+            <Border Style="{StaticResource DashCard}">
+              <StackPanel>
+                <DockPanel x:Name="RecentTablesProHeader" Margin="0,0,0,12">
+                  <Button DockPanel.Dock="Right" Click="BtnAll_Click" Padding="12,6"
+                          AutomationProperties.Name="{DynamicResource Main.RailTables}">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{DynamicResource Main.RailTables}" TextWrapping="NoWrap"/>
+                      <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource Main.RecentTables}" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Text="{DynamicResource Main.SessionFlow}" Style="{StaticResource CardHint}"/>
+                  </StackPanel>
+                </DockPanel>
+                <TextBlock x:Name="RecentTablesLiteHeader" Text="{DynamicResource Main.RecentTables}" Style="{StaticResource CardTitle}"
+                           Margin="0,0,0,10" Visibility="Collapsed"/>
+
+                <DataGrid x:Name="RecentTablesGrid"
+                          ItemsSource="{Binding RecentTables}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserReorderColumns="False"
+                          CanUserResizeRows="False"
+                          CanUserSortColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          RowHeaderWidth="0"
+                          RowHeight="36"
+                          MinHeight="120"
+                          VerticalScrollBarVisibility="Disabled"
+                          GridLinesVisibility="None"
+                          BorderThickness="0"
+                          Background="Transparent"
+                          RowBackground="Transparent"
+                          AlternatingRowBackground="{DynamicResource Brush.Inset}"
+                          Cursor="Hand"
+                          ToolTip="{DynamicResource Common.OpenTableDetail}"
+                          MouseDoubleClick="RecentTablesGrid_MouseDoubleClick">
+                  <DataGrid.Resources>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                      <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                  </DataGrid.Resources>
+                  <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="{DynamicResource Grid.Table}" Width="2.4*">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          <StackPanel Margin="6,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TableName}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock FontSize="11" Foreground="{DynamicResource Brush.TextDim}" TextWrapping="NoWrap">
+                              <Run Text="{Binding GameFormat, Mode=OneWay}"/><Run Text="  ·  "/><Run Text="{Binding PlayedDate, Mode=OneWay}"/>
+                            </TextBlock>
+                          </StackPanel>
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{DynamicResource Grid.Hands}" Binding="{Binding HandsReceived}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                          <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="VPIP" Binding="{Binding VPIPPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="PFR" Binding="{Binding PFRPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="3BET" Binding="{Binding ThreeBetPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="AF" Binding="{Binding AF, StringFormat={}{0:0.#}}" Width="0.6*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="CBET" Binding="{Binding CBetFlopPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="WTSD" Binding="{Binding WTSDPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="W$SD" Binding="{Binding WSDPct, StringFormat={}{0:0.#}%}" Width="0.7*">
+                      <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+                      </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="{DynamicResource Grid.FinalBb}" Width="1.1*">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          <Border CornerRadius="10" Padding="10,3" HorizontalAlignment="Right" Margin="0,0,10,0">
+                            <Border.Style>
+                              <Style TargetType="Border">
+                                <Setter Property="Background" Value="#33E24E5B"/>
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding IsWin}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}"/>
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding TrendIcon}" FontWeight="Bold" Margin="0,0,5,0" FontSize="10" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                  <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Negative}"/>
+                                    <Style.Triggers>
+                                      <DataTrigger Binding="{Binding IsWin}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+                                      </DataTrigger>
+                                    </Style.Triggers>
+                                  </Style>
+                                </TextBlock.Style>
+                              </TextBlock>
+                              <TextBlock Text="{Binding NetBb, StringFormat={}{0:+0.#;-0.#;0} bb}" FontWeight="Bold"/>
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                  </DataGrid.Columns>
+                </DataGrid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </ContentControl>
     </Grid>
-    </ScrollViewer>
-   </Grid>
+  </Grid>
 </Window>
-

@@ -20,8 +20,6 @@ namespace Hud.App.Views
     {
         private static readonly string[] Ranks = { "A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2" };
         private static readonly Regex HandStartRx = PokerStarsHandHistory.HandStartRx;
-        private static readonly Regex HeaderTimestampRx =
-            new(@"-\s*(?<stamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(?<zone>[A-Z]+)", RegexOptions.Compiled);
         private static readonly Regex SeatRx =
             PokerStarsHandHistory.SeatRx;
         private static readonly Regex ButtonRx =
@@ -43,7 +41,7 @@ namespace Hud.App.Views
         private static readonly Regex ActionAmountRx =
             PokerStarsHandHistory.ActionAmountRx;
 
-        private readonly DataVillainViewModel _viewModel;
+        private DataVillainViewModel? _viewModel;
         private readonly IReadOnlyList<MainWindow.TableSessionStats> _tables;
 
         private static readonly VillainAction[] ActionDisplayOrder =
@@ -65,8 +63,14 @@ namespace Hud.App.Views
             InitializeComponent();
             FitToWorkArea();
             _tables = tables.ToList();
-            _viewModel = DataVillainViewModel.Build(villain, _tables);
-            DataContext = _viewModel;
+            // Reunir las manos del villano lee todos los historiales: en segundo plano.
+            BackgroundLoad.Run(this, () => DataVillainViewModel.Build(villain, _tables), viewModel =>
+            {
+                _viewModel = viewModel;
+                DataContext = viewModel;
+                viewModel.ColorRangeByProfit = ProfitColorToggle.IsChecked == true;
+                viewModel.ShowAllDataSummary = SummaryModeToggle.IsChecked == true;
+            });
             Title = $"APH - {villain.Name}";
         }
 
@@ -92,13 +96,13 @@ namespace Hud.App.Views
             if (table is null || row.HandNumber <= 0)
                 return;
 
-            var window = new TableDetailWindow(table, row.HandNumber, _viewModel.VillainName)
+            var window = new TableDetailWindow(table, row.HandNumber, _viewModel?.VillainName)
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void RangeCell_Click(object sender, RoutedEventArgs e)
@@ -125,13 +129,13 @@ namespace Hud.App.Views
             if (table is null || row.HandNumber <= 0)
                 return;
 
-            var window = new TableDetailWindow(table, row.HandNumber, _viewModel.VillainName)
+            var window = new TableDetailWindow(table, row.HandNumber, _viewModel?.VillainName)
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
 
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void ProfitColorToggle_Changed(object sender, RoutedEventArgs e)
@@ -512,6 +516,7 @@ namespace Hud.App.Views
 
         private static bool TryGetKnownCards(IReadOnlyList<string> hand, string villainName, out string cards)
         {
+            Dictionary<int, string>? seatRoster = null;
             foreach (var line in hand)
             {
                 var show = ShowCardsRx.Match(line);
@@ -521,11 +526,17 @@ namespace Hud.App.Views
                     return true;
                 }
 
+                // El nombre que captura SummaryShownRx se corta en el primer espacio ("Big Fish"
+                // -> "Big"): el jugador de la linea del resumen se saca de su asiento.
                 var summary = SummaryShownRx.Match(line);
-                if (summary.Success && PokerStarsHandHistory.SamePlayer(summary.Groups["name"].Value, villainName))
+                if (summary.Success)
                 {
-                    cards = summary.Groups["cards"].Value.Trim();
-                    return true;
+                    seatRoster ??= PokerStarsHandHistory.BuildSeatRoster(hand);
+                    if (PokerStarsHandHistory.SummaryLineIsAbout(line, villainName, seatRoster))
+                    {
+                        cards = summary.Groups["cards"].Value.Trim();
+                        return true;
+                    }
                 }
             }
 
@@ -706,14 +717,11 @@ namespace Hud.App.Views
             if (index < 0)
                 return "?";
 
-            return playerCount switch
-            {
-                <= 2 => index == 0 ? "BTN/SB" : "BB",
-                3 => index switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                4 => index switch { 0 => "CO", 1 => "BTN", 2 => "SB", 3 => "BB", _ => "?" },
-                5 => index switch { 0 => "UTG", 1 => "CO", 2 => "BTN", 3 => "SB", 4 => "BB", _ => "?" },
-                _ => index switch { 0 => "UTG", 1 => "HJ", 2 => "CO", 3 => "BTN", 4 => "SB", 5 => "BB", _ => "MP" }
-            };
+            // Un indice fuera de la mesa sigue dando MP desde 6 jugadores, como la tabla anterior.
+            if (playerCount >= 6 && index >= playerCount)
+                return "MP";
+
+            return PokerStarsHandHistory.PositionFromPreflopIndex(index, playerCount);
         }
 
         private static IReadOnlyList<string> ExtractPlayersFromSeats(IReadOnlyList<string> hand)
@@ -728,16 +736,6 @@ namespace Hud.App.Views
 
             return result;
         }
-
-        private static string PositionFromOffset(int offset, int playerCount) =>
-            playerCount switch
-            {
-                <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
-            };
 
         private static DateTime? ExtractTimestamp(IReadOnlyList<string> hand)
         {
@@ -971,37 +969,37 @@ namespace Hud.App.Views
         }
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
 
         private static Brush BrushForBb(double bb)
         {
             var abs = Math.Abs(bb);
             if (abs < 0.05)
-                return BrushFrom(80, 86, 96);
+                return BrushFrom(96, 105, 101);
             if (bb > 0)
             {
-                if (abs < 10) return BrushFrom(34, 116, 101);
-                if (abs < 30) return BrushFrom(39, 156, 92);
-                if (abs < 50) return BrushFrom(76, 184, 4);
-                return BrushFrom(184, 181, 4);
+                if (abs < 10) return BrushFrom(58, 128, 104);
+                if (abs < 30) return BrushFrom(64, 158, 98);
+                if (abs < 50) return BrushFrom(96, 186, 112);
+                return BrushFrom(206, 170, 60);
             }
 
-            if (abs < 10) return BrushFrom(112, 48, 55);
-            if (abs < 30) return BrushFrom(178, 43, 52);
-            if (abs < 50) return BrushFrom(210, 34, 45);
-            return BrushFrom(156, 0, 0);
+            if (abs < 10) return BrushFrom(150, 92, 98);
+            if (abs < 30) return BrushFrom(186, 82, 92);
+            if (abs < 50) return BrushFrom(214, 92, 104);
+            return BrushFrom(232, 112, 124);
         }
 
         private static Brush BrushForAction(VillainAction action) => action switch
         {
-            VillainAction.Fold => BrushFrom(80, 86, 96),
-            VillainAction.Check => BrushFrom(75, 102, 122),
-            VillainAction.Call => BrushFrom(0, 148, 198),
-            VillainAction.Bet => BrushFrom(64, 184, 4),
-            VillainAction.Raise => BrushFrom(184, 181, 4),
-            VillainAction.ThreeBet => BrushFrom(226, 137, 0),
-            VillainAction.FourBetPlus => BrushFrom(255, 115, 115),
-            VillainAction.AllIn => BrushFrom(156, 0, 0),
+            VillainAction.Fold => BrushFrom(96, 105, 101),
+            VillainAction.Check => BrushFrom(104, 130, 146),
+            VillainAction.Call => BrushFrom(70, 145, 205),
+            VillainAction.Bet => BrushFrom(72, 170, 100),
+            VillainAction.Raise => BrushFrom(206, 160, 52),
+            VillainAction.ThreeBet => BrushFrom(220, 130, 60),
+            VillainAction.FourBetPlus => BrushFrom(226, 110, 120),
+            VillainAction.AllIn => BrushFrom(212, 86, 98),
             _ => Brushes.Transparent
         };
 
@@ -1105,7 +1103,7 @@ namespace Hud.App.Views
                 new(label, BrushFrom(98, 21, 32), BrushFrom(226, 78, 91), Brushes.White, reason);
 
             public static TagViewModel Neutral(string label, string reason) =>
-                new(label, BrushFrom(28, 40, 54), BrushFrom(86, 108, 132), Brushes.White, reason);
+                new(label, Hud.App.Services.ThemeBrushes.NeutralBackground, Hud.App.Services.ThemeBrushes.NeutralBorder, Hud.App.Services.ThemeBrushes.Text, reason);
         }
 
         private sealed class RangeCell : System.ComponentModel.INotifyPropertyChanged
@@ -1170,12 +1168,12 @@ namespace Hud.App.Views
                     street,
                     handCode,
                     0,
-                    new[] { new ActionSegment(BrushFrom(38, 43, 50), 100, new Thickness(0)) },
+                    new[] { new ActionSegment(Hud.App.Services.ThemeBrushes.NeutralBackground, 100, new Thickness(0)) },
                     BrushFrom(135, 145, 156),
                     LocalizationManager.Text("Common.NoKnownSample"),
                     new[] { new ActionSummaryItem(LocalizationManager.Text("Tag.NoSample"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCount"), 0), BrushFrom(80, 86, 96)) },
                     Array.Empty<ExactVillainHandRow>(),
-                    BrushFrom(38, 43, 50));
+                    Hud.App.Services.ThemeBrushes.NeutralBackground);
 
             public static RangeCell FromExamples(string street, string handCode, IReadOnlyList<KnownVillainHand> examples)
             {

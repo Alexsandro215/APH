@@ -30,7 +30,12 @@ namespace Hud.App.Views
         private HeroAction? _exactActionFilter;
         private string _exactResultFilter = "ALL";
         private bool _colorByProfit;
+        private bool _compareChart = true;
         private string _street = "PREFLOP";
+        private readonly Dictionary<string, Border> _selectionMarks = new(StringComparer.Ordinal);
+
+        /// <summary>Con 5 manos o mas la casilla se pinta entera; con menos, mas tenue.</summary>
+        private const int FullSample = 5;
 
         private static readonly HeroAction[] ActionDisplayOrder =
         {
@@ -50,10 +55,16 @@ namespace Hud.App.Views
             FitHeightToScreen();
             Loaded += MisTablasWindow_Loaded;
             _tables = tables.ToList();
-            LoadStats();
-            PopulateFilterOptions();
-            RebuildFilteredCells();
-            RenderGrid();
+            LocalizeControls();
+            UpdateStreetButtons();
+
+            // Leer y procesar todos los historiales congelaba la ventana: va en segundo plano.
+            BackgroundLoad.Run(this, () => { LoadStats(); return true; }, _ =>
+            {
+                PopulateFilterOptions();
+                RebuildFilteredCells();
+                RenderGrid();
+            });
         }
 
         private void MisTablasWindow_Loaded(object sender, RoutedEventArgs e)
@@ -77,6 +88,27 @@ namespace Hud.App.Views
                 : workArea.Left;
         }
 
+        /// <summary>Acciones en el idioma de APH y nombres para el control por voz.</summary>
+        private void LocalizeControls()
+        {
+            foreach (var (chip, action) in new[]
+                     {
+                         (ActionFoldChip, HeroAction.Fold), (ActionCheckChip, HeroAction.Check), (ActionCallChip, HeroAction.Call),
+                         (ActionBetChip, HeroAction.Bet), (ActionRaiseChip, HeroAction.Raise), (ActionThreeBetChip, HeroAction.ThreeBet),
+                         (ActionFourBetChip, HeroAction.FourBetPlus), (ActionAllInChip, HeroAction.AllIn)
+                     })
+            {
+                chip.Content = LabelForAction(action);
+            }
+
+            SetName(SituationFilter, T("Mine.Situation"));
+            SetName(PositionFilter, T("Common.Position"));
+            SetName(FormatFilter, T("Grid.Format"));
+            SetName(MoneyTypeFilter, T("Common.Type"));
+            SetName(FromDateFilter, T("Common.From"));
+            SetName(ToDateFilter, T("Common.To"));
+        }
+
         private void Street_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not string street)
@@ -84,6 +116,28 @@ namespace Hud.App.Views
 
             _street = street;
             RenderGrid();
+        }
+
+        /// <summary>La calle que se esta viendo queda marcada con el color de acento.</summary>
+        private void UpdateStreetButtons()
+        {
+            foreach (var button in new[] { BtnPreflop, BtnFlop, BtnTurn, BtnRiver })
+            {
+                var active = (string)button.Tag == _street;
+                button.SetResourceReference(BackgroundProperty, active ? "Brush.AccentSoft" : "Brush.Card");
+                button.SetResourceReference(BorderBrushProperty, active ? "Brush.Accent" : "Brush.Border");
+                button.SetResourceReference(ForegroundProperty, active ? "Brush.Accent" : "Brush.Text");
+                button.BorderThickness = new Thickness(active ? 2 : 1);
+                button.FontWeight = active ? FontWeights.Bold : FontWeights.SemiBold;
+            }
+        }
+
+        private void CompareChartToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            // Se llama tambien al crear la ventana (IsChecked="True"), antes de tener datos.
+            _compareChart = (sender as CheckBox)?.IsChecked == true;
+            if (_cells.Count > 0)
+                RenderGrid();
         }
 
         private void Filter_Changed(object sender, RoutedEventArgs e)
@@ -103,6 +157,16 @@ namespace Hud.App.Views
 
         private void LoadStats()
         {
+            AphPreflopProvider? charts = null;
+            try
+            {
+                charts = PreflopLibrary.Charts;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Mis Tablas: no se pudieron cargar las tablas de APH", ex);
+            }
+
             foreach (var table in _tables)
             {
                 if (!File.Exists(table.SourcePath))
@@ -126,36 +190,50 @@ namespace Hud.App.Views
                         : "?";
                     var handDateTime = ExtractHandDateTime(hand) ?? table.LastPlayedAt;
 
+                    // Cada decision preflop con su situacion (abrir, contra subida...) y lo que dice la tabla de APH.
+                    var decisions = ReadPreflopDecisions(hand, table.HeroName, charts);
+                    // Pasar gratis nunca es error (ciega grande, o quien ya puso la ciega al entrar a la
+                    // mesa): si la tabla no sube con esta mano, lo correcto era pasar.
+                    if (decisions.Count > 0 && DetectHeroAction(hand, table.HeroName, "PREFLOP") == HeroAction.Check)
+                        decisions[0] = decisions[0] with { HeroChecked = true, ChartCode = decisions[0].ChartCode == "F" ? "C" : decisions[0].ChartCode };
+                    var handScenarios = decisions.Select(d => d.Base).ToHashSet(StringComparer.Ordinal);
+                    var firstDecision = decisions.FirstOrDefault();
+
+                    ExactHandItem Item(string street, HeroAction action, PreflopDecision? decision, bool isFirst) =>
+                        new(street, handCode, table.TableName, table.SourcePath, tableHandNumber, position, table.GameFormat,
+                            table.IsCash, table.LastPlayedAt.Date, handDateTime, exactCards, spot, action, netBb, cumulativeBb,
+                            decision, isFirst, handScenarios);
+
                     foreach (var street in new[] { "PREFLOP", "FLOP", "TURN", "RIVER" })
                     {
                         var action = DetectHeroAction(hand, table.HeroName, street);
                         if (action is null)
                             continue;
 
-                        _allExamples.Add(
-                            new ExactHandItem(
-                                street,
-                                handCode,
-                                table.TableName,
-                                table.SourcePath,
-                                tableHandNumber,
-                                position,
-                                table.GameFormat,
-                                table.IsCash,
-                                table.LastPlayedAt.Date,
-                                handDateTime,
-                                exactCards,
-                                spot,
-                                action.Value,
-                                netBb,
-                                cumulativeBb));
+                        _allExamples.Add(Item(street, action.Value, firstDecision, isFirst: true));
                     }
+
+                    // Las decisiones siguientes del preflop (por ejemplo, contra el 3bet despues de abrir)
+                    // solo cuentan al elegir esa situacion: en "Todas" cada mano cuenta una vez.
+                    foreach (var later in decisions.Skip(1))
+                        _allExamples.Add(Item("PREFLOP", ActionFromDecision(later), later, isFirst: false));
                 }
             }
         }
 
         private void PopulateFilterOptions()
         {
+            // Situaciones que hay en las manos, en el orden de las tablas preflop.
+            var order = PreflopScenarios.SixMax.ToList();
+            ConfigureOptionCombo(SituationFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
+                .Concat(_allExamples.Where(example => example.Street == "PREFLOP" && example.Decision is not null)
+                    .Select(example => example.Decision!.Base)
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(scenario => order.IndexOf(scenario) is var index && index >= 0 ? index : 99)
+                    .Select(scenario => new LocalizedOption(scenario, PreflopScenarios.Label(scenario))))
+                .ToList());
+            SituationFilter.SelectedIndex = 0;
+
             ConfigureOptionCombo(PositionFilter, new[] { LocalizedOption.Key("ALL", "Common.All") }
                 .Concat(_allExamples.Select(example => example.Position)
                     .Where(value => !string.IsNullOrWhiteSpace(value))
@@ -202,6 +280,7 @@ namespace Hud.App.Views
 
         private IEnumerable<ExactHandItem> FilterExamples(IEnumerable<ExactHandItem> examples)
         {
+            var situation = SelectedFilter(SituationFilter);
             var position = SelectedFilter(PositionFilter);
             var format = SelectedFilter(FormatFilter);
             var moneyType = SelectedFilter(MoneyTypeFilter);
@@ -209,6 +288,14 @@ namespace Hud.App.Views
             var to = ToDateFilter.SelectedDate?.Date;
 
             return examples.Where(example =>
+                // Sin situacion elegida, cada mano cuenta una vez (su primera decision preflop). Con una
+                // situacion: en el preflop, las decisiones en esa situacion; despues del flop, las manos
+                // que pasaron por ella.
+                (situation is null
+                    ? example.Street != "PREFLOP" || example.IsFirstDecision
+                    : example.Street == "PREFLOP"
+                        ? example.Decision?.Base == situation
+                        : example.HandScenarios.Contains(situation)) &&
                 (position is null || string.Equals(example.Position, position, StringComparison.OrdinalIgnoreCase)) &&
                 (format is null || string.Equals(example.GameFormat, format, StringComparison.OrdinalIgnoreCase)) &&
                 (moneyType is null ||
@@ -250,17 +337,15 @@ namespace Hud.App.Views
 
         private void RenderGrid()
         {
-            SelectedStreetText.Text = StreetLabel(_street);
-            ActionSummaryList.ItemsSource = null;
-            SelectedHandText.Text = Hud.App.Services.LocalizationManager.Text("Common.SelectCell");
-            ExactHandsPanel.Visibility = Visibility.Collapsed;
+            UpdateStreetButtons();
+            BuildLegend();
             ExactHandsGrid.ItemsSource = null;
-            _selectedCell = null;
             _exactActionFilter = null;
             _exactResultFilter = "ALL";
             RefreshExactFilterChips();
 
             HandsGrid.Children.Clear();
+            _selectionMarks.Clear();
             for (var row = 0; row < Ranks.Length; row++)
             {
                 for (var col = 0; col < Ranks.Length; col++)
@@ -270,90 +355,106 @@ namespace Hud.App.Views
                     HandsGrid.Children.Add(CreateCell(handCode, stats));
                 }
             }
+
+            ShowStreetSummary();
         }
 
+        private bool ShowChartMarks => _compareChart && _street == "PREFLOP";
+
+        /// <summary>
+        /// Una casilla: el color de lo que mas hiciste (o de la ganancia media), mas tenue si hay pocas
+        /// manos; abajo, una barra con la mezcla de acciones; arriba a la izquierda, cuantas manos; y
+        /// una esquina si jugaste distinto a la tabla de APH.
+        /// </summary>
         private Button CreateCell(string handCode, HandCellStats? stats)
         {
-            var root = new Grid
-            {
-                ClipToBounds = true,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
-            };
-            var segments = new Grid
-            {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
-            };
-            root.Children.Add(segments);
+            var root = new Grid { ClipToBounds = true };
+            var total = stats?.Total ?? 0;
+            Brush ink;
 
-            if (stats is null || stats.Total == 0)
+            if (stats is null || total == 0)
             {
-                segments.Background = new SolidColorBrush(Color.FromRgb(38, 43, 50));
+                var empty = new Border();
+                empty.SetResourceReference(Border.BackgroundProperty, "Brush.Card");
+                root.Children.Add(empty);
+                ink = Hud.App.Services.ThemeBrushes.TextDim;
             }
             else
             {
-                foreach (var action in ActionDisplayOrder.Where(stats.Actions.ContainsKey))
+                var color = _colorByProfit ? ColorForBb(stats.AverageBb) : ColorForAction(stats.MainAction);
+                var strength = SampleStrength(total);
+                var under = Hud.App.Services.ThemeBrushes.Color("Col.Panel", Color.FromRgb(17, 24, 32));
+                var under2 = new Border();
+                under2.SetResourceReference(Border.BackgroundProperty, "Brush.Inset");
+                root.Children.Add(under2);
+                root.Children.Add(new Border { Background = Frozen(color), Opacity = strength });
+                ink = InkFor(Blend(under, color, strength));
+
+                // La mezcla de acciones (siempre con los colores de accion).
+                if (stats.Actions.Count > 1 || _colorByProfit)
                 {
-                    segments.ColumnDefinitions.Add(new ColumnDefinition
+                    var bar = new Grid();
+                    foreach (var action in ActionDisplayOrder.Where(stats.Actions.ContainsKey))
                     {
-                        Width = new GridLength(stats.Actions[action].Count, GridUnitType.Star)
-                    });
+                        bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(stats.Actions[action].Count, GridUnitType.Star) });
+                        var segment = new Border { Background = Frozen(ColorForAction(action)), Margin = new Thickness(0, 0, 1, 0) };
+                        Grid.SetColumn(segment, bar.ColumnDefinitions.Count - 1);
+                        bar.Children.Add(segment);
+                    }
+                    var barBox = new Border
+                    {
+                        Height = 7,
+                        Padding = new Thickness(1, 1, 0, 1),
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        Margin = new Thickness(4, 0, 4, 3),
+                        Child = bar
+                    };
+                    barBox.SetResourceReference(Border.BackgroundProperty, "Brush.Bg");
+                    root.Children.Add(barBox);
                 }
 
-                var index = 0;
-                foreach (var action in ActionDisplayOrder.Where(stats.Actions.ContainsKey))
+                root.Children.Add(new TextBlock
                 {
-                    var border = new Border
+                    Text = total.ToString(CultureInfo.CurrentCulture),
+                    Foreground = ink,
+                    FontSize = 10,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(4, 1, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Top
+                });
+
+                if (ShowChartMarks && stats.ChartDiff > 0)
+                {
+                    var corner = new System.Windows.Shapes.Polygon
                     {
-                        Background = _colorByProfit
-                            ? BrushForBb(stats.Actions[action].AverageBb)
-                            : BrushForAction(action),
-                        BorderBrush = Brushes.Black,
-                        BorderThickness = index == 0 ? new Thickness(0) : new Thickness(1, 0, 0, 0)
+                        Points = new PointCollection { new(0, 0), new(14, 0), new(14, 14) },
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        VerticalAlignment = VerticalAlignment.Top,
+                        StrokeThickness = 1
                     };
-                    Grid.SetColumn(border, index++);
-                    segments.Children.Add(border);
+                    corner.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Brush.Negative");
+                    corner.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "Brush.Bg");
+                    root.Children.Add(corner);
                 }
             }
 
-            var overlay = new Border
-            {
-                BorderBrush = new SolidColorBrush(Color.FromRgb(4, 7, 10)),
-                BorderThickness = new Thickness(1)
-            };
-            root.Children.Add(overlay);
-
-            var label = new StackPanel
-            {
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-
-            label.Children.Add(new TextBlock
+            root.Children.Add(new TextBlock
             {
                 Text = handCode,
-                Foreground = stats is null || stats.Total == 0
-                    ? new SolidColorBrush(Color.FromRgb(135, 145, 156))
-                    : Brushes.Black,
+                Foreground = ink,
                 FontWeight = FontWeights.Bold,
                 FontSize = 15,
-                HorizontalAlignment = HorizontalAlignment.Center
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 2)
             });
 
-            if (stats is not null && stats.Total > 0)
-            {
-                label.Children.Add(new TextBlock
-                {
-                    Text = $"{stats.Total}",
-                    Foreground = Brushes.Black,
-                    FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                });
-            }
-
-            root.Children.Add(label);
+            // Marca de la casilla elegida.
+            var mark = new Border { BorderThickness = new Thickness(3), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
+            mark.SetResourceReference(Border.BorderBrushProperty, "Brush.Text");
+            root.Children.Add(mark);
+            _selectionMarks[handCode] = mark;
 
             var button = new Button
             {
@@ -368,13 +469,193 @@ namespace Hud.App.Views
                 VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Stretch,
-                ToolTip = stats is null || stats.Total == 0
-                    ? $"{handCode} | {LocalizationManager.Text("Common.NoSampleLower")}"
-                    : string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandActionAverage"), handCode, stats.Total, stats.AverageBb)
+                ToolTip = CellToolTip(handCode, stats)
             };
+            // Para el control por voz: "clic AKo".
+            SetName(button, handCode);
 
             button.Click += Cell_Click;
             return button;
+        }
+
+        private string CellToolTip(string handCode, HandCellStats? stats)
+        {
+            if (stats is null || stats.Total == 0)
+                return $"{handCode} | {LocalizationManager.Text("Common.NoSampleLower")}";
+
+            var lines = new List<string>
+            {
+                string.Format(CultureInfo.CurrentCulture, T("Mine.Tip.Hands"), handCode, HandsText(stats.Total), stats.AverageBb),
+                string.Join(" · ", ActionDisplayOrder.Where(stats.Actions.ContainsKey)
+                    .Select(action => $"{LabelForAction(action)} {100.0 * stats.Actions[action].Count / stats.Total:0}%"))
+            };
+            if (stats.Total < FullSample)
+                lines.Add(T("Mine.Tip.Few"));
+            if (ShowChartMarks && stats.ChartChecked > 0)
+                lines.Add(ChartLine(stats));
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        /// <summary>"Tabla de APH: subir (abrir). Jugaste distinto 2 de 3 veces."</summary>
+        private static string ChartLine(HandCellStats stats)
+        {
+            var advice = stats.ChartAdvice.Count == 1 ? stats.ChartAdvice.First() : T("Mine.Tip.ChartDepends");
+            return stats.ChartDiff > 0
+                ? string.Format(CultureInfo.CurrentCulture, T("Mine.Tip.ChartDiff"), advice, stats.ChartDiff, stats.ChartChecked)
+                : string.Format(CultureInfo.CurrentCulture, T("Mine.Tip.ChartSame"), advice, stats.ChartChecked);
+        }
+
+        /// <summary>1 mano: 40%; 2: 55%; 3: 70%; 4: 85%; 5 o mas: entera.</summary>
+        private static double SampleStrength(int hands) =>
+            hands >= FullSample ? 1.0 : 0.4 + 0.15 * (hands - 1);
+
+        // ---------------------------------------------------------------- leyenda
+
+        private void BuildLegend()
+        {
+            LegendPanel.Children.Clear();
+            var actions = _street == "PREFLOP"
+                ? new[] { HeroAction.Fold, HeroAction.Check, HeroAction.Call, HeroAction.Raise, HeroAction.AllIn }
+                : new[] { HeroAction.Fold, HeroAction.Check, HeroAction.Call, HeroAction.Bet, HeroAction.Raise, HeroAction.AllIn };
+
+            if (_colorByProfit)
+            {
+                LegendPanel.Children.Add(LegendTitle(T("Mine.Legend.ProfitTitle")));
+                var scale = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 18, 6) };
+                scale.Children.Add(LegendText(T("Mine.Legend.Loses")));
+                foreach (var bb in new[] { -60.0, -40, -20, -5, 0, 5, 20, 40, 60 })
+                    scale.Children.Add(new Border { Width = 16, Height = 14, Background = Frozen(ColorForBb(bb)), Margin = new Thickness(1, 0, 0, 0) });
+                scale.Children.Add(LegendText(" " + T("Mine.Legend.Wins")));
+                LegendPanel.Children.Add(scale);
+                LegendPanel.Children.Add(LegendTitle(T("Mine.Legend.BarTitle")));
+            }
+            else
+            {
+                LegendPanel.Children.Add(LegendTitle(T("Mine.Legend.ActionTitle")));
+            }
+
+            foreach (var action in actions)
+                LegendPanel.Children.Add(LegendItem(Swatch(ColorForAction(action)), action == HeroAction.Raise ? T("Mine.Legend.Raise") : LabelForAction(action)));
+
+            if (!_colorByProfit)
+                LegendPanel.Children.Add(LegendItem(BarSample(), T("Mine.Legend.Bar")));
+            LegendPanel.Children.Add(LegendItem(FaintSample(), string.Format(CultureInfo.CurrentCulture, T("Mine.Legend.Faint"), FullSample)));
+            if (ShowChartMarks)
+                LegendPanel.Children.Add(LegendItem(CornerSample(), T("Mine.Legend.Chart")));
+        }
+
+        private static TextBlock LegendTitle(string text) => new()
+        {
+            Text = text,
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 6)
+        };
+
+        private static TextBlock LegendText(string text)
+        {
+            var block = new TextBlock { Text = text, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.NoWrap };
+            block.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextDim");
+            return block;
+        }
+
+        private static FrameworkElement LegendItem(FrameworkElement sample, string text)
+        {
+            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 14, 6), VerticalAlignment = VerticalAlignment.Center };
+            sample.Margin = new Thickness(0, 0, 5, 0);
+            sample.VerticalAlignment = VerticalAlignment.Center;
+            item.Children.Add(sample);
+            item.Children.Add(LegendText(text));
+            return item;
+        }
+
+        private static Border Swatch(Color color) => new() { Width = 14, Height = 14, CornerRadius = new CornerRadius(3), Background = Frozen(color) };
+
+        private static FrameworkElement BarSample()
+        {
+            var bar = new StackPanel { Orientation = Orientation.Horizontal, Height = 7 };
+            foreach (var action in new[] { HeroAction.Fold, HeroAction.Call, HeroAction.Raise })
+                bar.Children.Add(new Border { Width = 8, Background = Frozen(ColorForAction(action)), Margin = new Thickness(0, 0, 1, 0) });
+            return bar;
+        }
+
+        private static FrameworkElement FaintSample() =>
+            new Border { Width = 14, Height = 14, CornerRadius = new CornerRadius(3), Background = Frozen(ColorForAction(HeroAction.Call)), Opacity = 0.45 };
+
+        private static FrameworkElement CornerSample()
+        {
+            var corner = new System.Windows.Shapes.Polygon { Points = new PointCollection { new(0, 0), new(14, 0), new(14, 14) } };
+            corner.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Brush.Negative");
+            return corner;
+        }
+
+        // ---------------------------------------------------------------- resumen y casilla elegida
+
+        /// <summary>Sin casilla elegida: un resumen de la calle con los filtros puestos.</summary>
+        private void ShowStreetSummary()
+        {
+            _selectedCell = null;
+            UpdateSelectionMarks();
+            ExactHandsPanel.Visibility = Visibility.Collapsed;
+            InsightPanel.Children.Clear();
+            SelectedHandText.Text = string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Title"), StreetLabel(_street));
+            SelectedStreetText.Text = T("Mine.Sum.Hint");
+
+            var cells = _cells.Values.Where(cell => cell.Street == _street && cell.Total > 0).ToList();
+            if (cells.Count == 0)
+            {
+                ActionSummaryList.ItemsSource = null;
+                AddInsight(T("Mine.Sum.NoHands"));
+                return;
+            }
+
+            var all = new HandCellStats(_street, "");
+            foreach (var example in cells.SelectMany(cell => cell.Examples))
+                all.Add(example.Action, example.NetBb, example);
+            ActionSummaryList.ItemsSource = all.SummaryItems(_colorByProfit);
+
+            AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Hands"), HandsText(all.Total), all.AverageBb));
+            if (_street == "PREFLOP")
+            {
+                var played = all.Examples.Count(example => example.Action != HeroAction.Fold);
+                AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Played"), 100.0 * played / all.Total));
+                if (ShowChartMarks && all.ChartChecked > 0)
+                {
+                    var same = all.ChartChecked - all.ChartDiff;
+                    AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Chart"), same, all.ChartChecked, 100.0 * same / all.ChartChecked), bold: true);
+                    var different = cells.Where(cell => cell.ChartDiff > 0)
+                        .OrderByDescending(cell => cell.ChartDiff).ThenBy(cell => cell.HandCode, StringComparer.Ordinal)
+                        .Take(6).Select(cell => cell.HandCode).ToList();
+                    if (different.Count > 0)
+                        AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.ChartWorst"), string.Join(", ", different)));
+                }
+            }
+
+            string Top(IEnumerable<HandCellStats> source) =>
+                string.Join(", ", source.Select(cell => $"{cell.HandCode} ({cell.TotalBb:+0.#;-0.#;0} bb)"));
+            var losers = cells.Where(cell => cell.TotalBb < -0.05).OrderBy(cell => cell.TotalBb).Take(3).ToList();
+            var winners = cells.Where(cell => cell.TotalBb > 0.05).OrderByDescending(cell => cell.TotalBb).Take(3).ToList();
+            if (losers.Count > 0)
+                AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Losers"), Top(losers)));
+            if (winners.Count > 0)
+                AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Winners"), Top(winners)));
+        }
+
+        private void AddInsight(string text, bool bold = false) =>
+            InsightPanel.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontSize = 13,
+                FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 3, 0, 0)
+            });
+
+        private void UpdateSelectionMarks()
+        {
+            foreach (var (hand, mark) in _selectionMarks)
+                mark.Visibility = _selectedCell is not null && _selectedCell.HandCode == hand ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void Cell_Click(object sender, RoutedEventArgs e)
@@ -382,10 +663,25 @@ namespace Hud.App.Views
             if (sender is not Button button || button.Tag is not HandCellStats stats)
                 return;
 
+            // Tocar otra vez la casilla elegida vuelve al resumen de la calle.
+            if (_selectedCell is not null && _selectedCell.HandCode == stats.HandCode)
+            {
+                ShowStreetSummary();
+                return;
+            }
+
             SelectedHandText.Text = stats.HandCode;
-            SelectedStreetText.Text = StreetLabel(stats.Street);
+            SelectedStreetText.Text = StreetLabel(stats.Street) + " · " + T("Mine.Sum.Back");
+            InsightPanel.Children.Clear();
+            if (stats.Total > 0)
+                AddInsight(string.Format(CultureInfo.CurrentCulture, T("Mine.Sum.Hands"), HandsText(stats.Total), stats.AverageBb));
+            if (stats.Total is > 0 and < FullSample)
+                AddInsight(T("Mine.Tip.Few"));
+            if (ShowChartMarks && stats.ChartChecked > 0)
+                AddInsight(ChartLine(stats), bold: true);
             ActionSummaryList.ItemsSource = stats.SummaryItems(_colorByProfit);
             _selectedCell = stats;
+            UpdateSelectionMarks();
             _exactActionFilter = null;
             _exactResultFilter = "ALL";
             RefreshExactFilterChips();
@@ -445,16 +741,12 @@ namespace Hud.App.Views
 
         private void RefreshExactFilterChips()
         {
-            var selectedBrush = new SolidColorBrush(Color.FromRgb(143, 211, 244));
-            var selectedForeground = Brushes.Black;
-            var defaultBrush = new SolidColorBrush(Color.FromRgb(17, 26, 36));
-            var defaultForeground = (Brush)FindResource("Brush.Text");
-
+            // Con los colores del tema (antes azul claro fijo): elegido = acento.
             void SetChip(Button button, bool selected)
             {
-                button.Background = selected ? selectedBrush : defaultBrush;
-                button.Foreground = selected ? selectedForeground : defaultForeground;
-                button.BorderBrush = selected ? selectedBrush : new SolidColorBrush(Color.FromRgb(42, 58, 76));
+                button.SetResourceReference(BackgroundProperty, selected ? "Brush.Accent" : "Brush.Inset");
+                button.SetResourceReference(ForegroundProperty, selected ? "Brush.Bg" : "Brush.Text");
+                button.SetResourceReference(BorderBrushProperty, selected ? "Brush.Accent" : "Brush.Border");
             }
 
             SetChip(ActionAllChip, _exactActionFilter is null);
@@ -488,7 +780,7 @@ namespace Hud.App.Views
                 ShowInTaskbar = true
             };
 
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private static IEnumerable<IReadOnlyList<string>> SplitHands(IEnumerable<string> lines)
@@ -560,16 +852,6 @@ namespace Hud.App.Views
         {
             return PokerStarsHandHistory.BuildPositionMap(hand);
         }
-
-        private static string PositionFromOffset(int offset, int playerCount) =>
-            playerCount switch
-            {
-                <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "HJ", 5 => "CO", _ => "MP" }
-            };
 
         private static string FormatCardForDisplay(string card)
         {
@@ -752,55 +1034,135 @@ namespace Hud.App.Views
             _ => street
         };
 
-        private static Brush BrushForAction(HeroAction action) => action switch
+        /// <summary>Colores de cada accion (con significado: no cambian con el tema, como los de las estadisticas).</summary>
+        private static Color ColorForAction(HeroAction action) => action switch
         {
-            HeroAction.Fold => new SolidColorBrush(Color.FromRgb(80, 86, 96)),
-            HeroAction.Check => new SolidColorBrush(Color.FromRgb(75, 102, 122)),
-            HeroAction.Call => new SolidColorBrush(Color.FromRgb(0, 148, 198)),
-            HeroAction.Bet => new SolidColorBrush(Color.FromRgb(64, 184, 4)),
-            HeroAction.Raise or HeroAction.ThreeBet or HeroAction.FourBetPlus => new SolidColorBrush(Color.FromRgb(184, 181, 4)),
-            HeroAction.AllIn => new SolidColorBrush(Color.FromRgb(156, 0, 0)),
-            _ => Brushes.Transparent
+            HeroAction.Fold => Color.FromRgb(96, 105, 101),
+            HeroAction.Check => Color.FromRgb(104, 130, 146),
+            HeroAction.Call => Color.FromRgb(70, 145, 205),
+            HeroAction.Bet => Color.FromRgb(72, 170, 100),
+            HeroAction.Raise or HeroAction.ThreeBet or HeroAction.FourBetPlus => Color.FromRgb(206, 160, 52),
+            HeroAction.AllIn => Color.FromRgb(212, 86, 98),
+            _ => Colors.Transparent
         };
 
-        private static Brush BrushForBb(double bb)
+        private static Brush BrushForAction(HeroAction action) => Frozen(ColorForAction(action));
+
+        private static Color ColorForBb(double bb)
         {
             var abs = Math.Abs(bb);
             if (abs < 0.05)
-                return new SolidColorBrush(Color.FromRgb(80, 86, 96));
+                return Color.FromRgb(96, 105, 101);
 
             if (bb > 0)
             {
                 if (abs < 10)
-                    return new SolidColorBrush(Color.FromRgb(34, 116, 101));
+                    return Color.FromRgb(58, 128, 104);
                 if (abs < 30)
-                    return new SolidColorBrush(Color.FromRgb(39, 156, 92));
+                    return Color.FromRgb(64, 158, 98);
                 if (abs < 50)
-                    return new SolidColorBrush(Color.FromRgb(76, 184, 4));
-                return new SolidColorBrush(Color.FromRgb(184, 181, 4));
+                    return Color.FromRgb(96, 186, 112);
+                return Color.FromRgb(206, 170, 60);
             }
 
             if (abs < 10)
-                return new SolidColorBrush(Color.FromRgb(112, 48, 55));
+                return Color.FromRgb(150, 92, 98);
             if (abs < 30)
-                return new SolidColorBrush(Color.FromRgb(178, 43, 52));
+                return Color.FromRgb(186, 82, 92);
             if (abs < 50)
-                return new SolidColorBrush(Color.FromRgb(210, 34, 45));
-            return new SolidColorBrush(Color.FromRgb(156, 0, 0));
+                return Color.FromRgb(214, 92, 104);
+            return Color.FromRgb(232, 112, 124);
         }
 
+        private static Brush BrushForBb(double bb) => Frozen(ColorForBb(bb));
+
+        /// <summary>Las acciones en el idioma de APH (antes salian en ingles).</summary>
         private static string LabelForAction(HeroAction action) => action switch
         {
-            HeroAction.Fold => "Fold",
-            HeroAction.Check => "Check",
-            HeroAction.Call => "Call",
-            HeroAction.Bet => "Bet",
-            HeroAction.Raise => "Raise",
-            HeroAction.ThreeBet => "3Bet",
-            HeroAction.FourBetPlus => "4Bet+",
+            HeroAction.Fold => T("Mine.Act.Fold"),
+            HeroAction.Check => T("Mine.Act.Check"),
+            HeroAction.Call => T("Mine.Act.Call"),
+            HeroAction.Bet => T("Mine.Act.Bet"),
+            HeroAction.Raise => T("Mine.Act.Raise"),
+            HeroAction.ThreeBet => "3bet",
+            HeroAction.FourBetPlus => "4bet+",
             HeroAction.AllIn => "All-in",
             _ => action.ToString()
         };
+
+        /// <summary>Decisiones preflop del heroe en esta mano, con su situacion y lo que dice la tabla de APH.</summary>
+        private static List<PreflopDecision> ReadPreflopDecisions(IReadOnlyList<string> hand, string heroName, AphPreflopProvider? charts)
+        {
+            var list = new List<PreflopDecision>();
+            try
+            {
+                foreach (var spot in PreflopSpotReader.ReadHand(hand))
+                {
+                    if (!PokerStarsHandHistory.SamePlayer(spot.Player, heroName))
+                        break;
+                    string? chart = null;
+                    try
+                    {
+                        chart = charts?.GetCode(spot.Scenario, spot.Hero, spot.Villain, spot.Hand);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLog.Warn("Mis Tablas: no se pudo consultar la tabla de APH", ex);
+                    }
+                    list.Add(new PreflopDecision(spot.Scenario, PreflopScenarios.BaseOf(spot.Scenario), spot.Hero, spot.Villain, spot.Action, chart));
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Mis Tablas: no se pudo leer la situacion preflop de una mano", ex);
+            }
+            return list;
+        }
+
+        private static HeroAction ActionFromDecision(PreflopDecision decision) => decision.HeroCode switch
+        {
+            "F" => HeroAction.Fold,
+            "C" => HeroAction.Call,
+            _ => decision.Base == PreflopScenarios.VsRaise ? HeroAction.ThreeBet
+                : decision.Base is PreflopScenarios.Vs3Bet or PreflopScenarios.Vs4Bet or PreflopScenarios.Vs5Bet ? HeroAction.FourBetPlus
+                : HeroAction.Raise
+        };
+
+        private static string T(string key) => LocalizationManager.Text(key);
+
+        /// <summary>"1 mano" o "N manos".</summary>
+        private static string HandsText(int count) =>
+            count == 1 ? T("Mine.OneHand") : string.Format(CultureInfo.CurrentCulture, T("Common.HandCount"), count);
+
+        private static void SetName(DependencyObject element, string name) =>
+            System.Windows.Automation.AutomationProperties.SetName(element, name);
+
+        private static Brush Frozen(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        private static Color Blend(Color under, Color over, double amount) => Color.FromRgb(
+            (byte)Math.Round(under.R + (over.R - under.R) * amount),
+            (byte)Math.Round(under.G + (over.G - under.G) * amount),
+            (byte)Math.Round(under.B + (over.B - under.B) * amount));
+
+        /// <summary>Texto negro o blanco, el que mas contraste tenga con el fondo (formula WCAG).</summary>
+        private static Brush InkFor(Color background)
+        {
+            static double Channel(byte value)
+            {
+                var c = value / 255.0;
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            var luminance = 0.2126 * Channel(background.R) + 0.7152 * Channel(background.G) + 0.0722 * Channel(background.B);
+            var vsBlack = (luminance + 0.05) / 0.05;
+            var vsWhite = 1.05 / (luminance + 0.05);
+            return vsBlack >= vsWhite ? Frozen(Color.FromRgb(17, 17, 17)) : Brushes.White;
+        }
 
         private static HeroAction? ActionFromLabel(string label) => label switch
         {
@@ -840,7 +1202,19 @@ namespace Hud.App.Views
             public Dictionary<HeroAction, ActionStats> Actions { get; } = new();
             public List<ExactHandItem> Examples { get; } = new();
             public int Total => Actions.Values.Sum(action => action.Count);
-            public double AverageBb => Total == 0 ? 0 : Actions.Values.Sum(action => action.TotalBb) / Total;
+            public double TotalBb => Actions.Values.Sum(action => action.TotalBb);
+            public double AverageBb => Total == 0 ? 0 : TotalBb / Total;
+
+            /// <summary>Lo que mas hiciste con esta mano (en empate, la accion mas agresiva).</summary>
+            public HeroAction MainAction => Actions
+                .OrderByDescending(pair => pair.Value.Count)
+                .ThenByDescending(pair => Array.IndexOf(ActionDisplayOrder, pair.Key))
+                .First().Key;
+
+            /// <summary>Decisiones preflop que tienen tabla de APH, cuantas fueron distintas y que dice la tabla.</summary>
+            public int ChartChecked { get; private set; }
+            public int ChartDiff { get; private set; }
+            public HashSet<string> ChartAdvice { get; } = new(StringComparer.Ordinal);
 
             public void Add(HeroAction action, double netBb, ExactHandItem example)
             {
@@ -853,6 +1227,14 @@ namespace Hud.App.Views
                 stats.Count++;
                 stats.TotalBb += netBb;
                 Examples.Add(example);
+
+                if (example.Street == "PREFLOP" && example.Decision is { ChartCode: not null } decision)
+                {
+                    ChartChecked++;
+                    if (decision.HeroCode != decision.ChartCode)
+                        ChartDiff++;
+                    ChartAdvice.Add(decision.ChartAction!.ToLower(CultureInfo.CurrentCulture));
+                }
             }
 
             public IReadOnlyList<ActionSummaryItem> SummaryItems(bool colorByProfit)
@@ -861,7 +1243,7 @@ namespace Hud.App.Views
                 {
                     return new[]
                     {
-                        new ActionSummaryItem(LocalizationManager.Text("Tag.NoSample"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCount"), 0), new SolidColorBrush(Color.FromRgb(80, 86, 96)))
+                        new ActionSummaryItem(LocalizationManager.Text("Tag.NoSample"), string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCount"), 0), Hud.App.Services.ThemeBrushes.NeutralBackground)
                     };
                 }
 
@@ -874,7 +1256,9 @@ namespace Hud.App.Views
                         var avg = actionStats.TotalBb / actionStats.Count;
                         return new ActionSummaryItem(
                             $"{LabelForAction(action)} {pct:0.#}%",
-                            string.Format(CultureInfo.InvariantCulture, LocalizationManager.Text("Common.HandCountBbAverage"), actionStats.Count, avg),
+                            actionStats.Count == 1
+                                ? string.Format(CultureInfo.CurrentCulture, T("Mine.OneHandBb"), avg)
+                                : string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Common.HandCountBbAverage"), actionStats.Count, avg),
                             colorByProfit ? BrushForBb(avg) : BrushForAction(action));
                     })
                     .ToList();
@@ -889,6 +1273,18 @@ namespace Hud.App.Views
         }
 
         private sealed record ActionSummaryItem(string Label, string Detail, Brush Color);
+
+        /// <summary>
+        /// Una decision preflop: situacion (por ejemplo "HU VS RAISE"), su base ("VS RAISE"), posiciones
+        /// con los nombres de las tablas, lo que hizo el heroe (R/C/F) y lo que dice la tabla (o null).
+        /// </summary>
+        private sealed record PreflopDecision(string Scenario, string Base, string Hero, string Villain, string HeroCode, string? ChartCode, bool HeroChecked = false)
+        {
+            /// <summary>Lo que dice la tabla, con "Pasar (check)" cuando se podia pasar gratis.</summary>
+            public string? ChartAction => ChartCode is null ? null
+                : HeroChecked && ChartCode == "C" ? T("Preflop.Action.Check")
+                : PreflopScenarios.ActionLabel(Scenario, Hero, ChartCode);
+        }
 
         private sealed record ExactHandItem(
             string Street,
@@ -905,10 +1301,25 @@ namespace Hud.App.Views
             string Spot,
             HeroAction Action,
             double NetBb,
-            double CumulativeBb)
+            double CumulativeBb,
+            PreflopDecision? Decision,
+            bool IsFirstDecision,
+            IReadOnlySet<string> HandScenarios)
         {
             public string HandDateTimeLabel => HandDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             public string ActionLabel => LabelForAction(Action);
+
+            /// <summary>"Contra subida · BTN": la situacion de esta decision (despues del flop, la del preflop de la mano).</summary>
+            public string SituationLabel => Decision is null
+                ? "—"
+                : PreflopScenarios.Label(Decision.Scenario)
+                  + (PreflopScenarios.IsHeadsUp(Decision.Scenario) ? " HU" : "")
+                  + (string.IsNullOrEmpty(Decision.Villain) ? "" : " · " + PreflopScenarios.PositionLabel(Decision.Villain, Decision.Scenario));
+
+            /// <summary>"✓ Subir (abrir)" si jugaste como la tabla; "✗ Retirarse" si la tabla decia otra cosa.</summary>
+            public string ChartLabel => Street != "PREFLOP" || Decision?.ChartCode is null
+                ? "—"
+                : (Decision.HeroCode == Decision.ChartCode ? "✓ " : "✗ ") + Decision.ChartAction;
             public string NetBbLabel => $"{NetBb:+0.#;-0.#;0} bb";
             public string CumulativeBbLabel => $"{CumulativeBb:+0.#;-0.#;0} bb";
             public string NetTrendIcon => NetBb >= 0 ? "\u25B2" : "\u25BC";

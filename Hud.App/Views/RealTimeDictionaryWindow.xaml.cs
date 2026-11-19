@@ -59,13 +59,11 @@ namespace Hud.App.Views
             private static IEnumerable<ColorLegendRow> BuildColors()
             {
                 yield return new ColorLegendRow(FindBrush("BgDark"), T("Color.Neutral"), T("Color.NeutralRt.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudBlueDark"), T("Color.DarkBlue"), T("Color.DarkBlue.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudBlue"), T("Color.Blue"), T("Color.Blue.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudGreenSoft"), T("Color.Green"), T("Color.Green.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudYellow"), T("Color.Yellow"), T("Color.Yellow.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudOrange"), T("Color.Orange"), T("Color.Orange.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudRedSoft"), T("Color.SoftRed"), T("Color.SoftRed.Desc"));
-                yield return new ColorLegendRow(FindBrush("HudRed"), T("Color.Red"), T("Color.RedRt.Desc"));
+                // La escala unica de APH (StatScale): azul = menos que lo normal, verde = normal,
+                // naranja y rojo = mas que lo normal. El color ya no se invierte en ninguna stat.
+                foreach (var level in StatScale.Scale)
+                    yield return new ColorLegendRow(BackgroundLoad.Frozen(new SolidColorBrush(StatScale.ColorOf(level)!.Value)),
+                        StatScale.LabelOf(level), StatScale.RangeOf(level) + ". " + LocalizationManager.Text("StatLegend.Short." + level));
             }
 
             private static IEnumerable<string> BuildNotes()

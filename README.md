@@ -72,6 +72,58 @@ Run:
 dotnet run --project Hud.App\Hud.App.csproj
 ```
 
+Automated tests (hand parsing, results and stats, with hand-written sample hands in `HandReader.Tests/TestData`):
+
+```powershell
+dotnet test HandReader.Tests\HandReader.Tests.csproj
+```
+
+HUD calibration with real hands: `APH.Calibration` reads hands in PHH format (for example the
+public [Dataset of Poker Hand Histories](https://doi.org/10.5281/zenodo.10796885), CC BY 4.0)
+and writes `Hud.App/Data/population_baselines.json`, the population percentiles APH uses to
+color HUD stats and classify opponents. To recalibrate:
+
+```powershell
+dotnet run --project APH.Calibration -c Release -- D:\APH_Datos\phh\data Hud.App\Data\population_baselines.json
+```
+
+Preflop charts: the reference charts are `Hud.App/Data/APH_Reference_100bb_6max.csv` (13x13 grids,
+also used by the Trainer). The draft charts for vs limp, squeeze and heads-up are
+`Hud.App/Data/APH_Rangos_Borrador_6max.txt`, one line per spot in range notation
+(`SITUACION | HEROE | RIVALES | SUBIR | PAGAR`, e.g. `77+, ATs+, A5s-A2s, T9s-54s, resto`), so they
+can be reviewed and edited without touching code. The tests check that every spot has its chart
+and that the notation parses.
+
+Simulator: `Hud.App/Services/Simulator` holds the hand engine (`SimEngine`), the machine profiles
+(`SimBot`), the range reading and decision review (`SimReview`), the skills (`SimSession`) and the
+self-play measurement (`SimTraining`). `SimulatorTests` plays tens of thousands of machine-only hands
+and fails if a profile leaves its statistical band, so re-run the tests after changing a profile.
+
+All-in solver: `Hud.App/Services/Solver/PushFoldSolver.cs` computes the heads-up push/fold Nash
+equilibrium (CFR+ over the 169 starting hands) from `Hud.App/Data/APH_Equidad_HU_169.txt`, the
+all-in equity of every hand against every hand. To regenerate that table (about 7 minutes):
+
+```powershell
+dotnet run --project APH.Calibration -c Release -- --equidad Hud.App\Data\APH_Equidad_HU_169.txt 1000000
+```
+
+`PushFoldTests` check the equities against known values and that no perfect opponent can exploit
+the solution.
+
+GTO solver: `Hud.App/Services/Solver/PostflopGtoSolver.cs` solves one heads-up postflop street
+(the river, or the turn with every river) with discounted CFR over both ranges. The Modo
+Entrenador live decision (play money only) uses it on the turn and river; `GtoSolverTests` check
+a known equilibrium and the exploitability. Run APH from a Release build: the solver is several
+times slower in Debug.
+
+Flop: `FlopGtoSolver.cs` solves the flop as an approximate two-street game (flop and turn betting,
+the river dealt without betting) with a precomputed equity matrix per turn card. The live
+decision solves it in about 5 seconds, or reads it instantly from the flop library
+(`FlopLibrary.cs`): the 1,755 suit-distinct flops for LJ, HJ, CO, BTN and SB opens called by the
+big blind, built in the background from Real time ("Biblioteca GTO del flop", about 6 hours on
+4 threads) into `%APPDATA%\APH\gto-flop`. `FlopGtoTests` cover it; `FlopGtoBenchTests` (skipped
+by default) measure speed and convergence.
+
 If the app executable is already open and blocks the default build output, use an alternate output path:
 
 ```powershell

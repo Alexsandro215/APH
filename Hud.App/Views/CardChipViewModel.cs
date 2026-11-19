@@ -71,7 +71,7 @@ namespace Hud.App.Views
                 .Replace("-", "");
 
         private static Brush BrushFrom(byte r, byte g, byte b) =>
-            new SolidColorBrush(Color.FromRgb(r, g, b));
+            BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
     }
 }
 

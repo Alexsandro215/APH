@@ -60,7 +60,7 @@
                      Margin="0,0,0,14"/>
 
         <Button Content="{DynamicResource Unlock.Enter}"
-                Style="{StaticResource Btn.Primary}"
+                Style="{StaticResource Btn.Accent}"
                 Height="46"
                 Click="UnlockButton_Click"/>
 

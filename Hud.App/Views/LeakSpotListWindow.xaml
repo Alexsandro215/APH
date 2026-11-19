@@ -33,7 +33,7 @@
     </Style>
     <Style TargetType="DataGridColumnHeader">
       <Setter Property="Background" Value="{DynamicResource Brush.Header}"/>
-      <Setter Property="Foreground" Value="{StaticResource FgLight}"/>
+      <Setter Property="Foreground" Value="{DynamicResource FgLight}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Padding" Value="6,5"/>

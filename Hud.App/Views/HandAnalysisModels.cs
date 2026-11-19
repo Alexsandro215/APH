@@ -16,10 +16,12 @@ namespace Hud.App.Views
             IsBoardHeader = isBoardHeader;
             IsTrackedVillain = isTrackedVillain;
 
+            // El heroe va con el acento del tema y su fila con el tono "HeroRow" del tema (antes era
+            // verde fijo y no cambiaba con el aspecto).
             var baseForeground = isTrackedVillain
                 ? new SolidColorBrush(Color.FromRgb(255, 132, 146))
                 : isHero
-                ? new SolidColorBrush(Color.FromRgb(33, 192, 122))
+                ? Hud.App.Services.ThemeBrushes.Brush("Col.Accent", Color.FromRgb(33, 192, 122))
                 : isSystem
                     ? new SolidColorBrush(Color.FromRgb(143, 211, 244))
                     : Brushes.White;
@@ -27,10 +29,10 @@ namespace Hud.App.Views
             Background = isTrackedVillain
                 ? new SolidColorBrush(Color.FromRgb(61, 22, 30))
                 : isHero
-                ? new SolidColorBrush(Color.FromRgb(16, 37, 28))
+                ? Hud.App.Services.ThemeBrushes.Resource("HeroRow", Color.FromRgb(16, 37, 28))
                 : isSystem
-                    ? new SolidColorBrush(Color.FromRgb(16, 28, 41))
-                    : new SolidColorBrush(Color.FromRgb(17, 24, 32));
+                    ? Hud.App.Services.ThemeBrushes.NeutralBackground
+                    : Hud.App.Services.ThemeBrushes.Panel;
 
             VisualParts = BuildActionVisualParts(text, baseForeground, isBoardHeader);
         }

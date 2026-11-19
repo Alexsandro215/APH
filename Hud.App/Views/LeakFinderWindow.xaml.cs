@@ -15,7 +15,7 @@ namespace Hud.App.Views
 {
     public partial class LeakFinderWindow : Window
     {
-        private readonly LeakFinderViewModel _viewModel;
+        private LeakFinderViewModel? _viewModel;
 
         public LeakFinderWindow(IEnumerable<MainWindow.TableSessionStats> tables, string summary)
         {
@@ -24,8 +24,12 @@ namespace Hud.App.Views
             MaxHeight = SystemParameters.WorkArea.Height;
 
             var tableList = tables.ToList();
-            _viewModel = new LeakFinderViewModel(tableList, summary);
-            DataContext = _viewModel;
+            // Buscar fugas lee todos los historiales: en segundo plano.
+            BackgroundLoad.Run(this, () => new LeakFinderViewModel(tableList, summary), viewModel =>
+            {
+                _viewModel = viewModel;
+                DataContext = viewModel;
+            });
         }
 
         private void LeakGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -36,8 +40,17 @@ namespace Hud.App.Views
             OpenSpotWindow($"{leak.TitlePrefix}: {leak.Key}", leak.SummaryLabel, leak.MatchingHands);
         }
 
+        private void LeakBars_ItemClicked(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Charts.DivergingBarList)?.LastClicked?.Payload is LeakSummaryViewModel leak)
+                OpenSpotWindow($"{leak.TitlePrefix}: {leak.Key}", leak.SummaryLabel, leak.MatchingHands);
+        }
+
         private void BtnViewAllReview_Click(object sender, RoutedEventArgs e)
         {
+            if (_viewModel is null)
+                return;
+
             OpenSpotWindow("MANOS PARA REVISAR", _viewModel.ReviewSummary, _viewModel.ReviewHands);
         }
 
@@ -48,12 +61,13 @@ namespace Hud.App.Views
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ShowInTaskbar = true
             };
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private void BtnSessionAnalysis_Click(object sender, RoutedEventArgs e)
         {
-            var window = new SessionLeakAnalysisWindow() { Owner = this };
+            // Esta ventana puede estar mostrada como pagina (nunca abierta): el dueno es la ventana visible.
+            var window = new SessionLeakAnalysisWindow() { Owner = (sender as DependencyObject is { } source ? Window.GetWindow(source) : null) ?? Application.Current.MainWindow };
             window.ShowDialog();
         }
 
@@ -120,6 +134,40 @@ namespace Hud.App.Views
                 WorstReviewPotLabel = BuildWorstLabel(ReviewHands, hand => hand.PotType);
                 ReviewCountLabel = string.Format(CultureInfo.InvariantCulture, Hud.App.Services.LocalizationManager.Text("Common.CountOfHands"), ReviewHands.Count, hands.Count);
                 ReviewSummary = string.Format(Hud.App.Services.LocalizationManager.Text("Common.ReviewSummary"), ReviewHands.Count);
+                Conclusions = BuildConclusions().ToList();
+            }
+
+            /// <summary>Las fugas claras (grupos de 30 manos o mas que pierden) en frases, con que hacer.</summary>
+            public IReadOnlyList<string> Conclusions { get; }
+
+            private IEnumerable<string> BuildConclusions()
+            {
+                var text = Hud.App.Services.LocalizationManager.Text;
+                string Bb(double value) => value.ToString("+0;-0;0", CultureInfo.CurrentCulture);
+                LeakSummaryViewModel? Worst(IEnumerable<LeakSummaryViewModel> items) =>
+                    items.Where(item => item.Count >= 30 && item.TotalBb <= -20).OrderBy(item => item.TotalBb).FirstOrDefault();
+
+                var any = false;
+                if (Worst(PositionLeaks) is { } position)
+                {
+                    any = true;
+                    yield return string.Format(CultureInfo.CurrentCulture, text("Leak.Conc.Position"), position.Key, Bb(position.TotalBb),
+                        position.Count, Bb(position.TotalBb * 100 / Math.Max(1, position.Count)));
+                }
+                if (Worst(PotLeaks) is { } pot)
+                {
+                    any = true;
+                    yield return string.Format(CultureInfo.CurrentCulture, text("Leak.Conc.Pot"), pot.Key, Bb(pot.TotalBb), pot.Count);
+                }
+                if (Worst(BoardLeaks) is { } board)
+                {
+                    any = true;
+                    yield return string.Format(CultureInfo.CurrentCulture, text("Leak.Conc.Board"), board.Key, Bb(board.TotalBb), board.Count);
+                }
+                if (!any)
+                    yield return text("Leak.Conc.None");
+                if (ComboLeaks.OrderBy(item => item.TotalBb).FirstOrDefault() is { } combo && combo.TotalBb < 0 && combo.Count < 20)
+                    yield return string.Format(CultureInfo.CurrentCulture, text("Leak.Conc.Combo"), combo.Key, Bb(combo.TotalBb), combo.Count);
             }
 
             public string Summary { get; }
@@ -139,6 +187,30 @@ namespace Hud.App.Views
             public ObservableCollection<LeakSummaryViewModel> ComboLeaks { get; }
             public ObservableCollection<LeakSummaryViewModel> BoardLeaks { get; }
             public ObservableCollection<LeakSummaryViewModel> SessionLeaks { get; }
+
+            // Barras para leer las fugas de un vistazo: rojo donde se pierde, verde donde se gana.
+            // Posiciones y sesiones en su orden natural; el resto, lo peor arriba.
+            public IReadOnlyList<Charts.BarDatum> PositionBars => ToBars(PositionLeaks, keepOrder: true);
+            public IReadOnlyList<Charts.BarDatum> ActionBars => ToBars(ActionLeaks, keepOrder: false);
+            public IReadOnlyList<Charts.BarDatum> PotBars => ToBars(PotLeaks, keepOrder: false);
+            public IReadOnlyList<Charts.BarDatum> ComboBars => ToBars(ComboLeaks, keepOrder: false);
+            public IReadOnlyList<Charts.BarDatum> BoardBars => ToBars(BoardLeaks, keepOrder: false);
+            public IReadOnlyList<Charts.BarDatum> SessionBars => ToBars(SessionLeaks, keepOrder: true);
+
+            private static IReadOnlyList<Charts.BarDatum> ToBars(IEnumerable<LeakSummaryViewModel> items, bool keepOrder)
+            {
+                var text = Hud.App.Services.LocalizationManager.Text;
+                var ordered = keepOrder ? items : items.OrderBy(item => item.TotalBb);
+                return ordered
+                    .Select(item => new Charts.BarDatum(
+                        item.Key,
+                        item.TotalBb,
+                        item.TotalBbLabel,
+                        $"{item.Count} {text("Visual.Hands")}",
+                        $"{item.TitlePrefix}: {item.Key}\n{item.SummaryLabel}\n{item.WorstCombo}",
+                        item))
+                    .ToList();
+            }
             public ObservableCollection<LeakSpotRow> ReviewHands { get; }
             public string WorstReviewHandLabel { get; }
             public string WorstReviewActionLabel { get; }
@@ -338,7 +410,7 @@ namespace Hud.App.Views
                 for (var i = 0; i < orderedSeats.Count; i++)
                 {
                     var offset = (i - buttonIndex + orderedSeats.Count) % orderedSeats.Count;
-                    result[seats[orderedSeats[i]]] = PositionFromOffset(offset, orderedSeats.Count);
+                    result[seats[orderedSeats[i]]] = AsSummaryPosition(PokerStarsHandHistory.PositionFromOffset(offset, orderedSeats.Count));
                 }
 
                 ApplyBlindPositionOverrides(hand, result, orderedSeats.Count);
@@ -375,15 +447,10 @@ namespace Hud.App.Views
                 }
             }
 
-            private static string PositionFromOffset(int offset, int playerCount) =>
-                playerCount switch
-                {
-                    <= 2 => offset == 0 ? "BTN/SB" : "BB",
-                    3 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                    4 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "CO", _ => "?" },
-                    5 => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "CO", _ => "?" },
-                    _ => offset switch { 0 => "BTN", 1 => "SB", 2 => "BB", 3 => "UTG", 4 => "MP", 5 => "CO", _ => "UTG" }
-                };
+            // La tabla comun llama HJ al asiento previo al CO; las copias de esta ventana lo
+            // llamaban MP, que es lo que espera PositionSummaryOrder.
+            private static string AsSummaryPosition(string position) =>
+                position == "HJ" ? "MP" : position;
 
             private static string InferPositionFromActions(IReadOnlyList<string> hand, string playerName)
             {
@@ -432,14 +499,11 @@ namespace Hud.App.Views
                 if (index < 0)
                     return "?";
 
-                return playerCount switch
-                {
-                    <= 2 => index == 0 ? "BTN/SB" : "BB",
-                    3 => index switch { 0 => "BTN", 1 => "SB", 2 => "BB", _ => "?" },
-                    4 => index switch { 0 => "CO", 1 => "BTN", 2 => "SB", 3 => "BB", _ => "?" },
-                    5 => index switch { 0 => "UTG", 1 => "CO", 2 => "BTN", 3 => "SB", 4 => "BB", _ => "?" },
-                    _ => index switch { 0 => "UTG", 1 => "MP", 2 => "CO", 3 => "BTN", 4 => "SB", 5 => "BB", _ => "UTG" }
-                };
+                // Un indice fuera de la mesa sigue dando UTG desde 6 jugadores, como la tabla anterior.
+                if (playerCount >= 6 && index >= playerCount)
+                    return "UTG";
+
+                return AsSummaryPosition(PokerStarsHandHistory.PositionFromPreflopIndex(index, playerCount));
             }
 
             private static string NormalizePositionLabel(string position) =>
@@ -447,6 +511,9 @@ namespace Hud.App.Views
                 {
                     "BU" => "BTN",
                     "EP" => "UTG",
+                    // La tabla de posiciones agrupa el HJ como MP. Sin esto, las manos en HJ no
+                    // salian en "Perdidas por posicion" (MP quedaba en 0) pero si como "Mayor fuga: HJ".
+                    "HJ" => "MP",
                     "SB/BTN" => "BTN/SB",
                     "" => "?",
                     _ => position
@@ -827,7 +894,7 @@ namespace Hud.App.Views
             }
 
             private static Brush BrushFrom(byte r, byte g, byte b) =>
-                new SolidColorBrush(Color.FromRgb(r, g, b));
+                BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(r, g, b)));
         }
 
         private sealed record StreetInfo(
@@ -869,9 +936,9 @@ namespace Hud.App.Views
         private static Brush TrendBrush(double value) =>
             value switch
             {
-                > 0 => new SolidColorBrush(Color.FromRgb(33, 192, 122)),
-                < 0 => new SolidColorBrush(Color.FromRgb(226, 78, 91)),
-                _ => new SolidColorBrush(Color.FromRgb(135, 145, 156))
+                > 0 => BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(33, 192, 122))),
+                < 0 => BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(226, 78, 91))),
+                _ => BackgroundLoad.Frozen(new SolidColorBrush(Color.FromRgb(135, 145, 156)))
             };
     }
 }

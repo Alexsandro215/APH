@@ -1,0 +1,23 @@
+PokerStars Hand #200000000003:  Hold'em No Limit ($0.01/$0.02 USD) - 2026/10/01 10:10:00 ET
+Table 'Vega' 6-max Seat #1 is the button
+Seat 1: Hero ($2 in chips)
+Seat 2: Villain ($2 in chips)
+Seat 3: Newbie ($2 in chips)
+Seat 4: Away ($2 in chips) is sitting out
+Hero: posts small blind $0.01
+Villain: posts big blind $0.02
+Newbie: posts small & big blinds $0.03
+*** HOLE CARDS ***
+Dealt to Hero [7c 2d]
+Newbie: raises $0.04 to $0.06
+Hero: folds
+Villain: folds
+Uncalled bet ($0.04) returned to Newbie
+Newbie collected $0.06 from pot
+Newbie: doesn't show hand
+*** SUMMARY ***
+Total pot $0.06 | Rake $0
+Seat 1: Hero (button) (small blind) folded before Flop
+Seat 2: Villain (big blind) folded before Flop
+Seat 3: Newbie collected ($0.06)
+Seat 4: Away is sitting out

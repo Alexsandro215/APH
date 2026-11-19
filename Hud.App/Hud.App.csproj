@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Windows 10 2004+: el modo Entrenador usa el OCR integrado de Windows (Windows.Media.Ocr). -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,6 +15,18 @@
   <ItemGroup>
     <None Update="Data\APH_Reference_100bb_6max.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <!-- Rangos borrador de contra limp, squeeze y heads-up (notacion de rangos, se editan sin tocar codigo). -->
+    <None Update="Data\APH_Rangos_Borrador_6max.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Cortes del HUD calibrados con manos reales (APH.Calibration). -->
+    <None Update="Data\population_baselines.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Equidad all-in de cada mano contra cada mano para el solver de all-in (la genera APH.Calibration con la opcion equidad). -->
+    <None Update="Data\APH_Equidad_HU_169.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

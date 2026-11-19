@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- El mismo evaluador de manos de APH, para generar la tabla de equidades del solver de all-in -->
+    <Compile Include="..\Hud.App\Services\Trainer\TrainerCards.cs" Link="Shared\TrainerCards.cs" />
+  </ItemGroup>
+</Project>

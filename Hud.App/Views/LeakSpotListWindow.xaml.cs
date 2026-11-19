@@ -80,7 +80,7 @@ namespace Hud.App.Views
                 ShowInTaskbar = true
             };
 
-            window.Show();
+            AppNavigator.Open(window);
         }
 
         private static string SelectedText(ComboBox comboBox) =>

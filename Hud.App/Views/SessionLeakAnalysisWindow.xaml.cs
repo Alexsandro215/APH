@@ -48,14 +48,24 @@ namespace Hud.App.Views
                 SafeAnalyzeSession(row);
         }
 
-        private void SafeAnalyzeSession(SessionAnalysisRow row)
+        private bool _analyzing;
+
+        // Antes el analisis corria en el hilo de la interfaz: el aviso "por favor espera" nunca
+        // llegaba a verse porque la ventana se congelaba hasta terminar.
+        private async void SafeAnalyzeSession(SessionAnalysisRow row)
         {
+            if (_analyzing)
+                return;
+
+            _analyzing = true;
+            SessionsGrid.IsEnabled = false;
             try
             {
-                AnalyzeSession(row);
+                await AnalyzeSessionAsync(row);
             }
             catch (Exception ex)
             {
+                AppLog.Error("Fallo el analisis de leaks de una sesion", ex);
                 StatusText.Text = $"No se pudo abrir el analisis: {ex.Message}";
                 MessageBox.Show(
                     $"No se pudo abrir el analisis de esta sesion.\n\nDetalle: {ex.Message}",
@@ -63,9 +73,14 @@ namespace Hud.App.Views
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+            finally
+            {
+                _analyzing = false;
+                SessionsGrid.IsEnabled = true;
+            }
         }
 
-        private void AnalyzeSession(SessionAnalysisRow row)
+        private async Task AnalyzeSessionAsync(SessionAnalysisRow row)
         {
             StatusText.Text = $"Analizando {row.Name}... por favor espera.";
             
@@ -73,7 +88,7 @@ namespace Hud.App.Views
             var paths = row.Record.TableSourcePaths;
             if (paths == null || paths.Count == 0)
             {
-                paths = TryFindHistoryFiles(row.Record);
+                paths = await Task.Run(() => TryFindHistoryFiles(row.Record));
             }
 
             if (paths == null || paths.Count == 0)
@@ -83,14 +98,19 @@ namespace Hud.App.Views
                 return;
             }
 
-            var handsToReview = new List<LeakSpotRow>();
             var hero = row.Record.Hero;
-
-            foreach (var path in paths)
+            var sourcePaths = paths;
+            var handsToReview = await Task.Run(() =>
             {
-                if (!File.Exists(path)) continue;
-                handsToReview.AddRange(ExtractFilteredHands(path, hero));
-            }
+                var found = new List<LeakSpotRow>();
+                foreach (var path in sourcePaths)
+                {
+                    if (!File.Exists(path)) continue;
+                    found.AddRange(ExtractFilteredHands(path, hero));
+                }
+
+                return found;
+            });
 
             if (handsToReview.Count == 0)
             {
