@@ -48,3 +48,6 @@ tools/
 # OS files
 Thumbs.db
 Desktop.ini
+
+# Datos de entrenamiento descargados (manos de internet); no se suben
+Datos/
