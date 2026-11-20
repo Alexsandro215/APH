@@ -611,7 +611,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Header="BB sesion" Width="96">
+          <DataGridTemplateColumn Header="BB sesión" Width="96">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

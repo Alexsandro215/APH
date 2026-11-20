@@ -17,6 +17,15 @@ namespace Hud.App.Services.Trainer
     public sealed record SolverOpponent(IReadOnlyList<WeightedCombo> Range, TrainerVillainProfile? Profile, double Committed, bool AllIn = false);
 
     /// <summary>
+    /// Cuanto se retiran TODOS ante una apuesta segun el ritmo de la sala (<see cref="TrainerRoomRhythm"/>);
+    /// null si no hay datos y manda la tabla fija de <see cref="TrainerSolver.FoldChance"/>.
+    /// </summary>
+    /// <param name="size">Lo que se sube sobre la apuesta, en botes tras igualarla (una apuesta: sobre el bote).</param>
+    /// <param name="isRaise">Habia apuesta delante.</param>
+    /// <param name="facing">Rivales que pueden retirarse (los que no estan all-in).</param>
+    public delegate double? RoomFoldAll(double size, bool isRaise, int facing);
+
+    /// <summary>
     /// "Solver" de entrenamiento para la decision en vivo (SOLO dinero ficticio: la puerta la pone la
     /// sesion del Modo Entrenador, que corta en mesas de dinero real).
     ///  - Pocas ciegas y dos jugadores: el equilibrio exacto de all-in o retirarse (PushFoldSolver).
@@ -70,7 +79,9 @@ namespace Hud.App.Services.Trainer
         /// Valor de cada opcion en esta calle. Sin apuesta delante: pasar y apostar 1/3, 1/2, 2/3,
         /// bote (y all-in si la pila es corta). Con apuesta: retirarse, pagar y subir a 3x (y all-in).
         /// El rival responde a una apuesta retirandose con parte de su rango (FoldChance); si sigue,
-        /// se juega la equity contra lo que le queda, como si pagara.
+        /// se juega la equity contra lo que le queda, como si pagara. Con <paramref name="room"/> (ritmo
+        /// de la sala) cuantos se retiran lo dice lo que hace la gente en esas mesas; el rango y la
+        /// tabla fija solo dicen quienes (las manos mas flojas primero).
         /// </summary>
         public static IReadOnlyList<SolverOption> Postflop(
             IReadOnlyList<int> hero,
@@ -82,7 +93,8 @@ namespace Hud.App.Services.Trainer
             double? heroStack,
             double currentBet,
             bool canRaise,
-            int iterations = 1500)
+            int iterations = 1500,
+            RoomFoldAll? room = null)
         {
             var options = new List<SolverOption>();
             if (opponents.Count == 0 || pot <= 0)
@@ -106,7 +118,7 @@ namespace Hud.App.Services.Trainer
                         // El all-in solo si no es una sobreapuesta enorme frente al bote.
                         if (to >= maxTo - 1e-9 && to - currentBet > 1.6 * (pot + call) && to > currentBet * 3 + 1e-9)
                             continue;
-                        options.Add(Aggression("Raise", hero, board, opponents, pot, heroCommitted, currentBet, to, street, iterations));
+                        options.Add(Aggression("Raise", hero, board, opponents, pot, heroCommitted, currentBet, to, street, iterations, room));
                     }
                 }
             }
@@ -117,10 +129,10 @@ namespace Hud.App.Services.Trainer
                 {
                     // Medias ciegas, como se apuesta en la mesa (minimo 1 bb).
                     var bet = Math.Min(Math.Max(1, Math.Round(pot * fraction * 2, MidpointRounding.AwayFromZero) / 2), stackBehind);
-                    options.Add(Aggression("Bet", hero, board, opponents, pot, 0, 0, bet, street, iterations));
+                    options.Add(Aggression("Bet", hero, board, opponents, pot, 0, 0, bet, street, iterations, room));
                 }
                 if (stackBehind <= 1.5 * pot && !options.Any(o => Math.Abs(o.Amount - stackBehind) < 0.01))
-                    options.Add(Aggression("Bet", hero, board, opponents, pot, 0, 0, stackBehind, street, iterations));
+                    options.Add(Aggression("Bet", hero, board, opponents, pot, 0, 0, stackBehind, street, iterations, room));
             }
 
             return options
@@ -133,18 +145,38 @@ namespace Hud.App.Services.Trainer
         /// <summary>Apostar o subir hasta "to": se retiran todos con FoldAll; si alguien sigue, se juega lo que le queda.</summary>
         private static SolverOption Aggression(
             string kind, IReadOnlyList<int> hero, IReadOnlyList<int> board, IReadOnlyList<SolverOpponent> opponents,
-            double pot, double heroCommitted, double currentBet, double to, string street, int iterations)
+            double pot, double heroCommitted, double currentBet, double to, string street, int iterations, RoomFoldAll? room = null)
         {
             var add = to - heroCommitted;
             // Tamano como se mide en poker: lo que se sube por encima de la apuesta, sobre el bote
             // despues de igualarla (una apuesta sin nada delante: sobre el bote).
             var call = Math.Max(0, currentBet - heroCommitted);
             var size = (to - currentBet) / Math.Max(0.5, pot + call);
+
+            // Lo que se retira cada mano de cada rango por su fuerza y el perfil del rival, y lo mas que
+            // puede llegar a retirarse con el ritmo de la sala (null: all-in, no se retira).
+            var folds = opponents
+                .Select(opponent => opponent.AllIn
+                    ? null
+                    : opponent.Range.Select(combo =>
+                    {
+                        var strength = HandInsightReader.StrengthClass(combo.A, combo.B, board);
+                        return (Fold: FoldChance(strength, size, street, opponent.Profile), Cap: RoomFoldCap(strength));
+                    }).ToArray())
+                .ToList();
+            // Ritmo de la sala: se mueven todas esas retiradas a la vez (en logit) hasta que se retiren
+            // todos tanto como en la sala. Con alguien all-in no hay "se retiran todos" que ajustar.
+            var shift = 0.0;
+            if (room is not null && opponents.Count > 0 && !opponents.Any(opponent => opponent.AllIn) &&
+                room(size, kind == "Raise", opponents.Count) is { } target)
+                shift = ShiftTo(opponents, folds.Select(item => item!).ToList(), Math.Clamp(target, 0.001, 0.999));
+
             var foldAll = 1.0;
             var continuing = new List<IReadOnlyList<WeightedCombo>>();
             var expectedCalls = 0.0;
-            foreach (var opponent in opponents)
+            for (var i = 0; i < opponents.Count; i++)
             {
+                var opponent = opponents[i];
                 // Quien ya esta all-in no puede retirarse ni pagar mas: sigue con todo su rango y lo que
                 // puso ya esta en el bote. Antes se le suponia retirarse con parte del rango y pagar la
                 // subida entera (Q-high contra un all-in "ganaba" por esa fold equity imposible).
@@ -158,9 +190,10 @@ namespace Hud.App.Services.Trainer
                 var total = 0.0;
                 var folded = 0.0;
                 var kept = new List<WeightedCombo>(opponent.Range.Count);
-                foreach (var combo in opponent.Range)
+                for (var j = 0; j < opponent.Range.Count; j++)
                 {
-                    var fold = FoldChance(HandInsightReader.StrengthClass(combo.A, combo.B, board), size, street, opponent.Profile);
+                    var combo = opponent.Range[j];
+                    var fold = Shifted(folds[i]![j], shift);
                     total += combo.Weight;
                     folded += combo.Weight * fold;
                     if (fold < 1)
@@ -181,6 +214,79 @@ namespace Hud.App.Services.Trainer
             var called = expectedCalls / Math.Max(1e-9, 1 - foldAll);
             var ev = foldAll * pot + (1 - foldAll) * (whenCalled * (pot + add + called) - add);
             return new SolverOption(kind, to, ev, foldAll, whenCalled);
+        }
+
+        /// <summary>
+        /// Lo mas que se retira una mano con el ritmo de la sala: el aire casi siempre (97%), una mano
+        /// floja a menudo (85%), una media poco (45%) y una fuerte nunca. Cuando la gente se retira mas
+        /// de lo que dice la tabla fija, es el aire el que se va, no las parejas: en el river de ficticio,
+        /// de los que pagan y ensenan, mas de la mitad llevan pareja o doble pareja (20-11-2026, 367
+        /// manos). Sin este tope, una escalera con 3 rivales "solo cobraba" de manos mejores y se pasaba.
+        /// </summary>
+        private static double RoomFoldCap(int strengthClass) => strengthClass switch
+        {
+            0 => 0.97,
+            1 => 0.85,
+            2 => 0.45,
+            _ => 0
+        };
+
+        /// <summary>
+        /// Una retirada movida en logit: con desplazamiento positivo todas las manos que podian
+        /// retirarse se retiran mas (las flojas siguen retirandose mas que las medias), sin pasar del
+        /// tope de su fuerza; las fuertes (0%) siguen sin retirarse.
+        /// </summary>
+        private static double Shifted((double Fold, double Cap) item, double shift)
+        {
+            var (fold, cap) = item;
+            if (shift == 0 || fold <= 0)
+                return fold;
+            if (fold >= 1)
+                return 1;
+            var moved = 1 / (1 + Math.Exp(-(Math.Log(fold / (1 - fold)) + shift)));
+            return shift > 0 ? Math.Max(fold, Math.Min(cap, moved)) : moved;
+        }
+
+        /// <summary>
+        /// El desplazamiento con el que se retiran todos los rivales a la vez lo que dice la sala
+        /// (biseccion; si ni moviendo mucho se llega, por ejemplo con un rango casi todo de manos
+        /// fuertes, se queda en el limite).
+        /// </summary>
+        private static double ShiftTo(IReadOnlyList<SolverOpponent> opponents, IReadOnlyList<(double Fold, double Cap)[]> folds, double target)
+        {
+            double FoldAll(double shift)
+            {
+                var all = 1.0;
+                for (var i = 0; i < opponents.Count; i++)
+                {
+                    var total = 0.0;
+                    var folded = 0.0;
+                    var range = opponents[i].Range;
+                    for (var j = 0; j < range.Count; j++)
+                    {
+                        total += range[j].Weight;
+                        folded += range[j].Weight * Shifted(folds[i][j], shift);
+                    }
+                    all *= total > 0 ? folded / total : 1;
+                }
+                return all;
+            }
+
+            const double limit = 5;
+            if (FoldAll(limit) <= target)
+                return limit;
+            if (FoldAll(-limit) >= target)
+                return -limit;
+            double low = -limit, high = limit;
+            for (var step = 0; step < 40; step++)
+            {
+                var middle = (low + high) / 2;
+                if (FoldAll(middle) < target)
+                    low = middle;
+                else
+                    high = middle;
+            }
+            return (low + high) / 2;
         }
 
         /// <summary>

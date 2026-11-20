@@ -377,6 +377,11 @@ namespace Hud.App.Services.Trainer
                 return new PlayMoneyLimit(false, false, 0, $"{danger}: no se apuesta ni se sube (como mucho, empate)");
             if (danger is not null)
             {
+                // Sin pareja (ni proyecto fuerte antes del river y mano a mano) tampoco se farolea en una
+                // mesa peligrosa: antes esta rama dejaba apostar 35% con as alto en el river (AQ en
+                // 5-2-9-6-4), y con el ritmo de la sala ese farol salia "rentable".
+                if (made == 0 && (river || multiway || withDraws < 2))
+                    return new PlayMoneyLimit(false, false, 0, "Sin pareja ni proyecto fuerte: en dinero ficticio no se farolea, te pagan");
                 var max = river ? 0.35 : 0.55;
                 return new PlayMoneyLimit(false, false, max,
                     $"{danger}: no se sube ni se va all-in, y se apuesta como mucho {max * 100:0}% del bote");

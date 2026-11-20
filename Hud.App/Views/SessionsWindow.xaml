@@ -123,6 +123,7 @@
         <DataGrid Grid.Row="1" Grid.Column="1" x:Name="PlayedGrid" RowHeight="28">
           <DataGrid.Columns>
             <DataGridTextColumn Header="{DynamicResource Sessions.Col.Date}" Binding="{Binding DateLabel}" Width="92"/>
+            <DataGridTextColumn Header="{DynamicResource Sessions.Col.Money}" Binding="{Binding MoneyLabel}" Width="72"/>
             <DataGridTextColumn Header="{DynamicResource Sessions.Col.Time}" Binding="{Binding TimeLabel}" Width="104"/>
             <DataGridTextColumn Header="{DynamicResource Common.Duration}" Binding="{Binding DurationLabel}" Width="78"/>
             <DataGridTextColumn Header="{DynamicResource Sessions.Col.Hands}" Binding="{Binding Hands}" Width="64"/>
@@ -143,11 +144,14 @@
               x:Name="SessionsGrid"
               MouseDoubleClick="SessionsGrid_MouseDoubleClick">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="{DynamicResource Common.SessionNumber}" Binding="{Binding SessionNumber}" Width="90"/>
-        <DataGridTextColumn Header="{DynamicResource Common.Start}" Binding="{Binding StartLabel}" Width="160"/>
-        <DataGridTextColumn Header="{DynamicResource Common.Close}" Binding="{Binding CloseLabel}" Width="160"/>
-        <DataGridTextColumn Header="{DynamicResource Main.TotalTables}" Binding="{Binding TableCount}" Width="70"/>
-        <DataGridTextColumn Header="{DynamicResource Common.Duration}" Binding="{Binding DurationLabel}" Width="100"/>
+        <DataGridTextColumn Header="{DynamicResource Common.SessionNumber}" Binding="{Binding SessionNumber}" Width="70"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Start}" Binding="{Binding StartLabel}" Width="130"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Close}" Binding="{Binding CloseLabel}" Width="130"/>
+        <DataGridTextColumn Header="{DynamicResource Sessions.Col.Money}" Binding="{Binding Money}" Width="72"/>
+        <DataGridTextColumn Header="{DynamicResource Sessions.Col.Hands}" Binding="{Binding Hands}" Width="64"/>
+        <DataGridTextColumn Header="{DynamicResource Main.TotalTables}" Binding="{Binding TableCount}" Width="64"/>
+        <DataGridTextColumn Header="{DynamicResource Common.Duration}" Binding="{Binding DurationLabel}" Width="80"/>
+        <DataGridTextColumn Header="{DynamicResource Sessions.Col.Result}" Binding="{Binding Result}" Width="190"/>
         <DataGridTextColumn Header="{DynamicResource Common.Hero}" Binding="{Binding Hero}" Width="130"/>
         <DataGridTextColumn Header="{DynamicResource Common.File}" Binding="{Binding FileName}" Width="*"/>
       </DataGrid.Columns>

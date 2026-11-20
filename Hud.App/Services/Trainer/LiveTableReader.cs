@@ -225,8 +225,9 @@ namespace Hud.App.Services.Trainer
         public bool OcrAvailable => _ocr.IsAvailable;
 
         /// <summary>
-        /// Turno del heroe: la barra de botones grandes es de un rojo intenso (83% de sus pixeles en
-        /// la mesa real) y fuera de turno, con las casillas de accion anticipada, casi negra (0%).
+        /// Turno del heroe: la barra de botones grandes es roja (83% de sus pixeles en la mesa real con
+        /// el tema de siempre; 44-67% con el tema de rojo oscuro, dos o tres botones) y fuera de turno,
+        /// con las casillas de accion anticipada, casi negra (0%).
         /// </summary>
         public static bool IsHeroTurn(CapturedFrame frame) =>
             Fraction(frame, BarLeft, BarTop, BarWidth, BarHeight, IsButtonRed) >= 0.35;
@@ -748,7 +749,15 @@ namespace Hud.App.Services.Trainer
             return double.TryParse(clean, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : null;
         }
 
-        private static bool IsButtonRed(byte r, byte g, byte b) => r >= 120 && g <= 60 && b <= 60 && r - g >= 80;
+        /// <summary>
+        /// Rojo de los botones grandes: el intenso del tema de siempre o el rojo oscuro en degradado de
+        /// otros temas de mesa (20-11-2026: con el tapete verde sobre fondo negro los botones van de
+        /// ~(80,0,0) a ~(160,20,0); con solo el rojo intenso la barra daba 14-34% y nunca se veia el
+        /// turno). Los dorsos de las cartas (156,67,66) siguen fuera: tienen demasiado verde y azul.
+        /// </summary>
+        private static bool IsButtonRed(byte r, byte g, byte b) =>
+            r >= 120 && g <= 60 && b <= 60 && r - g >= 80 ||
+            r >= 70 && g <= 45 && b <= 45 && r - Math.Max(g, b) >= 55;
 
         /// <summary>Rojo apagado de los dorsos (media 156,67,66), distinto del rojo intenso de los botones.</summary>
         private static bool IsCardBack(byte r, byte g, byte b) => r > 120 && g >= 45 && g <= 115 && b >= 40 && b <= 115 && r - g > 50;

@@ -483,21 +483,28 @@ namespace Hud.App.Services.Solver
                 case NodeKind.TurnChance:
                 {
                     Array.Clear(result, 0, n);
-                    var masked = Rent(_n[opp]);
-                    var maskedSelf = Rent(n);
-                    var child = Rent(n);
-                    for (var t = 0; t < _turns.Length; t++)
+                    var children = new double[_turns.Length][];
+                    Parallel.For(0, _turns.Length, CardParallelism, t =>
                     {
                         var turnBit = 1L << _turns[t];
+                        var masked = Rent(_n[opp]);
+                        var maskedSelf = Rent(n);
+                        var child = Rent(n);
                         Mask(opp, reachOpp, masked, turnBit);
                         Mask(p, reachSelf, maskedSelf, turnBit);
                         Traverse(node.Children[t], p, masked, maskedSelf, child);
+                        Return(masked);
+                        Return(maskedSelf);
+                        children[t] = child;
+                    });
+                    for (var t = 0; t < _turns.Length; t++)
+                    {
+                        var turnBit = 1L << _turns[t];
+                        var child = children[t];
                         for (var h = 0; h < n; h++)
                             if ((_hands[p][h].Mask & turnBit) == 0) result[h] += child[h] * TurnWeight;
+                        Return(child);
                     }
-                    Return(masked);
-                    Return(maskedSelf);
-                    Return(child);
                     return;
                 }
             }
@@ -830,6 +837,17 @@ namespace Hud.App.Services.Solver
                 result[h] = value;
             }
         }
+
+        /// <summary>
+        /// Cada carta que puede salir es un subarbol independiente: se recorren en paralelo, con todos
+        /// los hilos del procesador menos dos (PokerStars y la lectura de las mesas siguen fluidas).
+        /// Los resultados se suman despues en el mismo orden que antes, asi que la estrategia sale
+        /// identica a la de un solo hilo, solo que mucho antes.
+        /// </summary>
+        private static readonly ParallelOptions CardParallelism = new()
+        {
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 2)
+        };
 
         private static double[] Rent(int length) => ArrayPool<double>.Shared.Rent(Math.Max(1, length));
 

@@ -4,6 +4,8 @@ using Xunit;
 namespace HandReader.Tests;
 
 /// <summary>Cada mano corregida en vivo se guarda con la recomendacion que se mostro.</summary>
+/// <remarks>La carpeta del registro es global: las pruebas que la cambian van en la misma coleccion (sin paralelo).</remarks>
+[Collection("TrainerReviewLog")]
 public class TrainerReviewLogTests
 {
     [Fact]

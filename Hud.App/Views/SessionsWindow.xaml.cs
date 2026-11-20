@@ -29,14 +29,23 @@ namespace Hud.App.Views
         {
             _tables = tables;
             PlayedStatusText.Text = LocalizationManager.Text("Sessions.Loading");
-            BackgroundLoad.Run(this, () => SessionSummaryService.Group(SessionSummaryService.LoadHands(tables)), sessions =>
+            // Dinero real y ficticio a la vez, cada uno agrupado por separado: antes solo salia el modo
+            // elegido en el Panel (CASH o PLAY) y la sesion de ficticio de hoy no aparecia en CASH.
+            BackgroundLoad.Run(this, () =>
+            {
+                IEnumerable<SessionSummary> Of(bool cash) => SessionSummaryService
+                    .Group(SessionSummaryService.LoadHands(tables.Where(t => t.IsCash == cash).ToList()))
+                    .Select(session => session with { IsCash = cash });
+                return Of(true).Concat(Of(false)).OrderByDescending(session => session.Start).ToList();
+            }, sessions =>
             {
                 PlayedGrid.ItemsSource = sessions;
                 PlayedChart.Items = sessions
                     .Select(session => new Charts.BarDatum(
-                        $"{session.Start:MM-dd HH:mm}",
+                        $"{session.LocalStart:MM-dd HH:mm}",
                         session.NetBb,
                         session.NetLabel,
+                        session.MoneyLabel + " · " +
                         string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("HandTypes.Hands"), session.Hands) + " · " + session.DurationLabel,
                         string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Sessions.BarDetail"), session.DateLabel, session.TimeLabel,
                             session.Hands, session.Tables, session.NetLabel, session.AdjustedLabel, session.BestLabel, session.WorstLabel)))
@@ -57,7 +66,8 @@ namespace Hud.App.Views
 
             GenerateReportButton.IsEnabled = false;
             PlayedStatusText.Text = LocalizationManager.Text("Sessions.Generating");
-            var tables = _tables;
+            // Solo las mesas del mismo dinero que la sesion (real o ficticio).
+            var tables = _tables.Where(t => t.IsCash == session.IsCash).ToList();
             BackgroundLoad.Run(this, () =>
             {
                 try
@@ -104,12 +114,16 @@ namespace Hud.App.Views
             var folder = ReportSessionIndexService.GetReportsFolder();
             FolderText.Text = $"{LocalizationManager.Text("Common.Folder")}: {folder}";
             var sessions = ReportSessionIndexService.LoadSessions();
-            foreach (var session in sessions)
-                _rows.Add(SessionRow.FromRecord(session));
+            var distinct = ReportSessionIndexService.WithoutRepeats(sessions);
+            for (var i = 0; i < distinct.Count; i++)
+                _rows.Add(SessionRow.FromRecord(distinct[i].Record, distinct.Count - i, distinct[i].Copies));
 
+            var repeated = sessions.Count - distinct.Count;
             StatusText.Text = sessions.Count == 0
                 ? LocalizationManager.Text("Sessions.NoReports")
-                : string.Format(LocalizationManager.Text("Sessions.ReportsFound"), sessions.Count);
+                : repeated > 0
+                    ? string.Format(LocalizationManager.Text("Sessions.ReportsFoundRepeats"), distinct.Count, repeated)
+                    : string.Format(LocalizationManager.Text("Sessions.ReportsFound"), sessions.Count);
         }
 
         private sealed class SessionRow
@@ -122,22 +136,30 @@ namespace Hud.App.Views
             public string Hero { get; init; } = "-";
             public string FileName { get; init; } = "-";
             public string PdfPath { get; init; } = "";
+            public string Money { get; init; } = "-";
+            public int Hands { get; init; }
+            public string Result { get; init; } = "-";
 
-            public static SessionRow FromRecord(ReportSessionRecord record) =>
+            public static SessionRow FromRecord(ReportSessionRecord record, int number, int copies) =>
                 new()
                 {
-                    SessionNumber = record.SessionNumber,
+                    SessionNumber = number,
                     StartLabel = FormatDate(record.StartedAt),
                     CloseLabel = FormatDate(record.ClosedAt),
+                    Money = ReportSessionIndexService.MoneyOf(record),
+                    Hands = record.HandCount,
+                    Result = record.ResultLabel,
                     TableCount = record.TableCount,
                     DurationLabel = FormatDuration(record.Duration),
                     Hero = record.Hero,
-                    FileName = Path.GetFileName(record.PdfPath),
+                    // Si la misma sesion se genero varias veces, se abre la ultima y se dice cuantas hay.
+                    FileName = Path.GetFileName(record.PdfPath) +
+                               (copies > 1 ? "  " + string.Format(LocalizationManager.Text("Sessions.Copies"), copies) : ""),
                     PdfPath = record.PdfPath
                 };
 
             private static string FormatDate(DateTime? value) =>
-                value.HasValue ? value.Value.ToString("yyyy-MM-dd HH:mm:ss") : "-";
+                value.HasValue ? ReportSessionIndexService.ToLocal(value.Value).ToString("yyyy-MM-dd HH:mm") : "-";
 
             private static string FormatDuration(TimeSpan duration)
             {

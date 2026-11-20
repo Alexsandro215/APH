@@ -28,14 +28,14 @@ namespace Hud.App.Services
             new ThemePalette(
                 "classic",
                 "Classic Poker",
-                "Pano verde clasico con esmeralda y oro.",
+                "Paño verde clásico con esmeralda y oro.",
                 ColorFrom("#06120C"), ColorFrom("#0B1D14"), ColorFrom("#10281B"), ColorFrom("#1F4A33"),
                 ColorFrom("#EAF7EF"), ColorFrom("#9CC3AD"), ColorFrom("#34D399"), ColorFrom("#229A5E"),
                 ColorFrom("#E24E5B"), ColorFrom("#E3B341")),
             new ThemePalette(
                 "midnight",
                 "Midnight Casino",
-                "Azul medianoche profundo con platino y neon menta.",
+                "Azul medianoche profundo con platino y neón menta.",
                 ColorFrom("#05070A"), ColorFrom("#0A0D14"), ColorFrom("#121822"), ColorFrom("#202D3A"),
                 ColorFrom("#E5E4E2"), ColorFrom("#9FB6CE"), ColorFrom("#00FF88"), ColorFrom("#38BDF8"),
                 ColorFrom("#FB7185"), ColorFrom("#FACC15")),
@@ -56,7 +56,7 @@ namespace Hud.App.Services
             new ThemePalette(
                 "amethyst",
                 "Amethyst Night",
-                "Purpura real con azul electrico.",
+                "Púrpura real con azul eléctrico.",
                 ColorFrom("#0F0C16"), ColorFrom("#140F1F"), ColorFrom("#1D152C"), ColorFrom("#352A4F"),
                 ColorFrom("#F3E5F5"), ColorFrom("#B39DDB"), ColorFrom("#9575CD"), ColorFrom("#4FC3F7"),
                 ColorFrom("#FF4081"), ColorFrom("#FFD54F")),
@@ -77,7 +77,7 @@ namespace Hud.App.Services
             new ThemePalette(
                 "cyberpunk",
                 "Cyberpunk",
-                "Oscuridad futurista con rosa y cian neon.",
+                "Oscuridad futurista con rosa y cian neón.",
                 ColorFrom("#0A0510"), ColorFrom("#120A1D"), ColorFrom("#1B0E2B"), ColorFrom("#3A1E5C"),
                 ColorFrom("#FCE4EC"), ColorFrom("#F06292"), ColorFrom("#FF00FF"), ColorFrom("#00FFFF"),
                 ColorFrom("#FF4081"), ColorFrom("#FFFF00")),
@@ -105,14 +105,14 @@ namespace Hud.App.Services
             new ThemePalette(
                 "magma",
                 "Magma Core",
-                "Calor volcanico con rojos intensos y naranjas fundidos.",
+                "Calor volcánico con rojos intensos y naranjas fundidos.",
                 ColorFrom("#0D0202"), ColorFrom("#1A0505"), ColorFrom("#2E0B0B"), ColorFrom("#661414"),
                 ColorFrom("#FFF5F5"), ColorFrom("#FF9999"), ColorFrom("#FF0000"), ColorFrom("#FF8000"),
                 ColorFrom("#FFFF00"), ColorFrom("#FFD700")),
             new ThemePalette(
                 "toxic",
                 "Toxic Acid",
-                "Ambiente radiactivo con verdes acidos y violetas toxicos.",
+                "Ambiente radiactivo con verdes ácidos y violetas tóxicos.",
                 ColorFrom("#050805"), ColorFrom("#0A120A"), ColorFrom("#121F12"), ColorFrom("#204020"),
                 ColorFrom("#F0FFF0"), ColorFrom("#BFFF00"), ColorFrom("#39FF14"), ColorFrom("#BC13FE"),
                 ColorFrom("#FF0055"), ColorFrom("#FFD700")),
@@ -147,17 +147,73 @@ namespace Hud.App.Services
             new ThemePalette(
                 "poison",
                 "Poison Ivy",
-                "Verdes de jungla profunda con violetas misticos.",
+                "Verdes de jungla profunda con violetas místicos.",
                 ColorFrom("#080A08"), ColorFrom("#101410"), ColorFrom("#182218"), ColorFrom("#2A402A"),
                 ColorFrom("#F0FFF0"), ColorFrom("#A0C0A0"), ColorFrom("#00FF41"), ColorFrom("#9D00FF"),
                 ColorFrom("#FF0055"), ColorFrom("#FFD700")),
             new ThemePalette(
                 "stealth",
                 "Stealth Volt",
-                "Gris militar con acentos de amarillo electrico.",
+                "Gris militar con acentos de amarillo eléctrico.",
                 ColorFrom("#121417"), ColorFrom("#1A1D21"), ColorFrom("#24282D"), ColorFrom("#383E46"),
                 ColorFrom("#E1E4E8"), ColorFrom("#94A3B8"), ColorFrom("#FFFF00"), ColorFrom("#FFD700"),
-                ColorFrom("#FF3333"), ColorFrom("#FFD700"))
+                ColorFrom("#FF3333"), ColorFrom("#FFD700")),
+            new ThemePalette(
+                "royal",
+                "Royal Flush",
+                "Azul real profundo con oro de corona: la mano más alta.",
+                ColorFrom("#070912"), ColorFrom("#0C1020"), ColorFrom("#141A30"), ColorFrom("#2A3358"),
+                ColorFrom("#F4F1E8"), ColorFrom("#A9B1CC"), ColorFrom("#E8B931"), ColorFrom("#4F7BFF"),
+                ColorFrom("#F05252"), ColorFrom("#F5D06F")),
+            new ThemePalette(
+                "monaco",
+                "Monaco Night",
+                "Grafito y aguamarina con champán, como un casino junto al mar.",
+                ColorFrom("#070B0D"), ColorFrom("#0D1418"), ColorFrom("#142026"), ColorFrom("#26404A"),
+                ColorFrom("#EAF4F4"), ColorFrom("#9DB8BD"), ColorFrom("#2DD4BF"), ColorFrom("#0EA5E9"),
+                ColorFrom("#F87171"), ColorFrom("#E9C46A")),
+            new ThemePalette(
+                "vegas",
+                "Vegas Neon",
+                "Letreros de neón rosa y cian sobre la noche del Strip.",
+                ColorFrom("#0A0612"), ColorFrom("#120A1E"), ColorFrom("#1A0F2B"), ColorFrom("#3A2160"),
+                ColorFrom("#FFF0FB"), ColorFrom("#C3A9D6"), ColorFrom("#FF2E97"), ColorFrom("#22D3EE"),
+                ColorFrom("#FF4D4D"), ColorFrom("#FFE14D")),
+            new ThemePalette(
+                "sakura",
+                "Sakura Night",
+                "Cerezos en flor de noche: rosa suave y lavanda.",
+                ColorFrom("#0F0A0E"), ColorFrom("#170F16"), ColorFrom("#21161F"), ColorFrom("#43293C"),
+                ColorFrom("#FFF1F6"), ColorFrom("#D2AFC0"), ColorFrom("#F9A8D4"), ColorFrom("#A78BFA"),
+                ColorFrom("#FB7185"), ColorFrom("#FCD34D")),
+            new ThemePalette(
+                "ocean",
+                "Deep Ocean",
+                "Azul abisal con turquesa y luz de coral.",
+                ColorFrom("#03101A"), ColorFrom("#061826"), ColorFrom("#0A2236"), ColorFrom("#16405E"),
+                ColorFrom("#E6F6FF"), ColorFrom("#8FB8D0"), ColorFrom("#38BDF8"), ColorFrom("#14B8A6"),
+                ColorFrom("#F87171"), ColorFrom("#FBBF24")),
+            new ThemePalette(
+                "sunset",
+                "Sunset Strip",
+                "Atardecer cálido: naranja, coral y arena dorada.",
+                ColorFrom("#120A06"), ColorFrom("#1A0F09"), ColorFrom("#24150D"), ColorFrom("#4A2C1A"),
+                ColorFrom("#FFF4EC"), ColorFrom("#D2B19A"), ColorFrom("#FB923C"), ColorFrom("#F43F5E"),
+                ColorFrom("#EF4444"), ColorFrom("#FCD34D")),
+            new ThemePalette(
+                "aurora",
+                "Aurora Boreal",
+                "Verde boreal y violeta sobre un cielo polar.",
+                ColorFrom("#050B10"), ColorFrom("#0A121A"), ColorFrom("#101C27"), ColorFrom("#223748"),
+                ColorFrom("#E8FFF7"), ColorFrom("#9CC9BB"), ColorFrom("#5EEAD4"), ColorFrom("#A78BFA"),
+                ColorFrom("#FB7185"), ColorFrom("#FDE68A")),
+            new ThemePalette(
+                "contrast",
+                "Alto contraste",
+                "Negro puro, textos blancos y amarillo intenso: se lee mejor en pantallas grandes.",
+                ColorFrom("#000000"), ColorFrom("#0A0A0A"), ColorFrom("#141414"), ColorFrom("#6B6B6B"),
+                ColorFrom("#FFFFFF"), ColorFrom("#E0E0E0"), ColorFrom("#FFD400"), ColorFrom("#00B7FF"),
+                ColorFrom("#FF4040"), ColorFrom("#FFD400"))
         };
 
         public static ThemePalette Get(string? key) =>

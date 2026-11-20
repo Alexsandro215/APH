@@ -4,6 +4,30 @@
 
 ### Added
 
+- When APH sees open PokerStars tables and Tiempo real is closed, a small always-on-top notice
+  asks whether to start it ("Arrancar Tiempo real", "Ahora no", "No volver a preguntar"). It does
+  not take the focus, sits in the screen corner that covers the fewest tables, asks once per batch
+  of tables, closes by itself after a minute, and never starts Tiempo real on its own. It can be
+  turned off in Configuración > Tiempo real.
+
+- Interface overhaul. Pages enter with a short fade and slide, the menu highlight fades in on
+  hover and its marker grows when a page is chosen, the big dashboard numbers count up to their
+  new value, charts draw from left to right after loading, bar lists grow from their axis, and
+  the session performance window counts its tiles up and draws its curve the first time.
+- Notices that come and go (toasts) at the bottom right of the main window for informational
+  messages (hands loaded, settings saved); questions and errors stay in dialogs.
+- The main window dims while a dialog is open on top of it (Configuración, room paths...).
+- Loading screens show APH's spade beating inside a spinning ring instead of a bare progress
+  bar, on the dashboard while hands load and on every page that loads in the background.
+- Configuración redesigned with sections (Apariencia, Idioma, Informes, Respaldo): themes in a
+  grid with a preview of each one in its own colors and a check on the chosen one, an
+  Animaciones option (Normal, Reducidas, Apagadas) and an interface size option (90 %, 100 %,
+  110 %, 125 %) that scales the main window at once. Languages show their real names
+  (Español, Français, Português).
+- Eight new themes: Royal Flush, Monaco Night, Vegas Neon, Sakura Night, Deep Ocean, Sunset
+  Strip, Aurora Boreal and Alto contraste (pure black, white text and strong yellow for big
+  screens).
+
 - Trainer mode (`Modo Entrenador`) for coaching sessions on PokerStars play-money cash tables:
   live screen card reader that learns the user's deck from each finished hand, live preflop plan
   per scenario, equity vs. a typical range, outs and pot-odds limits, and post-hand grading of
@@ -27,6 +51,32 @@
 
 ### Changed
 
+- The flop and turn GTO solvers walk each possible turn or river card in parallel on all CPU
+  threads but two, and add the results in the same order as before, so strategies are identical
+  to the single-threaded ones. Measured on a Ryzen 5 5600G with six tables open: about 4 times
+  more iterations per second (BTN vs BB on Ks 7d 2c: 11 to 47 per second). The live flop budget
+  drops from 5 s to 2 s and the turn budget from 4.5 s to 2 s, still with more iterations than
+  before.
+- Opening Tiempo real while it is already open brings the open window to the front instead of
+  starting a second one (two at once put two HUDs on every table).
+- Simulator range chart is larger and readable (bigger hand labels, wider review column), and a
+  click on it opens it large over the table (click or Esc to close).
+- Real-time table range chart has a size option in Tiempo real (Chica, Normal, Grande); Normal is
+  now larger than before and its texts grow with it. Chica keeps the previous size.
+- Sesiones shows real-money and play-money sessions together, each grouped on its own and
+  marked "Real" or "Ficticio"; before, only the mode chosen on the dashboard (CASH or PLAY) was
+  listed, so a play-money session was missing while the dashboard was on CASH. Reports for a
+  session use only the tables of that money type.
+- The list of real-time PDF reports shows times in local time (hand histories are in UTC), adds
+  money type, hands and result columns, and shows each session once: when the same session was
+  generated several times, the newest PDF opens and the row says how many copies there are.
+  "Última sesión" in the top bar is the most recent session played, in local time.
+- Spanish texts across the app now carry their accents (Configuración, Análisis, sesión,
+  Menú, ratón, línea...), and the settings and backup descriptions no longer call Google Drive
+  backup a "future module".
+- The bottom of the side menu is compact (Configuración plus three labeled icon buttons), so
+  the whole menu fits without a scroll bar; big dashboard numbers shrink instead of being cut
+  on narrow windows; the Configuración footer message wraps instead of overlapping the buttons.
 - Live decisions and post-hand grading share the same rules, including the new price-driven
   preflop spots (all-ins, short all-in raises, calls that put the hero all-in, tiny prices).
 - Pot odds use the real price when the hero is covered: what the hero can call and the pot they
@@ -207,6 +257,145 @@
   among the best by the solver (within 0.3 bb or 5% of the pot) is never graded as a mistake, so
   following the live advice is never marked wrong. `TrainerSolverTests` cover push/fold,
   calling, the fold model, value betting, river folds and the live advice.
+
+### Added (room rhythm: how much people really fold)
+
+- `TrainerRoomRhythm` ("ritmo de la sala") learns from the hand histories of the last 30 days how
+  often everyone folds to a postflop bet or raise (any player's, since whoever answers can't see
+  the bettor's cards), by bet or raise, street, opponents who can fold (1, 2, 3+), whether they
+  had all checked, and size; each cell shrinks toward its parent (30 bets of weight). Only players
+  dealt into the hand count (sitting-out seats made folds look impossible), and a hand copied in
+  two folders counts once. Play money and real money have separate tables and never mix; a table
+  is used only from 400 bets, otherwise the fixed fold table stays.
+- The training solver (`TrainerSolver.Postflop`, new `room` argument) uses it: the room says how
+  many fold and the estimated range says who (every fold chance moves together in logit until
+  the chance that all fold matches the room), so when called the range left is stronger. The
+  extra folding comes from air, not pairs: with the room a hand folds at most 97% (air), 85%
+  (weak), 45% (medium) and never if strong (`RoomFoldCap`). Of the river callers who showed their
+  hand in play money (367 on 18/19-11), more than half had a pair or two pair; without the cap a
+  straight with 3 opponents "only got called by better" and checked. Live advice uses the
+  play-money table (it only exists on play-money tables) and says so in the details; post-hand
+  grading uses the table of the hand's money type. Heads-up spots without a known leak still use
+  the GTO solvers, which don't use fold chances.
+- Play-money limit fix (`PlayMoneyAggression`): on a dangerous board (straight or flush possible)
+  a hand with no pair (and no strong draw heads-up before the river) can no longer bet; that
+  branch used to allow 35% of the pot, and with the room's higher folds AQ ace-high bet the river
+  on 5-2-9-6-4.
+- Why: on 19-11 the fixed table said everyone folds 18% of the time to the hero's 264 postflop
+  bets and they folded 33% (river 14% vs 50%, 3+ opponents 3% vs 22%), worse than always guessing
+  the average. Learned only from the 18-11 hands, the room predicted the 19-11 bets better (log
+  loss 0.60 vs 0.78, Brier 0.209 vs 0.238). Replaying the 360 hands of 19-11 where the live advice
+  used the training solver, with the room learned from 18-11 (3,264 bets) and both versions run at
+  the same time (villain profiles come from `villain-history.json`, which the open APH keeps
+  updating): on 137 hero bets log loss 0.85 -> 0.68 and Brier 0.263 -> 0.231; 64 of 904 postflop
+  advices change (28 bet sizes, 27 bet -> check, mostly multiway one-pair hands on wet boards, 8
+  check -> bet, 1 call -> raise). Table and opponent layers on top of the room did not
+  improve that sample, so they are not used yet. `TrainerRoomRhythmTests` cover who counts as
+  facing the bet, separate money types, the solver reaching the room's fold rate (also multiway)
+  and staying unchanged without data.
+
+### Added (session performance window in Tiempo real)
+
+- `SessionPerformanceWindow`: a pop-up like the usual poker trackers that opens by itself with the
+  first graded hand of a Tiempo real session (and from the new "Rendimiento" button), stays on top
+  without taking focus from the tables and refreshes on every graded hand and every minute. It
+  shows hands, time and tables; won, won without all-in luck and the luck itself; bb/100 with and
+  without luck; the hand-by-hand curve (solid: won, dashed: without luck); how the decisions go (%
+  without mistakes, advice followed and the decision traffic light); the mistakes you repeat the
+  most with how to avoid them; the costliest mistakes without luck; your stats with the APH traffic
+  light; and what to focus on now. If you close it, it does not reopen by itself that session.
+- Redesigned as a dashboard for a separate big screen: big figure tiles (won, without luck, luck,
+  bb/100 with and without luck, decisions without mistakes, advice followed), a full-width curve
+  with a bb scale, and cards in three, two or one columns depending on the width. It remembers
+  where it was left (another monitor, size, maximized) and has an "always on top" switch; a saved
+  spot on a monitor that is gone is ignored.
+- Last hands recap: every hand of the session is graded by how it was played and what it left
+  without all-in luck (`RealTimeSessionReportService.QualityOf`): very bad (a mistake that cost 20
+  bb or more), bad (any mistake, even if it won), excellent (all correct and won 20 bb or more),
+  good (no mistakes and won), standard (no mistakes and did not win, like folding in time) or not
+  graded. The card shows how many of each, how many hands had good or bad all-in luck (5 bb or
+  more) with the bb, and the latest hands worth telling (folds under 2 bb are counted but not
+  listed) with time, cards, position, table, result, grade, luck and why. The luck card lists the
+  biggest all-ins: cards against cards, street, equity, result and luck.
+- `RealTimeSessionReportService.BuildLiveSummary`: the same calculation as the end-of-session PDF
+  (last continuous stretch of the linked tables), returned as `LiveSessionSummary`.
+  `BuildMistakePatterns` groups the graded mistakes by what you did and what was right, before or
+  after the flop ("Pagas cuando tocaba no ir"), with the count, the bb lost in those hands without
+  luck, example hands and a tip; same-action size mistakes are not a pattern. The report reads the
+  hand histories without locking them (PokerStars keeps writing). `SessionPerformanceTests` cover
+  the grouping and a two-hand summary; the tests that switch the review-log folder run in one
+  collection so they never overlap.
+
+### Changed (a player's type is a guess until 100 hands, and no bluffs until then)
+
+- Measured how often the type tag is right with few hands, on 1,788 real-money PokerStars NL25
+  6-max players with 1,000+ hands (their tag from all hands as the truth): exact tag 36% with 30
+  hands, 58% with 100, 82% with 500; the family (caller / loose-aggressive / tight / regular) 68%,
+  81% and 91%. So the HUD and the report keep the "?" until 100 hands (`PlayerProfileClassifier.
+  SureHands`), not 30, and the legend says so.
+- Live advice: the leaks that call for bluffing ("nit", "se retira mucho", and with them the Farol
+  note) need 100 hands (`TrainerVillainProfile.KnownHands`); until the type is known the advice plays
+  tight and for value. Value leaks (pagador, maníaco, trampero) still apply from 40 hands, since a
+  wrong read there costs little.
+
+### Added (player type in the report tables, with its legend)
+
+- The player tables of the session report ("Rivales de la sesión" and every table in "Mesa por
+  mesa") have a "Tipo" column with the same tag and color as the table HUD (Fish, Maniac, TAG,
+  LAG, Nit, Tight, Loose pasivo, Pasivo, Regular; "?" with 15-29 hands, "Poca muestra" under 15).
+  The HUD and the report share one rule (`PlayerProfileClassifier.Tag` / `ColorOf`), so they never
+  disagree.
+- Under the rivals table, "Cómo leer los tipos" explains each tag with the limits actually in use
+  (calibrated from the population file), numbered in the order they are checked, in two aligned
+  columns with same-width chips and wrapped text. The page lists as many rivals as fit (up to 20)
+  above both legends. `PlayerTypeTagTests` cover the tag rules.
+- Maniac now means very loose AND aggressive: VPIP at the Maniac limit with a LAG PFR or an AF at
+  the population median or more, or a very high AF while loose. Very loose players who do not push
+  (86/12 with AF 0.5 on 20-11) are "Loose pasivo" (callers), and a high 3Bet alone no longer makes
+  a Maniac: the hero was tagged Maniac at a table for 3-betting 13% in 107 hands. The HUD, the
+  dashboard and the report all use this rule.
+
+### Changed (passivity judged by whether you bet your strong hands)
+
+- New measure from the hand histories, for play and real money: after the flop, with nothing to
+  call and a strong hand (fewer than 5% of holdings beat it then), how often the hero bet
+  (`RealTimeSessionReportService.StrongValueSpots`, `HeroStatInput.StrongValue`). The session report
+  and the performance window show it ("con mano fuerte y nada que pagar apostaste el 79%").
+- Play money: a low AF/AFq (and a very low CBet or WWSF) is no longer "a mejorar" when you bet your
+  strong hands at least 75% of the time (12+ spots): it comes from not bluffing, which is the play-
+  money plan. If you check your strong hands too much, that is what gets flagged; without enough
+  spots a low AF is only "por ajustar". Why: on 20-11 the report said "very passive, bet more" while
+  the advice was followed 97%; 2,876 live postflop advices of 18-20/11 showed APH checks only 9% of
+  very strong and 7% of strong hands with nothing to call (raises 20 of 25 near-nut hands facing a
+  bet); the low AF came from the 1,339 weak spots where it does not bluff.
+- Real money keeps flagging a low AF as passive (thin value bets and semi-bluffs matter there); the
+  advice now says whether your strong hands are already bet so the leak is the rest.
+  `HeroStatCoachTests` cover both money types.
+
+### Added (range box on the table: win % and the range behind the advice)
+
+- On the hero's turn, with "Solver en la mesa" on, a box at the bottom left of the table (the black
+  area under the left seat) explains the advice (`LiveDecision.RangeView`, `LiveRangeView`): the
+  hero's chance to win the hand and a 13x13 range grid with rank letters.
+  - Preflop it is the hero's range: the APH chart of the exact scenario (open, vs raise, squeeze,
+    vs 3bet...) with raises in orange, calls in blue and the hero's hand outlined, plus "Tu mano
+    AKo: sube"; without a chart, the top % the advice uses. Win % is vs any hand when opening and
+    vs the raiser's estimated range (same top % as the grading) when facing a raise. Price spots
+    (all-ins, oversized raises) show the pusher's range instead, since that is what decides them.
+  - Postflop it is the range the solver gives the bettor (or the only opponent): each hand green
+    when the hero's made hand beats it now, red when it loses, brighter the more likely. Win % is
+    the same equity as the details, vs all opponents at once; it is computed before the GTO step
+    so the box also shows on GTO decisions.
+  - `TrainerRangeViewTests` cover the open spot and the flop range.
+
+### Fixed (live advice with other table themes)
+
+- After switching PokerStars to a table theme with a green felt on a black background, the live
+  advice never appeared: the big action buttons are a dark red gradient (~80,0,0 to ~160,20,0) and
+  `LiveTableReader.IsButtonRed` only accepted the bright red of the old theme, so the button bar
+  measured 14% (check/bet) or 34% (fold/call/raise) red against the 35% needed and the hero's turn
+  was never seen. Both reds are accepted now (card backs still are not). A 45 s probe on the six
+  open tables then saw 29 turns and read every button. `HeroTurnTests` cover both themes.
 
 ### Added (GTO on the turn and river, play money only)
 

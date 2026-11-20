@@ -1,3 +1,4 @@
+using Hud.App.Services;
 using System.Collections;
 using System.Windows;
 using System.Windows.Controls;
@@ -117,9 +118,16 @@ namespace Hud.App.Views.Charts
             var negativeShare = maxNegative > 0 ? (maxPositive > 0 ? maxNegative : scale) : 0;
             var positiveShare = maxPositive > 0 ? (maxNegative > 0 ? maxPositive : scale) : 0;
 
+            _rowIndex = 0;
             foreach (var item in items)
+            {
                 _rows.Children.Add(BuildRow(item, negativeShare, positiveShare));
+                _rowIndex++;
+            }
         }
+
+        // Fila que se esta armando: las barras crecen una tras otra, de arriba abajo.
+        private int _rowIndex;
 
         private FrameworkElement BuildRow(BarDatum item, double negativeShare, double positiveShare)
         {
@@ -178,6 +186,7 @@ namespace Hud.App.Views.Charts
                 var bar = Bar(NegativeColor, new CornerRadius(4, 0, 0, 4));
                 Grid.SetColumn(bar, 2);
                 row.Children.Add(bar);
+                UiMotion.GrowBar(bar, fromRight: true, _rowIndex);
             }
 
             if (negativeShare > 0 && positiveShare > 0)
@@ -193,6 +202,7 @@ namespace Hud.App.Views.Charts
                 var bar = Bar(IsMagnitude ? MagnitudeColor : PositiveColor, new CornerRadius(0, 4, 4, 0));
                 Grid.SetColumn(bar, 4);
                 row.Children.Add(bar);
+                UiMotion.GrowBar(bar, fromRight: false, _rowIndex);
             }
 
             if (negative <= 0 && positive <= 0)

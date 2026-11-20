@@ -68,6 +68,10 @@ namespace Hud.App.Services.Trainer
 
         public static string Key(string raw) => NonKeyRx.Replace(raw.Trim().ToLowerInvariant(), "");
 
+        /// <summary>Todos los historiales "HH*.txt" de las carpetas de PokerStars (ritmo de la sala).</summary>
+        public static IReadOnlyList<string> AllHistoryFiles() =>
+            Roots().SelectMany(SafeEnumerate).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
         /// <summary>Nombre de la mesa en la linea "Table 'Antares V' 6-max ..." de una mano.</summary>
         public static string? TableOfHand(IReadOnlyList<string> hand)
         {

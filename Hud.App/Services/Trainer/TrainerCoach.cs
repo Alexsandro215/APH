@@ -106,6 +106,12 @@ namespace Hud.App.Services.Trainer
         public AphPreflopProvider Charts => _charts;
         public TrainerRangeEstimator Ranges => _ranges;
 
+        /// <summary>
+        /// Ritmo de la sala para el solver de la correccion: la tabla del tipo de dinero de cada mano
+        /// (ficticio con ficticio, real con real; sin muestra suficiente, la tabla fija de siempre).
+        /// </summary>
+        public TrainerRoomRhythm? Rhythm { get; set; } = TrainerRoomRhythm.Shared;
+
         public static AphPreflopProvider LoadDefaultCharts() =>
             new(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "APH_Reference_100bb_6max.csv"));
 
@@ -809,8 +815,14 @@ namespace Hud.App.Services.Trainer
             {
                 var heroCommitted = CommittedBb(hand.HeroName);
                 var solverPot = potBb;
+                // Ritmo de la sala del tipo de dinero de la mano. "Pasaron todos": cada rival ya paso en la calle.
+                var checkedTo = !facingBet && opponents.Count > 0 && opponents.All(name => hand.Actions.Any(item =>
+                    item.Street == action.Street && item.Index < action.Index && item.Player == name && item.Kind == TrainerActionKind.Check));
+                RoomFoldAll? room = Rhythm is { } rhythm && hand.Money is TrainerMoneyKind.PlayMoney or TrainerMoneyKind.RealMoney
+                    ? (size, isRaise, facing) => rhythm.FoldAll(hand.Money, action.Street, facing, checkedTo && !isRaise, size, isRaise)?.FoldAll
+                    : null;
                 var options = TrainerSolver.Postflop(hand.HeroCards, board, solverOpponents, solverPot, facingBet ? toCallBb : 0,
-                    heroCommitted, action.StackBefore / bb, action.CurrentBetBefore / bb, canRaise);
+                    heroCommitted, action.StackBefore / bb, action.CurrentBetBefore / bb, canRaise, room: room);
                 if (options.Count > 0)
                 {
                     facts.Add("Solver de entrenamiento (lo que gana de media cada opción en esta calle): " +

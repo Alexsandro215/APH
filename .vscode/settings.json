@@ -1,5 +1,7 @@
 {
     // Tema verde solo para este proyecto (APH). Los demas proyectos conservan su tema.
+    // El titulo de la ventana empieza con la pica y APH para distinguir este proyecto de los demas.
+    "window.title": "♠ APH  ·  ${activeEditorShort}${separator}${rootName}",
     "workbench.colorCustomizations": {
         "titleBar.activeBackground": "#0E4A2C",
         "titleBar.activeForeground": "#EAF7EF",

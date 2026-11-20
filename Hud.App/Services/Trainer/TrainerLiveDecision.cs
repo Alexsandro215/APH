@@ -55,6 +55,9 @@ namespace Hud.App.Services.Trainer
         public string? ReadBoard { get; init; }
         public string? ReadPosition { get; init; }
 
+        /// <summary>Cuadro de la izquierda de la mesa: tu % de ganar y la tabla de rango (ver <see cref="LiveRangeView"/>).</summary>
+        public LiveRangeView? RangeView { get; init; }
+
         /// <summary>"fold", "check", "call" o "raise": el color del cartel.</summary>
         public string Tone => Kind switch
         {
@@ -63,6 +66,34 @@ namespace Hud.App.Services.Trainer
             "Call" => "call",
             _ => "raise"
         };
+    }
+
+    /// <summary>
+    /// Cuadro de la izquierda de la mesa, en tu turno, para entender el consejo: tu % de ganar la mano
+    /// y una tabla 13x13. Antes del flop, TU rango (la tabla de APH de ese escenario, o el top % que se
+    /// juega si no hay tabla) con tu mano marcada; despues del flop, el rango que el solver le da al
+    /// rival (al que apuesta, o al unico rival).
+    /// </summary>
+    /// <param name="Title">Que tabla es ("Tu rango · abrir desde CO", "Rango de Ana").</param>
+    /// <param name="WinPct">Probabilidad de ganar la mano (equity, 0-100), o null si no se calculo.</param>
+    /// <param name="WinAgainst">Contra que se calcula ("contra una mano cualquiera", "contra su rango"...).</param>
+    /// <param name="Raise">En tu rango, las manos que se suben (1); en el del rival, el peso de cada mano (0-1).</param>
+    /// <param name="Call">En tu rango, las manos que se pagan (1); vacio en el del rival.</param>
+    /// <param name="HeroClass">Tu mano ("AJs"), marcada en tu rango; null en el del rival.</param>
+    /// <param name="Ahead">En el rango del rival despues del flop: que parte de cada mano le ganas ahora
+    /// (1 le ganas, 0 te gana, 0,5 empatais), para pintarla de verde a rojo.</param>
+    /// <param name="HeroPlay">Tu mano y lo que dice tu tabla ("AKo: sube"), bajo la tabla de tu rango.</param>
+    public sealed record LiveRangeView(
+        string Title,
+        double? WinPct,
+        string WinAgainst,
+        IReadOnlyDictionary<string, double> Raise,
+        IReadOnlyDictionary<string, double> Call,
+        string? HeroClass,
+        IReadOnlyDictionary<string, double>? Ahead = null,
+        string? HeroPlay = null)
+    {
+        public bool IsHeroRange => HeroClass is not null;
     }
 
     /// <summary>
@@ -303,6 +334,15 @@ namespace Hud.App.Services.Trainer
             _ranges = new TrainerRangeEstimator(charts);
         }
 
+        /// <summary>
+        /// Ritmo de la sala que usa el solver de entrenamiento. Siempre la tabla de dinero ficticio:
+        /// este consejo solo existe en mesas de ficticio (la puerta la pone la sesion).
+        /// </summary>
+        public TrainerRoomRhythm? Rhythm { get; set; } = TrainerRoomRhythm.Shared;
+
+        // Cuadro de rango del turno en curso (cada sesion tiene su propio consejero y decide de una en una).
+        private LiveRangeView? _view;
+
         public LiveDecision Decide(
             IReadOnlyList<int> hero,
             IReadOnlyList<int> board,
@@ -366,13 +406,88 @@ namespace Hud.App.Services.Trainer
             if (turn.PotBb is { } seen)
                 context.PotSeen[street] = seen;
 
+            _view = null;
             var decision = board.Count < 3
                 ? Preflop(hero, position, turn, context, platePositions, plateNames, profiles)
                 : Postflop(hero, board, turn, context, platePositions, plateNames, profiles);
             if (potNote is not null)
                 decision = decision with { Details = decision.Details.Prepend(potNote).ToList() };
-            return decision with { FacingBet = turn.FacingBet };
+            return decision with { FacingBet = turn.FacingBet, RangeView = _view };
         }
+
+        // ------------------------------------------------------------------ cuadro de rango
+
+        private static IReadOnlyDictionary<string, double> Ones(IEnumerable<string> classes) =>
+            classes.Distinct(StringComparer.Ordinal).ToDictionary(name => name, _ => 1.0, StringComparer.Ordinal);
+
+        /// <summary>Tu tabla APH del escenario: lo que se sube y lo que se paga, con tu mano marcada.</summary>
+        private void ChartView(string title, string scenario, string heroPos, string villainPos, string combo, double? win, string against)
+        {
+            var raise = Ones(_charts.GetClasses(scenario, heroPos, villainPos, "R"));
+            var call = Ones(_charts.GetClasses(scenario, heroPos, villainPos, "C"));
+            _view = raise.Count + call.Count == 0 ? null : new LiveRangeView(title, win, against, raise, call, combo, HeroPlay: HeroPlay(combo, raise, call));
+        }
+
+        /// <summary>Sin tabla exacta: el top % que se sube y el que se paga (lo que usa el consejo).</summary>
+        private void TopView(string title, double raiseTop, double callTop, string combo, double? win, string against)
+        {
+            var raise = Ones(PreflopRanking.TopPercent(raiseTop));
+            var call = Ones(PreflopRanking.TopPercent(Math.Max(raiseTop, callTop)).Where(name => !raise.ContainsKey(name)));
+            _view = new LiveRangeView(title, win, against, raise, call, combo, HeroPlay: HeroPlay(combo, raise, call));
+        }
+
+        private static string HeroPlay(string combo, IReadOnlyDictionary<string, double> raise, IReadOnlyDictionary<string, double> call) =>
+            $"Tu mano {combo}: " + (raise.ContainsKey(combo) ? "sube" : call.ContainsKey(combo) ? "paga" : "fuera del rango");
+
+        /// <summary>
+        /// Que parte de cada mano del rango del rival le ganas ahora mismo con tu mano hecha (sin contar
+        /// lo que pueda salir): 1 le ganas, 0 te gana, 0,5 empate.
+        /// </summary>
+        private static IReadOnlyDictionary<string, double> AheadByClass(IReadOnlyList<int> hero, IReadOnlyList<int> board, IReadOnlyList<WeightedCombo> range)
+        {
+            var mine = FastHandEvaluator.Evaluate(hero.Concat(board).ToArray());
+            var sums = new Dictionary<string, (double Ahead, double Weight)>(StringComparer.Ordinal);
+            foreach (var combo in range)
+            {
+                if (combo.Weight <= 0 || hero.Contains(combo.A) || hero.Contains(combo.B) || board.Contains(combo.A) || board.Contains(combo.B))
+                    continue;
+                var theirs = FastHandEvaluator.Evaluate(board.Append(combo.A).Append(combo.B).ToArray());
+                var ahead = mine > theirs ? 1.0 : mine == theirs ? 0.5 : 0.0;
+                var name = TrainerCards.ComboName(combo.A, combo.B);
+                sums.TryGetValue(name, out var sum);
+                sums[name] = (sum.Ahead + ahead * combo.Weight, sum.Weight + combo.Weight);
+            }
+
+            return sums.Where(item => item.Value.Weight > 0)
+                .ToDictionary(item => item.Key, item => item.Value.Ahead / item.Value.Weight, StringComparer.Ordinal);
+        }
+
+        /// <summary>Tu % de ganar antes del flop contra el rango de quien subio (top % estimado).</summary>
+        private static double EquityVsRaiser(IReadOnlyList<int> hero, double rangeTop) =>
+            EquityCalculator.VsRanges(hero, Array.Empty<int>(), new[] { TrainerDecisionRules.PreflopRange(rangeTop) }, 2000);
+
+        /// <summary>Peso de cada mano (0-1, relativo a la mas probable) en un rango estimado.</summary>
+        private static IReadOnlyDictionary<string, double> ClassWeights(IReadOnlyList<WeightedCombo> range)
+        {
+            var byClass = range
+                .Where(combo => combo.Weight > 0)
+                .GroupBy(combo => TrainerCards.ComboName(combo.A, combo.B), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Average(combo => combo.Weight), StringComparer.Ordinal);
+            var max = byClass.Count == 0 ? 0 : byClass.Values.Max();
+            return max <= 0
+                ? byClass
+                : byClass.ToDictionary(item => item.Key, item => item.Value / max, StringComparer.Ordinal);
+        }
+
+        private static string ScenarioWords(string scenario) => scenario switch
+        {
+            "vs Raise" => "contra subida",
+            "Squeeze" => "squeeze",
+            "vs 3bet" => "contra 3bet",
+            "vs 4bet" => "contra 4bet",
+            "vs 5bet" => "contra 5bet",
+            _ => scenario
+        };
 
         private static string? PreviousStreet(string street) => street switch
         {
@@ -437,11 +552,15 @@ namespace Hud.App.Services.Trainer
                 {
                     var code = heroPos == "?" ? null : _charts.GetCode("Open", heroPos, "", combo);
                     details.Add($"Tabla APH Open {heroPos}: {CodeName(code)}");
+                    var vsAny = PreflopRanking.EquityVsRandom(combo);
                     if (code is null)
                     {
                         var (openTop, _) = TrainerDecisionRules.ColdThresholds(0, null);
+                        TopView($"Tu rango · abrir (top {openTop.ToString("0", Spanish)}%)", openTop, openTop, combo, vsAny, "contra una mano cualquiera");
                         return ByStrength(combo, top, openTop, openTop, toCall, 1, heroCommitted, turn, details, "Posicion desconocida: referencia por fuerza de mano.");
                     }
+
+                    ChartView($"Tu rango · abrir desde {heroPos}", "Open", heroPos, "", combo, vsAny, "contra una mano cualquiera");
 
                     return code == "R"
                         ? Raise("PREFLOP", heroPos == "SB" ? 3 : 2.5, 1, heroCommitted, turn, $"{combo} esta en el rango de apertura desde {heroPos}: abre subiendo.", details)
@@ -450,6 +569,8 @@ namespace Hud.App.Services.Trainer
 
                 var iso = TrainerDecisionRules.IsoPercent(heroPos);
                 details.Add($"{limpers} limper(s) delante | iso-raise con el top {iso}%");
+                TopView($"Tu rango · aislar limpers (top {iso.ToString("0", Spanish)}%)", iso, iso, combo,
+                    PreflopRanking.EquityVsRandom(combo), "contra una mano cualquiera");
                 if (top <= iso)
                     return Raise("PREFLOP", 4 + limpers, 1, heroCommitted, turn, $"{combo} es suficientemente fuerte para aislar a {limpers} limper(s).", details);
                 if (TrainerDecisionRules.PlayableMultiway(combo, top))
@@ -568,6 +689,11 @@ namespace Hud.App.Services.Trainer
             }
 
             var chartCode = scenario is null || heroPos == "?" || aggressorPos == "?" ? null : _charts.GetCode(scenario, heroPos, aggressorPos, combo);
+            // Tu % de ganar contra el rango de quien subio (el mismo top % que usa la correccion).
+            var raiserTop = TrainerDecisionRules.PreflopAggressorTop(false, depth, n, profile);
+            var vsRaiser = EquityVsRaiser(hero, raiserTop);
+            var raiserWho = aggressorPos == "?" ? "quien subio" : aggressorPos;
+            var vsRaiserText = $"contra la subida de {raiserWho} (top {raiserTop.ToString("0", Spanish)}%)";
             if (chartCode is null)
             {
                 // Un 4bet+ despues de haber subido se decide por precio; si no, por fuerza de mano,
@@ -578,6 +704,8 @@ namespace Hud.App.Services.Trainer
 
                 var strength = n >= 2 ? PreflopRanking.StrengthTopPercent(combo) : top;
                 var (raiseTop, callTop) = TrainerDecisionRules.ColdThresholds(n, profile);
+                TopView($"Tu rango · sin tabla (sube top {raiseTop.ToString("0", Spanish)}%, paga top {callTop.ToString("0", Spanish)}%)",
+                    raiseTop, callTop, combo, vsRaiser, vsRaiserText);
                 details.Add(scenario is null
                     ? $"{n} subidas en la mano | {combo} es top {strength.ToString("0.#", Spanish)}% por fuerza contra rangos fuertes"
                     : $"Sin tabla exacta ({(aggressorPos == "?" ? "posicion del rival desconocida" : scenario)})");
@@ -586,6 +714,7 @@ namespace Hud.App.Services.Trainer
             }
 
             details.Add($"Tabla APH {scenario} {heroPos} vs {aggressorPos}: {CodeName(chartCode)}");
+            ChartView($"Tu rango · {heroPos} {ScenarioWords(scenario!)} de {aggressorPos}", scenario!, heroPos, aggressorPos, combo, vsRaiser, vsRaiserText);
             return chartCode switch
             {
                 "R" => Raise("PREFLOP", raiseTo, currentBet, heroCommitted, turn, $"La tabla APH juega {combo} con {raiseName} en {heroPos} contra {aggressorPos}.", details),
@@ -643,10 +772,12 @@ namespace Hud.App.Services.Trainer
         /// </summary>
         private LiveDecision FreeOption(string combo, double top, string heroPos, int limpers, LiveTurnState turn, List<string> details)
         {
+            var vsAny = PreflopRanking.EquityVsRandom(combo);
             if (limpers == 0 && heroPos is not ("BB" or "?"))
             {
                 var openCode = _charts.GetCode("Open", heroPos, "", combo);
                 details.Add($"Ciega puesta y nadie dentro | tabla APH Open {heroPos}: {CodeName(openCode)}");
+                ChartView($"Tu rango · abrir desde {heroPos}", "Open", heroPos, "", combo, vsAny, "contra una mano cualquiera");
                 return openCode == "R" || openCode is null && top <= TrainerDecisionRules.IsoPercent(heroPos)
                     ? Raise("PREFLOP", 2.5, 1, 1, turn, $"{combo} es mano de apertura desde {heroPos}: sube.", details)
                     : Check("PREFLOP", $"Pasa gratis: la referencia no abre {combo} desde {heroPos}.", details);
@@ -655,6 +786,7 @@ namespace Hud.App.Services.Trainer
             var iso = TrainerDecisionRules.IsoPercent(heroPos);
             if (limpers > 0)
                 details.Add($"{limpers} limper(s) | subir con el top {iso}%");
+            TopView($"Tu rango · ciega puesta, subir (top {iso.ToString("0", Spanish)}%)", iso, iso, combo, vsAny, "contra una mano cualquiera");
             return top <= iso
                 ? Raise("PREFLOP", 4 + limpers, 1, 1, turn, $"Con {combo} y la ciega puesta, sube por valor contra {limpers} limper(s): tienes de las mejores manos.", details)
                 : Check("PREFLOP", "Pasa gratis: con una mano media no merece la pena inflar el bote fuera de posicion.", details);
@@ -665,7 +797,7 @@ namespace Hud.App.Services.Trainer
         /// del que sube o empuja y de quien sigue en el bote, frente a lo que el heroe puede pagar y
         /// el bote al que opta. Sin subida legal nunca se recomienda subir.
         /// </summary>
-        private static LiveDecision PreflopByPrice(
+        private LiveDecision PreflopByPrice(
             IReadOnlyList<int> hero, string combo, double? toCall, double? currentBet, double depth, double heroCommitted, int raises,
             bool aggressorAllIn, bool shoveLike, bool callAllIn, int callersInPot, int earlierAllIns, string aggressorPos,
             TrainerVillainProfile? profile, LiveTurnState turn, LiveHandContext context, List<string> details)
@@ -679,6 +811,11 @@ namespace Hud.App.Services.Trainer
                 ranges.Add(TrainerDecisionRules.PreflopRange(30));
             var equity = EquityCalculator.VsRanges(hero, Array.Empty<int>(), ranges, 3000);
             var others = callersInPot + earlierAllIns;
+            // Aqui decide el precio contra el rango de quien empuja, no una tabla tuya: se muestra ese rango.
+            _view = new LiveRangeView(
+                $"Rango de {(aggressorAllIn ? "all-in" : "subida")} de {(aggressorPos == "?" ? "quien sube" : aggressorPos)} (top {rangeTop.ToString("0", Spanish)}%)",
+                equity, others > 0 ? $"contra su rango y {others} más en el bote" : "contra su rango",
+                ClassWeights(ranges[0]), new Dictionary<string, double>(), null);
             details.Add($"Equity contra el rango de {(aggressorAllIn ? "all-in" : shoveLike ? "subida enorme" : "subida")} de {aggressorPos} (top {rangeTop.ToString("0", Spanish)}%)" +
                         (others > 0 ? $" y {others} mas en el bote" : "") + $": {equity.ToString("0", Spanish)}%");
 
@@ -861,6 +998,7 @@ namespace Hud.App.Services.Trainer
             // Un all-in es subida si ya habia apuesta (del heroe o de otro); si no, es una apuesta.
             var raisedPot = heroCommitted > 0.01 || bettors.Count > 1;
             var ranges = new List<IReadOnlyList<WeightedCombo>>();
+            var rangeOwners = new List<(int Index, string? Name)>();
             var solverOpponents = new List<(SolverOpponent Opponent, int Index)>();
             TrainerVillainProfile? aggressorProfile = null;
             foreach (var opponent in opponents.DefaultIfEmpty(new LivePlate(-1, null, null, null, true, false, false)))
@@ -878,6 +1016,7 @@ namespace Hud.App.Services.Trainer
                     seen = opponent with { Action = opponent.Index == aggressorIndex ? raisedPot ? "Raise" : "Bet" : "Call" };
                 var range = OpponentRange(seen, context, positions, profile, board, street, raisedPot, callsAllIn, multiway: opponents.Count > 1);
                 ranges.Add(range.Combos);
+                rangeOwners.Add((opponent.Index, name));
                 solverOpponents.Add((new SolverOpponent(range.Combos, profile,
                     opponent.Index >= 0 ? context.Committed(street, opponent.Index) ?? 0 : 0), opponent.Index));
                 if (opponent.Index == aggressorIndex)
@@ -948,12 +1087,25 @@ namespace Hud.App.Services.Trainer
                 }
                 details.Add(bluffNote);
             }
+            // Cuadro de rango: tu % de ganar contra todos y el rango del que apuesta (o del unico rival).
+            // Se calcula antes del GTO para que tambien salga cuando decide el equilibrio.
+            var multiway = ranges.Count > 1;
+            var equity = EquityCalculator.VsRanges(hero, board, ranges, 2500);
+            if (ranges.Count > 0)
+            {
+                var shown = Math.Max(0, rangeOwners.FindIndex(owner => owner.Index == aggressorIndex));
+                var who = rangeOwners[shown].Name is { Length: > 0 } ownerName ? ownerName : "tu rival";
+                _view = new LiveRangeView(
+                    $"Rango de {who}" + (multiway ? $" (+{ranges.Count - 1} más)" : ""),
+                    equity, multiway ? $"contra los {ranges.Count} rivales a la vez" : "contra su rango",
+                    ClassWeights(ranges[shown]), new Dictionary<string, double>(), null,
+                    Ahead: AheadByClass(hero, board, ranges[shown]));
+            }
+
             if (opponents.Count == 1 && leak is null &&
                 GtoDecision(hero, board, street, turn, context, positions, names, profiles, opponents[0], details, limit) is { } gto)
                 return gto;
 
-            var multiway = ranges.Count > 1;
-            var equity = EquityCalculator.VsRanges(hero, board, ranges, 2500);
             details.Add($"Equity estimada: {equity.ToString("0", Spanish)}%" + (multiway ? $" contra {ranges.Count} rivales a la vez" : ""));
             if (aggressorProfile?.HasSample == true)
                 details.Add($"Rival: {aggressorProfile.Summary}");
@@ -962,6 +1114,18 @@ namespace Hud.App.Services.Trainer
                     ? $"Outs: {insight.Outs} (~{Math.Min(insight.Outs * 4, 100)}% hasta el river)"
                     : $"Outs: {insight.Outs} (~{insight.Outs * 2}% en el river)");
             details.Add(Options(turn));
+
+            // Ritmo de la sala: cuanto se retiran todos lo dice lo que hace la gente en tus mesas de
+            // ficticio. "Pasaron todos": cada rival que sigue ya paso en esta calle.
+            var checkedTo = opponents.Count > 0 && opponents.All(plate => plate.Action == "Check");
+            RoomFoldAll? room = null;
+            if (Rhythm is { } rhythm && rhythm.Total(TrainerMoneyKind.PlayMoney) >= TrainerRoomRhythm.MinBets)
+            {
+                room = (size, isRaise, facing) =>
+                    rhythm.FoldAll(TrainerMoneyKind.PlayMoney, street, facing, checkedTo && !isRaise, size, isRaise)?.FoldAll;
+                details.Add($"Ritmo de la sala: lo que se retira la gente sale de {rhythm.Total(TrainerMoneyKind.PlayMoney).ToString("N0", Spanish)} " +
+                            "apuestas vistas en tus mesas de ficticio, no de una tabla fija.");
+            }
 
             if (turn.FacingBet)
             {
@@ -1000,7 +1164,7 @@ namespace Hud.App.Services.Trainer
                     var allIn = (int index) => context.AllIn.Contains(index) ||
                                                opponents.Any(plate => plate.Index == index && plate.Action == "AllIn");
                     var options = TrainerSolver.Postflop(hero, board, WithBet(solverOpponents, aggressorIndex, bet, allIn), solverPot,
-                        callBb, heroCommitted, stack, bet, canRaise);
+                        callBb, heroCommitted, stack, bet, canRaise, room: room);
                     if (options.Count > 0)
                         return Mark(FromSolver(street, options, equity, required, insight, solverPot, bet, heroCommitted, turn, details, limit));
                 }
@@ -1030,7 +1194,7 @@ namespace Hud.App.Services.Trainer
             if (turn.PotBb is { } potNoBet && potNoBet > 0)
             {
                 var options = TrainerSolver.Postflop(hero, board, solverOpponents.Select(item => item.Opponent).ToList(), potNoBet,
-                    0, 0, turn.HeroStackBb, 0, canRaise: true);
+                    0, 0, turn.HeroStackBb, 0, canRaise: true, room: room);
                 if (options.Count > 0)
                     return Mark(FromSolver(street, options, equity, null, insight, potNoBet, 0, 0, turn, details, limit));
             }
@@ -1152,7 +1316,9 @@ namespace Hud.App.Services.Trainer
                         var flopSolver = new FlopGtoSolver(board, potStart, stack, oop.Combos, ip.Combos, history);
                         if (flopSolver.TargetActor < 0)
                             return null;
-                        solution = flopSolver.Solve(hero[0], hero[1], 150, TimeSpan.FromSeconds(5), minIterations: 25);
+                        // Con el solver repartido entre los hilos del procesador, 2 s dan mas vueltas que
+                        // los 5 s de antes con un solo hilo (unas 40-80 por segundo con 6 mesas abiertas).
+                        solution = flopSolver.Solve(hero[0], hero[1], 150, TimeSpan.FromSeconds(2), minIterations: 25);
                         note = $"GTO del flop resuelto en vivo: {solution.Iterations} vueltas en {solution.Elapsed.TotalSeconds.ToString("0.0", Spanish)} s; " +
                                "flop con 33%, 75% y all-in, turn con 75%, el river se reparte sin apuestas (aproximado).";
                     }
@@ -1160,7 +1326,7 @@ namespace Hud.App.Services.Trainer
                     {
                         var settings = street == "RIVER"
                             ? new GtoSettings { MaxIterations = 1000, Budget = TimeSpan.FromSeconds(1.5) }
-                            : new GtoSettings { MaxIterations = 250, Budget = TimeSpan.FromSeconds(4.5) };
+                            : new GtoSettings { MaxIterations = 250, Budget = TimeSpan.FromSeconds(2) };
                         Thinking?.Invoke(street);
                         var solver = new PostflopGtoSolver(board, potStart, stack, oop.Combos, ip.Combos, history, settings);
                         solution = solver.Solve(hero[0], hero[1]);

@@ -37,6 +37,73 @@ namespace Hud.App.Services
         int CBetMade, int CBetOpp, int FoldToCBet, int FacedCBet, int SawFlop, int WentToShowdown, int WonAtShowdown,
         int WonWhenSawFlop);
 
+    /// <summary>Calificacion de una mano por como se jugo (ver <see cref="RealTimeSessionReportService.QualityOf"/>).</summary>
+    public enum HandQuality
+    {
+        Excellent,
+        Good,
+        Standard,
+        Bad,
+        VeryBad,
+        Ungraded
+    }
+
+    /// <summary>Una mano de la sesion: donde, con que, lo que dejo, la suerte del all-in, su calificacion y por que.</summary>
+    public sealed record LiveHand(string HandId, DateTime? At, string Table, string Cards, string Position, double NetBb, double LuckBb,
+        HandQuality Quality, string Note)
+    {
+        public double AdjustedBb => NetBb - LuckBb;
+    }
+
+    /// <summary>Un all-in con cartas por salir: con que, contra que, en que calle, tu equity, lo que dejo y la suerte.</summary>
+    public sealed record LiveAllIn(DateTime? At, string Table, string Cards, string Against, string Street, double Equity, double NetBb, double LuckBb);
+
+    /// <summary>Una manera de equivocarse que se repite en la sesion: cuantas veces, lo perdido sin suerte y como evitarla.</summary>
+    public sealed record MistakePattern(string Label, string Tip, int Count, double AdjustedBb, IReadOnlyList<string> Cards);
+
+    /// <summary>Un error caro de la sesion: cartas, calle, que hiciste, que decia APH y lo perdido sin la suerte de los all-in.</summary>
+    public sealed record LiveMistake(string Cards, string Street, string Chosen, string? Advice, double AdjustedBb, string Why);
+
+    /// <summary>
+    /// Rendimiento de la sesion en vivo (la ventana de Tiempo real): ganancia, suerte de los all-in,
+    /// la curva mano a mano, tus stats con su semaforo, como van tus decisiones y los errores que mas
+    /// repites. El mismo calculo que el informe PDF al terminar.
+    /// </summary>
+    public sealed record LiveSessionSummary(
+        string Hero,
+        int Tables,
+        int Hands,
+        TimeSpan Duration,
+        double NetBb,
+        double LuckBb,
+        IReadOnlyList<(double NetBb, double LuckBb)> Curve,
+        double Vpip,
+        double Pfr,
+        IReadOnlyList<StatFeedback> Feedback,
+        string Focus,
+        int Decisions,
+        int WithAdvice,
+        int Followed,
+        int Mistakes,
+        DecisionFeedback? DecisionVerdict,
+        IReadOnlyList<MistakePattern> Patterns,
+        IReadOnlyList<LiveMistake> Costliest,
+        IReadOnlyList<LiveHand> HandLines,
+        IReadOnlyList<LiveAllIn> AllIns,
+        int StrongSpots = 0,
+        int StrongBets = 0)
+    {
+        /// <summary>Con mano fuerte y nada que pagar, % de veces que apostaste (null sin ocasiones).</summary>
+        public double? StrongBetPct => StrongSpots == 0 ? null : StrongBets * 100.0 / StrongSpots;
+
+        /// <summary>Lo ganado sin la suerte de los all-in.</summary>
+        public double AdjustedBb => NetBb - LuckBb;
+        public double BbPer100 => Hands == 0 ? 0 : NetBb * 100 / Hands;
+        public double AdjustedPer100 => Hands == 0 ? 0 : AdjustedBb * 100 / Hands;
+        public double GoodPct => Decisions == 0 ? 0 : (Decisions - Mistakes) * 100.0 / Decisions;
+        public double FollowedPct => WithAdvice == 0 ? 0 : Followed * 100.0 / WithAdvice;
+    }
+
     public sealed record RealTimeTableReportRow(
         string TableName,
         string? SourcePath,
@@ -107,9 +174,16 @@ namespace Hud.App.Services
         /// </summary>
         public static string? SavePdfForLastStretch(IEnumerable<(string TableName, string Path, string? Hero)> tables, string? folderOverride = null)
         {
+            var rows = LastStretchRows(tables);
+            return rows is null || rows.Count == 0 ? null : SavePdf(rows, folderOverride);
+        }
+
+        /// <summary>Las filas del ultimo tramo de juego seguido de estas mesas, o null si no hay manos.</summary>
+        private static List<RealTimeTableReportRow>? LastStretchRows(IEnumerable<(string TableName, string Path, string? Hero)> tables)
+        {
             var list = tables.Where(table => !string.IsNullOrWhiteSpace(table.Path) && File.Exists(table.Path)).ToList();
             var times = list
-                .SelectMany(table => PokerStarsHandHistory.SplitHands(File.ReadLines(table.Path))
+                .SelectMany(table => PokerStarsHandHistory.SplitHands(ReadShared(table.Path))
                     .Select(PokerStarsHandHistory.ExtractTimestamp))
                 .Where(at => at.HasValue)
                 .Select(at => at!.Value)
@@ -118,8 +192,18 @@ namespace Hud.App.Services
             if (times.Count == 0)
                 return null;
             var (start, end) = LastStretch(times, TimeSpan.FromMinutes(30));
-            var rows = RowsInWindow(list.Select(table => (table.TableName, table.Path, table.Hero)), start, end);
-            return rows.Count == 0 ? null : SavePdf(rows, folderOverride);
+            return RowsInWindow(list.Select(table => (table.TableName, table.Path, table.Hero)), start, end);
+        }
+
+        /// <summary>Las lineas de un historial que PokerStars sigue escribiendo (sin bloquearlo).</summary>
+        private static List<string> ReadShared(string path)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            var lines = new List<string>();
+            while (reader.ReadLine() is { } line)
+                lines.Add(line);
+            return lines;
         }
 
         /// <summary>El ultimo tramo de tiempos seguidos (sin huecos mayores que <paramref name="gap"/>).</summary>
@@ -144,7 +228,7 @@ namespace Hud.App.Services
             {
                 if (!File.Exists(table.Path))
                     continue;
-                var hands = PokerStarsHandHistory.SplitHands(File.ReadLines(table.Path))
+                var hands = PokerStarsHandHistory.SplitHands(ReadShared(table.Path))
                     .Select(hand => (Hand: hand, At: PokerStarsHandHistory.ExtractTimestamp(hand)))
                     .Where(item => item.At is { } at && at >= start.AddSeconds(-1) && at <= end.AddSeconds(1))
                     .ToList();
@@ -245,8 +329,9 @@ namespace Hud.App.Services
             var bestHand = tableModels.Select(table => table.BestHand).Where(hand => hand is not null).OrderByDescending(hand => hand!.NetAmount).FirstOrDefault();
             var worstHand = tableModels.Select(table => table.WorstHand).Where(hand => hand is not null).OrderBy(hand => hand!.NetAmount).FirstOrDefault();
             // Retroalimentacion con semaforo (la misma del perfil del heroe): avisos, notas y enfoque salen de aqui.
-            var feedback = HeroStatCoach.Evaluate(ToInput(heroSummary.Stats), playMoney: !isCash);
             var coaching = BuildCoaching(active, tableModels);
+            var feedback = HeroStatCoach.Evaluate(ToInput(heroSummary.Stats) with { StrongValue = (coaching.StrongSpots, coaching.StrongBets) },
+                playMoney: !isCash);
             var alerts = BuildAlerts(heroSummary.Stats, feedback, coaching.DecisionVerdict).ToList();
             var rivalImpacts = BuildRivalImpacts(tableModels, hero).ToList();
 
@@ -289,6 +374,9 @@ namespace Hud.App.Services
             var curve = new List<CurvePoint>();
             var luckByHand = new Dictionary<string, double>(StringComparer.Ordinal);
             var handIds = new HashSet<string>(StringComparer.Ordinal);
+            var handRows = new List<(string HandId, DateTime? At, string Table, string Cards, string Position, double NetBb, double LuckBb)>();
+            var strongSpots = 0;
+            var strongBets = 0;
             var hands = 0;
             var vpip = 0;
             var pfr = 0;
@@ -318,6 +406,11 @@ namespace Hud.App.Services
                     if (played)
                         samples.Add(new HandTypeSample(TrainerCards.ComboName(hand.HeroCards[0], hand.HeroCards[1]),
                             hand.SeatOf(hand.HeroName)?.Position ?? "?", net, allIn?.LuckBb ?? 0));
+                    handRows.Add((hand.HandId, PokerStarsHandHistory.ExtractTimestamp(lines), table.TableName,
+                        TrainerCards.ComboName(hand.HeroCards[0], hand.HeroCards[1]), hand.SeatOf(hand.HeroName)?.Position ?? "?", net, allIn?.LuckBb ?? 0));
+                    var (spots, bets) = StrongValueSpots(hand);
+                    strongSpots += spots;
+                    strongBets += bets;
                 }
             }
 
@@ -341,6 +434,24 @@ namespace Hud.App.Services
                     luckByHand.TryGetValue(item.Entry.HandId, out var luck) ? luck : 0))
                 .ToList();
             var mistakes = mistakeHands.OrderBy(item => item.AdjustedBb).Take(3).ToList();
+            // Cada mano de la sesion con su calificacion (por como se jugo, sin la suerte) y su suerte.
+            var entryByHand = entries.ToDictionary(entry => entry.HandId, StringComparer.Ordinal);
+            var handLines = handRows
+                .OrderBy(row => row.At ?? DateTime.MinValue)
+                .Select(row =>
+                {
+                    entryByHand.TryGetValue(row.HandId, out var entry);
+                    var graded = entry?.Decisions ?? Array.Empty<TrainerReviewLog.DecisionEntry>();
+                    var quality = QualityOf(graded.Select(decision => decision.Grade).ToList(), row.NetBb - row.LuckBb);
+                    return new LiveHand(row.HandId, row.At, row.Table, row.Cards, row.Position, row.NetBb, row.LuckBb, quality,
+                        HandNote(graded, quality));
+                })
+                .ToList();
+            var patterns = BuildMistakePatterns(decisions
+                .Where(item => item.Decision.Grade == "Mistake")
+                .Select(item => (item.Entry.HandId, item.Entry.HeroCards, item.Entry.NetBb, item.Decision.Street, item.Decision.Chosen,
+                    item.Decision.Recommended, luckByHand.TryGetValue(item.Entry.HandId, out var luck) ? luck : 0))
+                .ToList());
             var decisionVerdict = HeroStatCoach.EvaluateDecisions(
                 decisions.Count,
                 withAdvice.Count,
@@ -376,7 +487,183 @@ namespace Hud.App.Services
                 mistakes,
                 HandTypeProfit.Build(samples, key => LocalizationManager.Text("HandType." + key)),
                 curve.OrderBy(point => point.At).ToList(),
-                decisionVerdict);
+                decisionVerdict,
+                patterns,
+                handLines,
+                strongSpots,
+                strongBets);
+        }
+
+        /// <summary>Una mano es fuerte si le gana menos de esta parte de las manos posibles en ese momento.</summary>
+        public const double StrongBeatenShare = 0.05;
+
+        /// <summary>
+        /// Despues del flop, sin nada que pagar y con mano fuerte (le gana menos del 5% de las manos
+        /// posibles en ese momento): cuantas veces le toco al heroe y cuantas aposto. Es la medida de si
+        /// cobra sus manos buenas; el AF tambien baja por no farolear. Publico para las pruebas.
+        /// </summary>
+        public static (int Spots, int Bets) StrongValueSpots(TrainerHand hand)
+        {
+            var spots = 0;
+            var bets = 0;
+            foreach (var action in hand.Actions)
+            {
+                if (action.Street == "PREFLOP" || action.ToCall > 0.0001 ||
+                    action.Kind is not (TrainerActionKind.Check or TrainerActionKind.Bet) ||
+                    !PokerStarsHandHistory.SamePlayer(action.Player, hand.HeroName) ||
+                    HandInsightReader.MadeClass(hand.HeroCards[0], hand.HeroCards[1], action.Board) < 2 ||
+                    TrainerDecisionRules.BeatenShare(hand.HeroCards, action.Board) >= StrongBeatenShare)
+                    continue;
+                spots++;
+                if (action.Kind == TrainerActionKind.Bet)
+                    bets++;
+            }
+            return (spots, bets);
+        }
+
+        /// <summary>A partir de estas ciegas (sin la suerte) una mano es un bote grande: excelente o malisima.</summary>
+        public const double BigHandBb = 20;
+
+        /// <summary>
+        /// Calificacion de una mano por como se jugo (la correccion) y lo que dejo SIN la suerte de los
+        /// all-in: malisima si hubo un error y costo <see cref="BigHandBb"/> o mas; mala si hubo un error;
+        /// excelente si todo fue correcto (sin dudosas) y gano un bote grande; buena si sin errores gano
+        /// algo; estandar si sin errores no gano (retirarse a tiempo, seguir el consejo). Sin decisiones
+        /// corregidas: sin corregir. Un error que gano sigue siendo mala: cuenta la decision, no el resultado.
+        /// </summary>
+        public static HandQuality QualityOf(IReadOnlyList<string> grades, double adjustedBb)
+        {
+            if (grades.Count == 0)
+                return HandQuality.Ungraded;
+            if (grades.Contains("Mistake"))
+                return adjustedBb <= -BigHandBb ? HandQuality.VeryBad : HandQuality.Bad;
+            if (adjustedBb >= BigHandBb && !grades.Contains("Marginal"))
+                return HandQuality.Excellent;
+            return adjustedBb > 0.01 ? HandQuality.Good : HandQuality.Standard;
+        }
+
+        /// <summary>Por que esa nota: el error (o la duda) en una frase, o que seguiste el consejo.</summary>
+        private static string HandNote(IReadOnlyList<TrainerReviewLog.DecisionEntry> decisions, HandQuality quality)
+        {
+            var worst = decisions.FirstOrDefault(decision => decision.Grade == "Mistake")
+                        ?? decisions.FirstOrDefault(decision => decision.Grade == "Marginal");
+            if (worst is not null)
+            {
+                var text = worst.Explanation.Trim();
+                var end = text.IndexOf(". ", StringComparison.Ordinal);
+                return $"{TrainerRangeEstimator.StreetName(worst.Street)}: {(end > 0 ? text[..(end + 1)] : text)}";
+            }
+            var withAdvice = decisions.Where(decision => decision.LiveRecommendation is not null).ToList();
+            if (quality == HandQuality.Ungraded)
+                return "";
+            return withAdvice.Count > 0 && withAdvice.All(decision => decision.FollowedLive == true)
+                ? "Seguiste el consejo en todo."
+                : "Sin errores.";
+        }
+
+        /// <summary>
+        /// Los errores de la correccion agrupados por lo que hiciste y lo que tocaba, antes o despues
+        /// del flop ("pagas cuando tocaba no ir"), con cuantas veces, lo perdido en esas manos sin la
+        /// suerte de los all-in y un consejo para evitarlo. Los que mas se repiten primero (y, a igual
+        /// numero, los mas caros). Publico para las pruebas.
+        /// </summary>
+        public static IReadOnlyList<MistakePattern> BuildMistakePatterns(
+            IReadOnlyList<(string HandId, string Cards, double NetBb, string Street, string Chosen, string Recommended, double LuckBb)> mistakes) =>
+            mistakes
+                .GroupBy(item => (Chosen: ActionGroupOf(item.Chosen), Recommended: ActionGroupOf(item.Recommended), Preflop: item.Street == "PREFLOP"))
+                .Where(group => group.Key.Chosen != group.Key.Recommended)
+                .Select(group =>
+                {
+                    var (label, tip) = MistakeText(group.Key.Chosen, group.Key.Recommended, group.Key.Preflop);
+                    var hands = group.GroupBy(item => item.HandId).Select(hand => hand.First()).ToList();
+                    return new MistakePattern(label, tip, group.Count(), hands.Sum(hand => hand.NetBb - hand.LuckBb),
+                        hands.Select(hand => FormatCombo(hand.Cards)).Distinct().Take(4).ToList());
+                })
+                .OrderByDescending(pattern => pattern.Count)
+                .ThenBy(pattern => pattern.AdjustedBb)
+                .ToList();
+
+        /// <summary>Fold, Check, Call o Raise ("Open raise a 3 bb", "3bet a 8 bb", "Bet 2 bb" cuentan como Raise).</summary>
+        private static string ActionGroupOf(string text) =>
+            (text ?? "").Trim().Split(' ', 2)[0].ToLowerInvariant() switch
+            {
+                "fold" or "no" => "Fold",
+                "check" or "pasar" => "Check",
+                "call" or "igualar" or "limp" => "Call",
+                "" => "",
+                _ => "Raise"
+            };
+
+        private static (string Label, string Tip) MistakeText(string chosen, string recommended, bool preflop)
+        {
+            var when = preflop ? "antes del flop" : "después del flop";
+            return (chosen, recommended) switch
+            {
+                ("Call", "Fold") => ($"Pagas cuando tocaba no ir ({when})",
+                    preflop
+                        ? "Antes de pagar una subida, mira si tu mano está en la tabla para pagar desde tu posición; si no, no vayas."
+                        : "Antes de pagar, compara el precio con lo que ganas contra quien apuesta así. En ficticio, una apuesta grande en turn o river casi siempre es mano hecha."),
+                ("Raise", "Fold") => ($"Subes o apuestas con manos para no ir ({when})",
+                    "En ficticio te pagan: sube y apuesta por valor, no para que se retiren."),
+                ("Raise", "Call") => ($"Subes cuando bastaba pagar ({when})",
+                    "Con manos medianas, pagar controla el bote; sube solo con manos que ganan a lo que te paga."),
+                ("Raise", "Check") => ($"Apuestas cuando tocaba pasar ({when})",
+                    "Apuesta cuando te paguen manos peores; si solo pagan las que te ganan, pasa."),
+                ("Call", "Raise") => ($"Solo pagas con manos para subir ({when})",
+                    "Con manos fuertes, sube por valor: en ficticio te pagan con peores."),
+                ("Check", "Raise") => ($"Pasas con manos para apostar por valor ({when})",
+                    "Si vas por delante a menudo, apuesta: en ficticio te pagan con manos peores."),
+                ("Fold", "Call") => ($"No vas cuando el precio daba para pagar ({when})",
+                    "Compara lo que ganas con lo que pide el bote: si te alcanza, paga."),
+                ("Fold", "Raise") => ($"Tiras manos para subir ({when})",
+                    preflop ? "Esa mano entra en tu tabla para subir: revísala en el cuadro de rango." : "Con manos fuertes no te retires: apuesta o sube por valor."),
+                ("Call", "Check") => ($"Pagas cuando podías pasar gratis ({when})",
+                    "Con la ciega puesta y nada que pagar, pasa: no pongas fichas de más."),
+                ("Fold", "Check") => ($"Te retiras cuando podías pasar gratis ({when})",
+                    "Si no hay nada que pagar, pasa: retirarte regala la mano."),
+                _ => ($"{chosen} cuando tocaba {recommended} ({when})", "Repasa esas manos en «Cómo jugaste».")
+            };
+        }
+
+        /// <summary>
+        /// Rendimiento de la sesion en vivo (ventana de Tiempo real): el mismo calculo que el informe al
+        /// terminar, sobre el ultimo tramo de juego seguido de estas mesas. Null si aun no hay manos.
+        /// </summary>
+        public static LiveSessionSummary? BuildLiveSummary(IEnumerable<(string TableName, string Path, string? Hero)> tables)
+        {
+            var rows = LastStretchRows(tables);
+            if (rows is null || rows.Count == 0)
+                return null;
+
+            var model = BuildReport(rows);
+            var coaching = model.Coaching;
+            return new LiveSessionSummary(
+                model.Hero,
+                model.RegisteredTables,
+                coaching.Hands,
+                model.Duration,
+                coaching.NetBb,
+                coaching.LuckBb,
+                coaching.Curve.Select(point => (point.NetBb, point.LuckBb)).ToList(),
+                coaching.Vpip,
+                coaching.Pfr,
+                model.Feedback,
+                model.Focus,
+                coaching.Decisions,
+                coaching.WithAdvice,
+                coaching.Followed,
+                coaching.Mistakes,
+                coaching.DecisionVerdict,
+                coaching.Patterns,
+                coaching.MistakeLines
+                    .Select(line => new LiveMistake(FormatCombo(line.Cards), line.Street, line.Chosen, line.Advice, line.AdjustedBb, line.Why))
+                    .ToList(),
+                coaching.HandLines,
+                coaching.AllIns
+                    .Select(line => new LiveAllIn(line.At, line.Table, FormatCombo(line.Cards), line.Against, line.Street, line.Equity, line.NetBb, line.LuckBb))
+                    .ToList(),
+                coaching.StrongSpots,
+                coaching.StrongBets);
         }
 
         /// <summary>Junta las filas de un jugador en varias mesas (publico para las pruebas).</summary>
@@ -441,7 +728,7 @@ namespace Hud.App.Services
 
             if (!string.IsNullOrWhiteSpace(table.SourcePath) && File.Exists(table.SourcePath))
             {
-                foreach (var line in File.ReadLines(table.SourcePath).Take(20))
+                foreach (var line in ReadShared(table.SourcePath).Take(20))
                 {
                     if (TryReadBigBlind(line, out var fileBlind))
                         return fileBlind;
@@ -648,7 +935,7 @@ namespace Hud.App.Services
                 yield break;
             var from = table.FirstHandTime?.AddSeconds(-1);
             var to = table.LastHandTime?.AddSeconds(1);
-            foreach (var hand in PokerStarsHandHistory.SplitHands(File.ReadLines(table.SourcePath)))
+            foreach (var hand in PokerStarsHandHistory.SplitHands(ReadShared(table.SourcePath)))
             {
                 var stamp = PokerStarsHandHistory.ExtractTimestamp(hand);
                 if (stamp is { } at && (from is { } start && at < start || to is { } end && at > end))
@@ -736,7 +1023,11 @@ namespace Hud.App.Services
             IReadOnlyList<MistakeLine> MistakeLines,
             IReadOnlyList<HandTypeRow> HandTypes,
             IReadOnlyList<CurvePoint> Curve,
-            DecisionFeedback? DecisionVerdict);
+            DecisionFeedback? DecisionVerdict,
+            IReadOnlyList<MistakePattern> Patterns,
+            IReadOnlyList<LiveHand> HandLines,
+            int StrongSpots,
+            int StrongBets);
 
         /// <summary>Un all-in con cartas por salir: con que ibas, contra que, y cuanto te dio o quito la suerte.</summary>
         private sealed record AllInLine(DateTime? At, string Table, string Cards, string Against, string Street, double Equity, double NetBb, double LuckBb);

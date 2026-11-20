@@ -179,7 +179,7 @@
                 Margin="0,0,0,12">
             <DockPanel>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="REVISION DE MANOS CRITICAS" FontSize="22" FontWeight="Bold"/>
+                    <TextBlock Text="REVISIÓN DE MANOS CRÍTICAS" FontSize="22" FontWeight="Bold"/>
                     <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
                 </StackPanel>
                 
@@ -208,11 +208,11 @@
                         <TextBlock Text="{Binding SelectedHand.TableName}" Style="{StaticResource ValueText}" FontSize="14"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,15,0">
-                        <TextBlock Text="POSICION" Style="{StaticResource LabelText}"/>
+                        <TextBlock Text="POSICIÓN" Style="{StaticResource LabelText}"/>
                         <TextBlock Text="{Binding ResolvedHeroPosition}" Style="{StaticResource ValueText}" FontSize="14"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,15,0">
-                        <TextBlock Text="ACCION" Style="{StaticResource LabelText}"/>
+                        <TextBlock Text="ACCIÓN" Style="{StaticResource LabelText}"/>
                         <TextBlock Text="{Binding SelectedHand.Action}" Style="{StaticResource ValueText}" FontSize="14"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,15,0">

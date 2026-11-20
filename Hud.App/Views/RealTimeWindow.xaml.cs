@@ -50,6 +50,7 @@ namespace Hud.App.Views
 
             Loaded += (_, _) => FitToWorkArea();
             Closed += (_, _) => ClearOverlays();
+            Closed += (_, _) => _performance?.Close();
 
             // Biblioteca GTO del flop: el calculo sigue aunque se cierre esta ventana.
             Action<FlopLibraryProgress> onProgress = progress => Dispatcher.InvokeAsync(() => ShowFlopLibrary(progress));
@@ -224,6 +225,12 @@ namespace Hud.App.Views
             HudSolver.Checked += (_, _) => { Save(s => s.ShowSolver = true); EnsureSolver(); };
             HudSolver.Unchecked += (_, _) => { Save(s => s.ShowSolver = false); StopAllSolvers(LocalizationManager.Text("Hud.SolverOff")); };
             Closed += (_, _) => StopAllSolvers(null);
+            HudRangeSmall.IsChecked = settings.RangeSize == 0;
+            HudRangeNormal.IsChecked = settings.RangeSize == 1;
+            HudRangeLarge.IsChecked = settings.RangeSize == 2;
+            HudRangeSmall.Checked += (_, _) => Save(s => s.RangeSize = 0);
+            HudRangeNormal.Checked += (_, _) => Save(s => s.RangeSize = 1);
+            HudRangeLarge.Checked += (_, _) => Save(s => s.RangeSize = 2);
             HudRecap.IsChecked = settings.ShowRecap;
             HudRecap.Checked += (_, _) => Save(s => s.ShowRecap = true);
             HudRecap.Unchecked += (_, _) => Save(s => s.ShowRecap = false);
@@ -436,8 +443,57 @@ namespace Hud.App.Views
             AppLog.Info("Aviso de pausa: " + pause);
         }
 
+        // ---------------------------------------------------------------- ventana de rendimiento
+
+        private SessionPerformanceWindow? _performance;
+        private bool _performanceDismissed;
+
+        /// <summary>Las mesas enlazadas con su historial y tu usuario (lo que lee la ventana de rendimiento).</summary>
+        private IReadOnlyList<(string TableName, string Path, string? Hero)> LinkedHistories() =>
+            _linked.Select(item => (item.Window.TableName, item.Path, item.Window.HeroName)).ToList();
+
+        private void BtnPerformance_Click(object sender, RoutedEventArgs e)
+        {
+            _performanceDismissed = false;
+            OpenPerformance(activate: true);
+        }
+
+        /// <summary>
+        /// Abre (o trae) la ventana de rendimiento. Sin dueno: Tiempo real suele estar minimizada mientras
+        /// se juega y una ventana con dueno se esconderia con ella. Se cierra al cerrar Tiempo real.
+        /// </summary>
+        private void OpenPerformance(bool activate)
+        {
+            if (_performance is { IsLoaded: true })
+            {
+                if (_performance.WindowState == WindowState.Minimized)
+                    _performance.WindowState = WindowState.Normal;
+                if (activate)
+                    _performance.Activate();
+                _performance.Refresh();
+                return;
+            }
+
+            _performance = new SessionPerformanceWindow(LinkedHistories);
+            _performance.Closed += (_, _) =>
+            {
+                // Si la cierras tu, no vuelve a abrirse sola en esta sesion (el boton la vuelve a abrir).
+                if (IsLoaded)
+                    _performanceDismissed = true;
+                _performance = null;
+            };
+            _performance.Show();
+            if (activate)
+                _performance.Activate();
+        }
+
         private void AddToSession(TrainerHandReport report)
         {
+            // La ventana de rendimiento sale sola con la primera mano corregida y se actualiza en cada una.
+            if (_performance is not null)
+                _performance.Refresh();
+            else if (!_performanceDismissed)
+                OpenPerformance(activate: false);
             CheckPause(report);
             _sessionHands++;
             _sessionNetBb += report.NetBb;

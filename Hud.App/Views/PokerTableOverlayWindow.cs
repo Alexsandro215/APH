@@ -23,8 +23,6 @@ namespace Hud.App.Views
     /// </summary>
     public sealed class PokerTableOverlayWindow : Window
     {
-        private const int TentativeHands = 15;
-
         private static readonly Color NeutralCell = Color.FromRgb(38, 50, 65);
         private static readonly Brush BoxBackground = Frozen(Color.FromArgb(232, 6, 10, 15));
         private static readonly Brush HeroBoxBackground = Frozen(Color.FromArgb(236, 14, 30, 48));
@@ -55,6 +53,11 @@ namespace Hud.App.Views
         private DateTime _noticeAt;
         private static readonly TimeSpan NoticeTime = TimeSpan.FromSeconds(25);
         private string _solverKey = "";
+
+        // Cuadro de la izquierda en tu turno: tu % de ganar y la tabla de rango que explica el consejo.
+        private readonly Border _rangeBox;
+        private LiveRangeView? _rangeShown;
+        private double _rangeFont;
 
         // Repaso de la mano anterior (preflop, board, showdown y quien gano) unos segundos.
         private readonly Border _recapBox;
@@ -142,6 +145,18 @@ namespace Hud.App.Views
                 IsHitTestVisible = false
             };
             _canvas.Children.Add(_solverBox);
+
+            _rangeBox = new Border
+            {
+                Background = Frozen(Color.FromArgb(238, 8, 12, 18)),
+                BorderBrush = BoxBorder,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(5, 3, 5, 4),
+                Visibility = Visibility.Collapsed,
+                IsHitTestVisible = false
+            };
+            _canvas.Children.Add(_rangeBox);
 
             _recapBox = new Border
             {
@@ -261,8 +276,183 @@ namespace Hud.App.Views
                     box.Border.Visibility = Visibility.Collapsed;
 
             PlaceSolver(settings, font, bounds.Width, bounds.Height);
+            PlaceRange(settings, font, bounds.Height);
             PlaceRecap(snapshot, settings, font, bounds.Width, bounds.Height);
         }
+
+        // ---------------------------------------------------------------- cuadro de rango (izquierda)
+
+        private static readonly Color RaiseCell = Color.FromRgb(224, 123, 46);
+        private static readonly Color CallCell = Color.FromRgb(59, 130, 196);
+        private static readonly Color EmptyCell = Color.FromRgb(34, 40, 48);
+        private static readonly Color VillainCell = Color.FromRgb(214, 69, 80);
+        private static readonly Color AheadCell = Color.FromRgb(56, 176, 96);
+        private const string RankLetters = "AKQJT98765432";
+
+        /// <summary>
+        /// En tu turno, abajo a la izquierda (la zona negra fuera del tapete): tu % de ganar la mano y la
+        /// tabla de rango que explica el consejo. Preflop tu rango con tu mano marcada; despues del flop,
+        /// el rango que el solver le da al rival. Sale y se va con el cuadro del solver.
+        /// </summary>
+        private void PlaceRange(HudOverlaySettings settings, double font, double height)
+        {
+            if (!settings.ShowSolver || _solverDecision?.RangeView is not { } view)
+            {
+                _rangeBox.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var factor = settings.RangeCellFactor;
+            if (!ReferenceEquals(view, _rangeShown) || Math.Abs(_rangeFont - font) > 0.01 || Math.Abs(_rangeFactor - factor) > 0.001)
+            {
+                _rangeBox.Child = RangeContent(view, font, factor);
+                _rangeShown = view;
+                _rangeFont = font;
+                _rangeFactor = factor;
+            }
+            _rangeBox.Visibility = Visibility.Visible;
+            _rangeBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Canvas.SetLeft(_rangeBox, 3);
+            Canvas.SetTop(_rangeBox, Math.Max(2, height - _rangeBox.DesiredSize.Height - 4));
+        }
+
+        private double _rangeFactor;
+
+        private static FrameworkElement RangeContent(LiveRangeView view, double font, double factor)
+        {
+            var cell = Math.Max(6, Math.Round(font * factor));
+            // Los textos de la caja crecen con la tabla (la chica conserva el tamaño de antes).
+            font *= Math.Clamp(factor / 0.8, 1, 1.6);
+            var panel = new StackPanel { Width = cell * 14 };
+            panel.Children.Add(new TextBlock
+            {
+                Text = view.Title,
+                FontSize = font * 0.72,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = DimBrush,
+                TextWrapping = TextWrapping.Wrap
+            });
+            if (view.WinPct is { } win)
+            {
+                panel.Children.Add(Text(string.Format(CultureInfo.CurrentCulture, LocalizationManager.Text("Hud.RangeWin"),
+                    win.ToString("0", CultureInfo.CurrentCulture)), font * 1.1, Brushes.White, FontWeights.Bold));
+                panel.Children.Add(new TextBlock
+                {
+                    Text = view.WinAgainst,
+                    FontSize = font * 0.66,
+                    Foreground = DimBrush,
+                    TextWrapping = TextWrapping.Wrap
+                });
+            }
+
+            // 13x13 con las letras arriba y a la izquierda: parejas en la diagonal, suited arriba a la
+            // derecha y offsuit abajo a la izquierda.
+            var grid = new Grid { Margin = new Thickness(0, 3, 0, 2) };
+            for (var i = 0; i < 14; i++)
+            {
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(cell) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cell) });
+            }
+            for (var i = 0; i < 13; i++)
+            {
+                foreach (var (row, col) in new[] { (0, i + 1), (i + 1, 0) })
+                {
+                    var letter = new TextBlock
+                    {
+                        Text = RankLetters[i].ToString(),
+                        FontSize = cell * 0.85,
+                        Foreground = DimBrush,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    Grid.SetRow(letter, row);
+                    Grid.SetColumn(letter, col);
+                    grid.Children.Add(letter);
+                }
+            }
+            for (var row = 0; row < 13; row++)
+            for (var col = 0; col < 13; col++)
+            {
+                var hand = AphPreflopProvider.HandAt(row, col);
+                var square = new Border { Background = Frozen(CellColor(view, hand)), Margin = new Thickness(0.5) };
+                if (hand == view.HeroClass)
+                {
+                    square.BorderBrush = Brushes.White;
+                    square.BorderThickness = new Thickness(1.3);
+                    square.Margin = new Thickness(0);
+                }
+                Grid.SetRow(square, row + 1);
+                Grid.SetColumn(square, col + 1);
+                grid.Children.Add(square);
+            }
+            panel.Children.Add(grid);
+
+            if (view.HeroPlay is { Length: > 0 } play)
+                panel.Children.Add(new TextBlock
+                {
+                    Text = play,
+                    FontSize = font * 0.72,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = Brushes.White,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 2)
+                });
+
+            var legend = new WrapPanel();
+            void Key(Color color, string text)
+            {
+                legend.Children.Add(LegendChip(color, cell));
+                legend.Children.Add(Text(text + "  ", font * 0.66, DimBrush, FontWeights.Normal));
+            }
+            if (view.IsHeroRange)
+            {
+                Key(RaiseCell, LocalizationManager.Text("Hud.RangeRaise"));
+                Key(CallCell, LocalizationManager.Text("Hud.RangeCall"));
+            }
+            else if (view.Ahead is not null)
+            {
+                Key(AheadCell, LocalizationManager.Text("Hud.RangeAhead"));
+                Key(VillainCell, LocalizationManager.Text("Hud.RangeBehind"));
+                legend.Children.Add(Text(LocalizationManager.Text("Hud.RangeLikely"), font * 0.62, DimBrush, FontWeights.Normal));
+            }
+            else
+            {
+                Key(VillainCell, LocalizationManager.Text("Hud.RangeVillain"));
+            }
+            panel.Children.Add(legend);
+            return panel;
+        }
+
+        /// <summary>
+        /// Color de una mano en la tabla. Tu rango: naranja sube, azul paga, oscuro fuera. Rango del
+        /// rival: de rojo (te gana ahora) a verde (le ganas), mas intenso cuanto mas probable; sin tablero,
+        /// rojo por lo probable que es.
+        /// </summary>
+        private static Color CellColor(LiveRangeView view, string hand)
+        {
+            if (view.IsHeroRange)
+                return view.Raise.ContainsKey(hand) ? RaiseCell : view.Call.ContainsKey(hand) ? CallCell : EmptyCell;
+            if (!view.Raise.TryGetValue(hand, out var weight) || weight <= 0)
+                return EmptyCell;
+            var tone = view.Ahead is { } ahead && ahead.TryGetValue(hand, out var share)
+                ? Mix(VillainCell, AheadCell, Math.Clamp(share, 0, 1))
+                : VillainCell;
+            return Mix(EmptyCell, tone, 0.3 + 0.7 * Math.Clamp(weight, 0, 1));
+        }
+
+        private static Border LegendChip(Color color, double cell) => new()
+        {
+            Background = Frozen(color),
+            Width = cell * 0.8,
+            Height = cell * 0.8,
+            Margin = new Thickness(0, 0, 3, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        private static Color Mix(Color from, Color to, double t) => Color.FromRgb(
+            (byte)Math.Round(from.R + (to.R - from.R) * t),
+            (byte)Math.Round(from.G + (to.G - from.G) * t),
+            (byte)Math.Round(from.B + (to.B - from.B) * t));
 
         // ---------------------------------------------------------------- solver de entrenamiento
 
@@ -961,30 +1151,10 @@ namespace Hud.App.Views
         /// Tipo de jugador con su color: con 30 manos o mas, el de APH; de 15 a 29, el mismo con "?"
         /// (todavia es una sospecha); con menos, "Poca muestra".
         /// </summary>
-        private static (string Label, Color Color) TypeOf(PlayerStats? player)
-        {
-            if (player is null || player.HandsReceived < TentativeHands)
-                return (LocalizationManager.Text("Hud.FewHands"), Color.FromRgb(70, 80, 94));
-
-            var tentative = player.HandsReceived < PlayerProfileClassifier.MinHands;
-            var label = PlayerProfileClassifier.Classify(
-                tentative ? PlayerProfileClassifier.MinHands : player.HandsReceived,
-                player.VPIPPct, player.PFRPct, player.ThreeBetPct, player.AF);
-
-            var color = label switch
-            {
-                "Fish" => Color.FromRgb(46, 158, 91),
-                "Maniac" => Color.FromRgb(214, 69, 80),
-                "LAG" => Color.FromRgb(224, 123, 46),
-                "TAG" => Color.FromRgb(59, 130, 196),
-                "Nit" => Color.FromRgb(107, 122, 143),
-                "Tight" => Color.FromRgb(74, 144, 164),
-                _ when label == LocalizationManager.Text("Tag.LoosePassive") => Color.FromRgb(120, 168, 52),
-                _ when label == LocalizationManager.Text("Tag.Passive") => Color.FromRgb(150, 138, 82),
-                _ => Color.FromRgb(92, 102, 112)
-            };
-            return (tentative ? label + "?" : label, color);
-        }
+        private static (string Label, Color Color) TypeOf(PlayerStats? player) =>
+            player is null
+                ? PlayerProfileClassifier.Tag(0, 0, 0, 0, 0)
+                : PlayerProfileClassifier.Tag(player.HandsReceived, player.VPIPPct, player.PFRPct, player.ThreeBetPct, player.AF);
 
         private static Border Pill(string text, Color color, double font) => new()
         {

@@ -143,7 +143,12 @@ namespace Hud.App
 
         private void ShowEntry(PageEntry entry)
         {
-            PageHost.Content = entry.Content;
+            // La pagina nueva entra con un fundido y sube unos pixeles (Configuracion > Apariencia).
+            if (!ReferenceEquals(PageHost.Content, entry.Content))
+            {
+                PageHost.Content = entry.Content;
+                UiMotion.EnterPage(PageHost);
+            }
             _currentPage = entry;
             PageTitleText.Text = entry.Title;
 

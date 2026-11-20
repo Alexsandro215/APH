@@ -322,11 +322,15 @@ namespace Hud.App.Services
                 var c = doc.C;
                 var y = doc.Y;
                 PageTitle(c, ref y, "Rivales de la sesión", "Los jugadores con más manos en esta sesión. Cada stat tiene el color de la escala de APH.");
-                var rows = model.TopPlayers.Take(20).ToList();
+                // Tantas filas como quepan (hasta 20) dejando sitio a la leyenda de los colores y a la de los tipos.
+                var legendHeight = 44 + TypeLegendHeight();
+                var fit = (int)Math.Floor((y - 18 - legendHeight - ContentBottom) / 16);
+                var rows = model.TopPlayers.Take(Math.Clamp(fit, 8, 20)).ToList();
                 PlayersTable(c, ref y, rows, model.Hero);
                 y -= 10;
                 Legend(c, Margin, y);
-                y -= 30;
+                y -= 34;
+                TypeLegend(c, Margin, ref y);
                 doc.Y = y;
             }
 
@@ -755,10 +759,89 @@ namespace Hud.App.Services
                 c.Text("· el detalle y qué hacer, en la página de Retroalimentación.", vx - 10, y - 37, 7, Muted);
             }
 
+            /// <summary>
+            /// Que es cada tipo de jugador de la columna "Tipo" (como la leyenda de los colores): cada tipo
+            /// con su color y sus limites, en el orden en que se miran.
+            /// </summary>
+            /// <summary>Alto que ocupa la leyenda de los tipos (sin dibujarla).</summary>
+            private static double TypeLegendHeight()
+            {
+                var y = 0.0;
+                TypeLegend(null, Margin, ref y);
+                return -y;
+            }
+
+            private static void TypeLegend(PdfCanvas? c, double x, ref double y)
+            {
+                c?.Text("Cómo leer los tipos:", x, y - 9, 7.5, Ink2, bold: true);
+                c?.Text("se miran en este orden (1, 2, 3…) y el primero que encaja es el tipo, con las stats de la sesión.",
+                    x + PdfCanvas.Width("Cómo leer los tipos:", 7.5, true) + 8, y - 9, 7, Muted);
+                y -= 16;
+
+                // Dos columnas: la primera mitad de los tipos a la izquierda y el resto a la derecha, todas
+                // las etiquetas del mismo ancho y la explicacion ajustada a su columna.
+                var items = PlayerProfileClassifier.Legend(Es);
+                const double gap = 18, lineH = 9.5, rowGap = 4;
+                var columnW = (ContentW - gap) / 2;
+                var chipW = items.Max(item => PdfCanvas.Width(item.Label, 7, true)) + 14;
+                var textW = columnW - chipW - 22;
+                var perColumn = (items.Count + 1) / 2;
+                double Draw(int index, double left, double top)
+                {
+                    var (label, color, meaning) = items[index];
+                    var lines = Wrap(meaning, textW, 7);
+                    if (c is not null)
+                    {
+                        c.TextRight($"{index + 1}.", left + 12, top - 8.8, 7, Muted);
+                        c.FillRoundRect(left + 16, top - 12, chipW, 12, 3, new Rgb(color.R, color.G, color.B));
+                        c.TextCenter(label, left + 16 + chipW / 2, top - 8.8, 7, White, bold: true);
+                        for (var i = 0; i < lines.Count; i++)
+                            c.Text(lines[i], left + 16 + chipW + 6, top - 8.8 - i * lineH, 7, Ink2);
+                    }
+                    return Math.Max(12, lines.Count * lineH + 2.5);
+                }
+                for (var row = 0; row < perColumn; row++)
+                {
+                    var height = Draw(row, x, y);
+                    if (row + perColumn < items.Count)
+                        height = Math.Max(height, Draw(row + perColumn, x + columnW + gap, y));
+                    y -= height + rowGap;
+                }
+                y -= 8;
+            }
+
+            /// <summary>Corta un texto en lineas que caben en el ancho dado (por palabras).</summary>
+            private static List<string> Wrap(string text, double width, double size)
+            {
+                var lines = new List<string>();
+                var line = "";
+                foreach (var word in text.Split(' '))
+                {
+                    var candidate = line.Length == 0 ? word : line + " " + word;
+                    if (line.Length > 0 && PdfCanvas.Width(candidate, size, false) > width)
+                    {
+                        lines.Add(line);
+                        line = word;
+                    }
+                    else
+                    {
+                        line = candidate;
+                    }
+                }
+                if (line.Length > 0)
+                    lines.Add(line);
+                return lines;
+            }
+
+            /// <summary>
+            /// Jugadores con su tipo (el mismo que en el HUD de la mesa: Fish, Nit, TAG...; "?" con 15-29
+            /// manos y "Poca muestra" con menos), sus manos y sus stats con el color de la escala.
+            /// </summary>
             private static void PlayersTable(PdfCanvas c, ref double y, IReadOnlyList<RealTimePlayerReportRow> players, string hero)
             {
-                var statW = (ContentW - 190 - 50) / StatColumns.Length;
-                var columns = new List<(string Header, double Width, bool Right)> { ("Jugador", 190, false), ("Manos", 50, true) };
+                const double nameW = 150, typeW = 76, handsW = 46;
+                var statW = (ContentW - nameW - typeW - handsW) / StatColumns.Length;
+                var columns = new List<(string Header, double Width, bool Right)> { ("Jugador", nameW, false), ("Tipo", typeW, false), ("Manos", handsW, true) };
                 columns.AddRange(StatColumns.Select(col => (col.Label, statW, true)));
                 TableHeader(c, Margin, y, columns.ToArray());
                 y -= 18;
@@ -767,9 +850,11 @@ namespace Hud.App.Services
                     if (y - 16 < ContentBottom)
                         break;
                     var isHero = SamePlayer(player.Name, hero);
+                    var (type, typeColor) = PlayerProfileClassifier.Tag(player.Hands, player.VPIP, player.PFR, player.ThreeBet, player.AF);
                     var cells = new List<CellSpec>
                     {
-                        Cell(Fit(isHero ? player.Name + " (tú)" : player.Name, 182, 8.5, true), isHero ? Accent : Ink, bold: true),
+                        Cell(Fit(isHero ? player.Name + " (tú)" : player.Name, nameW - 8, 8.5, true), isHero ? Accent : Ink, bold: true),
+                        Cell(Fit(type, typeW - 10, 8, true), White, bold: true, fill: new Rgb(typeColor.R, typeColor.G, typeColor.B)),
                         Cell(player.Hands.ToString("N0", Es), Ink2)
                     };
                     cells.AddRange(StatColumns.Select(col => StatCell(col.Key, StatValue(player, col.Key), player.Hands)));

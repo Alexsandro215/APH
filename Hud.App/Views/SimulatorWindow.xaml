@@ -136,7 +136,7 @@
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="290"/>
         <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="380"/>
+        <ColumnDefinition Width="410"/>
       </Grid.ColumnDefinitions>
 
       <!-- Mesa, rubro y rival -->
@@ -179,6 +179,23 @@
           <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,8,0,0">
             <Canvas x:Name="TableCanvas" Width="940" Height="560"/>
           </Viewbox>
+
+          <!-- Rango en grande encima de la mesa: se abre con un clic en la tabla de la derecha -->
+          <Border x:Name="RangeZoom" Grid.Row="1" Margin="0,8,0,0" CornerRadius="12" Padding="16,12"
+                  Background="{DynamicResource Brush.Panel}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                  Visibility="Collapsed" Cursor="Hand" MouseLeftButtonUp="RangeZoom_Click"
+                  AutomationProperties.Name="{DynamicResource Sim.RangeZoomClose}">
+            <DockPanel>
+              <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <TextBlock DockPanel.Dock="Right" Text="{DynamicResource Sim.RangeZoomClose}" Foreground="{DynamicResource Brush.Accent}"
+                           FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <TextBlock x:Name="RangeZoomTitle" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              </DockPanel>
+              <Viewbox Stretch="Uniform">
+                <UniformGrid x:Name="RangeGridLarge" Rows="13" Columns="13" Width="520" Height="520"/>
+              </Viewbox>
+            </DockPanel>
+          </Border>
           <StackPanel Grid.Row="2" Margin="0,8,0,0">
             <TextBlock x:Name="StatusText" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,8" TextWrapping="Wrap"/>
             <WrapPanel x:Name="ActionPanel" MinHeight="48"/>
@@ -193,9 +210,13 @@
             <ToggleButton x:Name="TechToggle" DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" Margin="8,0,0,0"/>
             <TextBlock x:Name="RightTitle" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
           </DockPanel>
-          <StackPanel x:Name="RangePanel" DockPanel.Dock="Bottom" Visibility="Collapsed" Margin="0,10,0,0">
-            <TextBlock x:Name="RangeTitle" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,6"/>
-            <Viewbox Stretch="Uniform" MaxHeight="300">
+          <StackPanel x:Name="RangePanel" DockPanel.Dock="Bottom" Visibility="Collapsed" Margin="0,10,0,0"
+                      Cursor="Hand" MouseLeftButtonUp="RangePanel_Click" Background="Transparent"
+                      ToolTip="{DynamicResource Sim.RangeZoomHint}">
+            <TextBlock x:Name="RangeTitle" FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,4"/>
+            <TextBlock Text="{DynamicResource Sim.RangeZoomHint}" FontSize="12" Foreground="{DynamicResource Brush.Accent}"
+                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+            <Viewbox Stretch="Uniform" MaxHeight="380">
               <UniformGrid x:Name="RangeGrid" Rows="13" Columns="13" Width="390" Height="390"/>
             </Viewbox>
           </StackPanel>

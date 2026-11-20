@@ -180,6 +180,7 @@ namespace Hud.App.Views
             RightTitle.Text = T("Sim.HandLog");
             RightList.Children.Clear();
             RangePanel.Visibility = Visibility.Collapsed;
+            RangeZoom.Visibility = Visibility.Collapsed;
             var hero = _session.Hand!.Hero;
             Log(string.Format(CultureInfo.CurrentCulture, T("Sim.Log.Start"), hero.Position, CardsText(hero.Cards)), bold: true);
             LogNewActions();
@@ -423,6 +424,12 @@ namespace Hud.App.Views
                 e.Handled = true;
                 return;
             }
+            if (e.Key == Key.Escape && RangeZoom.Visibility == Visibility.Visible)
+            {
+                RangeZoom.Visibility = Visibility.Collapsed;
+                e.Handled = true;
+                return;
+            }
             if (_session?.Hand is null)
                 return;
             if (_session.Hand.IsOver && e.Key is Key.Enter or Key.Space or Key.N)
@@ -516,6 +523,7 @@ namespace Hud.App.Views
         {
             RightList.Children.Clear();
             RangePanel.Visibility = Visibility.Collapsed;
+            RangeZoom.Visibility = Visibility.Collapsed;
             RightTitle.Text = T("Sim.ReviewTitle");
             var reviews = _reviews!;
             if (reviews.Count == 0)
@@ -605,10 +613,45 @@ namespace Hud.App.Views
             var max = shares.Count == 0 ? 1 : shares.Values.Max();
             var trueClass = TrainerCards.ComboName(opponent.TrueCards[0], opponent.TrueCards[1]);
 
+            _rangeShares = shares;
+            _rangeMax = max;
+            _rangeTrueClass = trueClass;
             RangeTitle.Text = SimReviewer.IsUntouched(opponent.Weights)
                 ? string.Format(CultureInfo.CurrentCulture, T("Sim.RangeUntouched"), SimProfiles.Name(opponent.Profile), trueClass)
                 : string.Format(CultureInfo.CurrentCulture, T("Sim.RangeTitle"), SimProfiles.Name(opponent.Profile), T("Sim.StreetName." + review.Decision.Street), trueClass);
-            RangeGrid.Children.Clear();
+            FillRangeGrid(RangeGrid, 12.5);
+            RangePanel.Visibility = Visibility.Visible;
+            if (RangeZoom.Visibility == Visibility.Visible)
+                ShowRangeZoom();
+        }
+
+        // Rango de la decision que se esta viendo, para la tabla de la derecha y la tabla en grande.
+        private Dictionary<string, double> _rangeShares = new();
+        private double _rangeMax = 1;
+        private string _rangeTrueClass = "";
+
+        private void RangePanel_Click(object sender, MouseButtonEventArgs e) => ShowRangeZoom();
+
+        private void RangeZoom_Click(object sender, MouseButtonEventArgs e) => RangeZoom.Visibility = Visibility.Collapsed;
+
+        /// <summary>La tabla de rango en grande encima de la mesa (clic o Esc para cerrarla).</summary>
+        private void ShowRangeZoom()
+        {
+            RangeZoomTitle.Text = RangeTitle.Text;
+            FillRangeGrid(RangeGridLarge, 15);
+            var wasOpen = RangeZoom.Visibility == Visibility.Visible;
+            RangeZoom.Visibility = Visibility.Visible;
+            if (!wasOpen)
+                UiMotion.Pop(RangeZoom);
+        }
+
+        /// <summary>Las 169 manos con la intensidad de azul segun lo probable que sea cada una.</summary>
+        private void FillRangeGrid(System.Windows.Controls.Primitives.UniformGrid grid, double fontSize)
+        {
+            var shares = _rangeShares;
+            var max = _rangeMax;
+            var trueClass = _rangeTrueClass;
+            grid.Children.Clear();
             for (var row = 0; row < 13; row++)
             {
                 for (var col = 0; col < 13; col++)
@@ -616,12 +659,21 @@ namespace Hud.App.Views
                     var hand = AphPreflopProvider.HandAt(row, col);
                     var share = shares.GetValueOrDefault(hand) / max;
                     var alpha = share <= 0 ? 0 : 0.12 + 0.88 * share;
-                    var label = new TextBlock { Text = hand, FontSize = 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                    var label = new TextBlock
+                    {
+                        Text = hand,
+                        FontSize = fontSize,
+                        FontWeight = share > 0 ? FontWeights.SemiBold : FontWeights.Normal,
+                        // Sin partir en dos lineas: con el recuadro de la mano real, "KQo" quedaba "KQ / o".
+                        TextWrapping = TextWrapping.NoWrap,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
                     var cell = new Border
                     {
                         Margin = new Thickness(0.5),
                         CornerRadius = new CornerRadius(2),
-                        BorderThickness = new Thickness(hand == trueClass ? 3 : 0),
+                        BorderThickness = new Thickness(hand == trueClass ? 2.5 : 0),
                         Child = label,
                         ToolTip = $"{hand}: {shares.GetValueOrDefault(hand) * 100:0.#}%"
                     };
@@ -632,10 +684,9 @@ namespace Hud.App.Views
                     if (hand == trueClass) cell.BorderBrush = ThemeBrushes.Text;
                     if (alpha > 0.55) label.Foreground = PreflopChartsWindow.InkOnColor;
                     else label.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextDim");
-                    RangeGrid.Children.Add(cell);
+                    grid.Children.Add(cell);
                 }
             }
-            RangePanel.Visibility = Visibility.Visible;
         }
 
         // ---------------------------------------------------------------- dibujo de la mesa

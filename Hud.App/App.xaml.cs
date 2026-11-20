@@ -15,6 +15,7 @@ namespace Hud.App
 
             var settings = AppSettingsService.Load();
             ThemePaletteManager.Apply(settings.Palette);
+            UiMotion.Level = UiMotion.Parse(settings.AnimationLevel);
             ThemedTitleBar.Install();
             LocalizationManager.Apply(settings.Language);
             AppLog.Info(PopulationBaselines.IsAvailable

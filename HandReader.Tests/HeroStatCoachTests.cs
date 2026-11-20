@@ -64,6 +64,41 @@ public class HeroStatCoachTests
                                                 item.Advice.Contains("farolea", StringComparison.OrdinalIgnoreCase));
     }
 
+    // AF y AFq muy bajos (por debajo del primer corte de la escala).
+    private static HeroStatInput Passive() => Normal() with
+    {
+        Af = StatScale.Cuts("AF", StakeProfile.Low)[0] - 0.2,
+        Afq = StatScale.Cuts("AFQ", StakeProfile.Low)[0] - 3
+    };
+
+    [Fact]
+    public void En_ficticio_el_AF_bajo_se_juzga_por_si_apuestas_tus_manos_fuertes()
+    {
+        // 20-11-2026: siguiendo el consejo en el 97%, AF 1 (muy bajo) y con mano fuerte apostaba ~9 de 10.
+        var cobra = HeroStatCoach.Evaluate(Passive() with { StrongValue = (20, 18) }, playMoney: true);
+        Assert.Equal(StatVerdict.Good, Of(cobra, "AF").Verdict);
+        Assert.Equal(StatVerdict.Good, Of(cobra, "AFQ").Verdict);
+        Assert.Contains("90% (18 de 20)", Of(cobra, "AF").Advice);
+
+        // Si con mano fuerte pasa mucho, eso si es a mejorar.
+        var noCobra = HeroStatCoach.Evaluate(Passive() with { StrongValue = (20, 8) }, playMoney: true);
+        Assert.Equal(StatVerdict.Bad, Of(noCobra, "AF").Verdict);
+        Assert.Contains("Pasivo con tus manos buenas", Of(noCobra, "AF").Advice);
+
+        // Sin muestra de manos fuertes: por ajustar, sin mandarte a farolear.
+        var sinDatos = HeroStatCoach.Evaluate(Passive() with { StrongValue = (5, 5) }, playMoney: true);
+        Assert.Equal(StatVerdict.Adjust, Of(sinDatos, "AF").Verdict);
+    }
+
+    [Fact]
+    public void En_dinero_real_el_AF_bajo_sigue_siendo_a_mejorar()
+    {
+        var real = HeroStatCoach.Evaluate(Passive() with { StrongValue = (20, 18) }, playMoney: false);
+        Assert.Equal(StatVerdict.Bad, Of(real, "AF").Verdict);
+        Assert.Contains("apuestas finas", Of(real, "AF").Advice);   // las manos fuertes ya las apuestas
+        Assert.Equal(StatVerdict.Bad, Of(HeroStatCoach.Evaluate(Passive(), playMoney: false), "AF").Verdict);
+    }
+
     [Fact]
     public void Llegar_mucho_al_showdown_solo_es_malo_si_pierdes()
     {

@@ -48,6 +48,17 @@ namespace Hud.App.Services
         /// "a mejorar" con 5 c-bets afrontadas.
         /// </summary>
         public IReadOnlyDictionary<string, int>? Opportunities { get; init; }
+
+        /// <summary>
+        /// Con mano fuerte (le gana menos del 5% de las manos posibles) y nada que pagar despues del
+        /// flop: cuantas veces fue y cuantas apostaste. Es lo que de verdad dice si eres pasivo con tus
+        /// manos buenas; el AF tambien baja por no farolear, que en ficticio es lo correcto.
+        /// </summary>
+        public (int Spots, int Bets)? StrongValue { get; init; }
+
+        /// <summary>% de apuesta con mano fuerte, si hay muestra suficiente (<see cref="HeroStatCoach.MinStrongSpots"/>).</summary>
+        public double? StrongValuePct =>
+            StrongValue is { } value && value.Spots >= HeroStatCoach.MinStrongSpots ? value.Bets * 100.0 / value.Spots : null;
     }
 
     /// <summary>Una mano con error de la correccion: cartas ("A4s"), que hizo, que decia APH y lo que perdio sin la suerte de los all-in.</summary>
@@ -179,14 +190,49 @@ namespace Hud.App.Services
                     break;
             }
 
-            // AF y AFq: agresion despues del flop.
+            // Con mano fuerte, ¿apuestas? (de los historiales: sirve en ficticio y en real).
+            var valuePct = stats.StrongValuePct;
+            var valueText = stats.StrongValue is { } strong && valuePct is { } pct
+                ? $"con mano fuerte apostaste el {pct.ToString("0", CultureInfo.CurrentCulture)}% ({strong.Bets} de {strong.Spots})"
+                : null;
+            var valueOk = valuePct >= GoodStrongValuePct;
+
+            // AF y AFq: agresion despues del flop. En ficticio un AF bajo sale sobre todo de no farolear
+            // con las manos flojas, que es lo correcto ahi: 20-11-2026, siguiendo el consejo en el 97% el AF
+            // era 1 (muy bajo) y aun asi con mano fuerte se apostaba 9 de cada 10 veces. Lo que se juzga es
+            // si apuestas tus manos fuertes. En real la pasividad si cuesta: faltan apuestas finas de valor
+            // y semi-faroles, aunque las manos fuertes las apuestes.
             foreach (var key in new[] { "AF", "AFQ" })
             {
-                switch (L(key))
+                var level = L(key);
+                if (level is StatLevel.VeryLow or StatLevel.Low or StatLevel.SlightlyLow)
                 {
-                    case StatLevel.VeryLow: Add(key, StatVerdict.Bad, "Muy pasivo después del flop: apuesta tus manos buenas, te pagan."); break;
-                    case StatLevel.Low: Add(key, StatVerdict.Adjust, "Pasivo después del flop: apuesta tus manos hechas en vez de pasar y pagar."); break;
-                    case StatLevel.SlightlyLow: Add(key, StatVerdict.Adjust, "Algo pasivo: cuando tengas mano, apuesta tú en lugar de pagar."); break;
+                    if (playMoney && valueText is not null)
+                    {
+                        if (valueOk)
+                            Add(key, StatVerdict.Good, $"Bajo porque no haces faroles, que en ficticio es lo correcto: {valueText}.");
+                        else
+                            Add(key, level == StatLevel.VeryLow ? StatVerdict.Bad : StatVerdict.Adjust,
+                                $"Pasivo con tus manos buenas: {valueText}. Cóbralas, en ficticio te pagan.");
+                        continue;
+                    }
+                    if (playMoney)
+                    {
+                        Add(key, StatVerdict.Adjust, "Bajo: en ficticio es normal si no haces faroles; asegúrate de apostar tus manos fuertes.");
+                        continue;
+                    }
+                    if (valueText is not null && valueOk)
+                    {
+                        Add(key, level == StatLevel.SlightlyLow ? StatVerdict.Adjust : StatVerdict.Bad,
+                            $"Tus manos fuertes sí las apuestas ({valueText}), pero en dinero real lo que falta son apuestas finas por valor y semi-faroles con proyecto.");
+                        continue;
+                    }
+                }
+                switch (level)
+                {
+                    case StatLevel.VeryLow: Add(key, StatVerdict.Bad, "Muy pasivo después del flop: apuesta tus manos buenas, te pagan" + (valueText is null ? "." : $" ({valueText}).")); break;
+                    case StatLevel.Low: Add(key, StatVerdict.Adjust, "Pasivo después del flop: apuesta tus manos hechas en vez de pasar y pagar" + (valueText is null ? "." : $" ({valueText}).")); break;
+                    case StatLevel.SlightlyLow: Add(key, StatVerdict.Adjust, "Algo pasivo: cuando tengas mano, apuesta tú en lugar de pagar" + (valueText is null ? "." : $" ({valueText}).")); break;
                     case StatLevel.Normal: Add(key, StatVerdict.Good, "Agresión normal después del flop."); break;
                     case StatLevel.SlightlyHigh:
                         Add(key, StatVerdict.Good, playMoney
@@ -211,7 +257,11 @@ namespace Hud.App.Services
                     case StatLevel.VeryHigh: Add("CBF", StatVerdict.Bad, "Apuestas casi todos los flops: en ficticio te pagan; apuesta solo con pareja o proyecto fuerte."); break;
                     case StatLevel.High: Add("CBF", StatVerdict.Adjust, "Apuestas muchos flops: quita las apuestas sin mano, aquí no se retiran."); break;
                     case StatLevel.SlightlyHigh: Add("CBF", StatVerdict.Adjust, "Apuestas bastantes flops: revisa los que apuestas sin pareja ni proyecto."); break;
-                    case StatLevel.VeryLow: Add("CBF", StatVerdict.Adjust, "Apuestas muy pocos flops: cuando conectes pareja o un proyecto fuerte, apuesta; te pagan."); break;
+                    case StatLevel.VeryLow:
+                        Add("CBF", valueOk ? StatVerdict.Good : StatVerdict.Adjust, valueOk
+                            ? $"Apuestas pocos flops porque solo apuestas con mano: en ficticio está bien; {valueText}."
+                            : "Apuestas muy pocos flops: cuando conectes pareja o un proyecto fuerte, apuesta; te pagan.");
+                        break;
                     case StatLevel.Normal: Add("CBF", StatVerdict.Good, "Sigues apostando el flop con una frecuencia normal."); break;
                     default: Add("CBF", StatVerdict.Good, "Apuestas el flop solo con mano: en ficticio está bien, los faroles no funcionan."); break;
                 }
@@ -283,6 +333,10 @@ namespace Hud.App.Services
             // WWSF: en ficticio casi nadie se retira, asi que algo bajo es normal.
             switch (L("WWSF"))
             {
+                case StatLevel.VeryLow when playMoney && valueOk:
+                    Add("WWSF", StatVerdict.Good,
+                        $"Ganas pocos botes sin llegar al final: en ficticio es normal, casi nadie se retira, y tus manos fuertes sí las apuestas: {valueText}.");
+                    break;
                 case StatLevel.VeryLow:
                     Add("WWSF", playMoney ? StatVerdict.Adjust : StatVerdict.Bad, playMoney
                         ? "Ganas muy pocos botes después del flop: apuesta tus manos hechas para cobrarlas."
@@ -307,6 +361,12 @@ namespace Hud.App.Services
                 .ThenBy(item => Array.IndexOf(StatScale.Keys, item.Key))
                 .ToList();
         }
+
+        /// <summary>Veces con mano fuerte y nada que pagar para juzgar si apuestas tus manos buenas.</summary>
+        public const int MinStrongSpots = 12;
+
+        /// <summary>Con mano fuerte, apostar al menos esto es cobrar tus manos (el consejo de APH apuesta ~90%).</summary>
+        public const double GoodStrongValuePct = 75;
 
         /// <summary>Ocasiones minimas para juzgar una stat.</summary>
         public static int MinOpportunities(string key) => key switch

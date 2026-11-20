@@ -90,6 +90,11 @@
                        Foreground="{DynamicResource Brush.SurfaceText}"
                        VerticalAlignment="Center"/>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button Content="{DynamicResource RT.Performance}"
+                      AutomationProperties.Name="{DynamicResource RT.Performance}"
+                      Padding="12,6"
+                      Margin="0,0,8,0"
+                      Click="BtnPerformance_Click"/>
               <Button Content="{DynamicResource RT.FinishSession}"
                       Padding="12,6"
                       Margin="0,0,8,0"
@@ -125,6 +130,13 @@
             <CheckBox x:Name="HudRecap" Content="{DynamicResource Hud.Recap}" ToolTip="{DynamicResource Hud.RecapDesc}" VerticalAlignment="Center" Margin="0,0,18,0"/>
             <CheckBox x:Name="HudGrade" Content="{DynamicResource Hud.Grade}" ToolTip="{DynamicResource Hud.GradeDesc}" VerticalAlignment="Center"/>
           </StackPanel>
+          <!-- Tamaño de la tabla de rango que sale en la mesa en tu turno -->
+          <WrapPanel Margin="0,4,0,4">
+            <TextBlock Text="{DynamicResource Hud.RangeSizeLabel}" VerticalAlignment="Center" Margin="0,0,8,6" Foreground="{DynamicResource Brush.TextDim}"/>
+            <RadioButton x:Name="HudRangeSmall" GroupName="hudrange" Style="{StaticResource HudRadio}" Content="{DynamicResource Hud.Small}"/>
+            <RadioButton x:Name="HudRangeNormal" GroupName="hudrange" Style="{StaticResource HudRadio}" Content="{DynamicResource Hud.Normal}"/>
+            <RadioButton x:Name="HudRangeLarge" GroupName="hudrange" Style="{StaticResource HudRadio}" Content="{DynamicResource Hud.Large}"/>
+          </WrapPanel>
           <TextBlock x:Name="SolverStatusText" TextWrapping="Wrap" FontSize="12"
                      Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,8"/>
           <views:StatLegendStrip Margin="0,0,0,8"/>

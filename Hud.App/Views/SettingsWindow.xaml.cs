@@ -1,7 +1,10 @@
+using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using Hud.App.Services;
 using Microsoft.Win32;
@@ -17,10 +20,25 @@ namespace Hud.App.Views
 
             _settings = AppSettingsService.Load();
 
-            LanguageCombo.ItemsSource = LocalizationManager.Languages;
-            LanguageCombo.SelectedItem = string.IsNullOrWhiteSpace(_settings.Language)
+            // El idioma se guarda con su clave interna ("Espanol", "Francais") pero se muestra con su nombre.
+            LanguageCombo.ItemsSource = LocalizationManager.Languages.Select(LanguageOption.From).ToList();
+            LanguageCombo.SelectedValue = string.IsNullOrWhiteSpace(_settings.Language)
                 ? LocalizationManager.NormalizeLanguage(null)
                 : LocalizationManager.NormalizeLanguage(_settings.Language);
+
+            AskRealTimeCheck.IsChecked = _settings.AskToStartRealTime;
+
+            // Apariencia: animaciones y tamaño de la interfaz.
+            var motion = UiMotion.Parse(_settings.AnimationLevel);
+            (motion switch
+            {
+                MotionLevel.Reduced => MotionReduced,
+                MotionLevel.Off => MotionOff,
+                _ => MotionNormal
+            }).IsChecked = true;
+            var scale = AppSettings.NormalizeUiScale(_settings.UiScale);
+            foreach (var choice in ScaleChoices.Children.OfType<RadioButton>())
+                choice.IsChecked = Math.Abs(ParseTag(choice.Tag) - scale) < 0.001;
 
             var previews = ThemePaletteManager.Palettes.Select(PalettePreview.FromPalette).ToList();
             foreach (var p in previews) p.IsSelected = p.Key == _settings.Palette;
@@ -40,9 +58,17 @@ namespace Hud.App.Views
                 ? LocalizationManager.Text("Settings.DriveReady")
                 : string.Format(LocalizationManager.Text("Login.MissingClientSecret"), GoogleDriveBackupService.CredentialsFolder);
 
+            // Se abre arriba, en Apariencia. Sin esto el foco caia en un campo de mas abajo y la
+            // ventana aparecia desplazada hasta el final.
+            Loaded += (_, _) =>
+            {
+                TabAppearance.Focus();
+                Dispatcher.BeginInvoke(() => SectionScroll.ScrollToTop(), System.Windows.Threading.DispatcherPriority.ContextIdle);
+            };
+
             LanguageCombo.SelectionChanged += (_, _) =>
             {
-                if (LanguageCombo.SelectedItem is string language)
+                if (LanguageCombo.SelectedValue is string language)
                 {
                     SyncSettingsFromControls();
                     _settings.Language = LocalizationManager.NormalizeLanguage(language);
@@ -54,6 +80,87 @@ namespace Hud.App.Views
         }
 
         public AppSettings SavedSettings => _settings;
+
+        // ---------------------------------------------------------------- secciones
+
+        /// <summary>Muestra la seccion elegida en el indice; entra con un fundido.</summary>
+        private void SectionTab_Checked(object sender, RoutedEventArgs e)
+        {
+            if (SectionAppearance is null)
+                return; // durante InitializeComponent
+
+            var show = sender == TabLanguage ? SectionLanguage
+                : sender == TabRealTime ? SectionRealTime
+                : sender == TabReports ? SectionReports
+                : sender == TabSync ? SectionSync
+                : SectionAppearance;
+            foreach (var section in new FrameworkElement[] { SectionAppearance, SectionLanguage, SectionRealTime, SectionReports, SectionSync })
+                section.Visibility = section == show ? Visibility.Visible : Visibility.Collapsed;
+            SectionScroll.ScrollToTop();
+            UiMotion.EnterPage(SectionHost);
+        }
+
+        // ---------------------------------------------------------------- apariencia
+
+        private void Motion_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not RadioButton { Tag: string key } choice)
+                return;
+
+            UiMotion.Level = UiMotion.Parse(key);
+            _settings.AnimationLevel = UiMotion.Level.ToString();
+            AppSettingsService.Save(_settings);
+            ShowStatus(string.Format(LocalizationManager.Text("Settings.MotionSaved"), ChoiceTitle(choice)));
+            // Una muestra del nivel elegido: los temas se reparten de nuevo.
+            UiMotion.Stagger(FindWrapPanel(PalettePreviewList), 18, 24);
+        }
+
+        /// <summary>Preguntar o no si se arranca Tiempo real al ver mesas abiertas (se guarda al instante).</summary>
+        private void AskRealTimeCheck_Click(object sender, RoutedEventArgs e)
+        {
+            _settings.AskToStartRealTime = AskRealTimeCheck.IsChecked == true;
+            AppSettingsService.Save(_settings);
+            ShowStatus(LocalizationManager.Text(_settings.AskToStartRealTime ? "Settings.RtAskOn" : "Settings.RtAskOff"));
+        }
+
+        private void Scale_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not RadioButton choice)
+                return;
+
+            _settings.UiScale = AppSettings.NormalizeUiScale(ParseTag(choice.Tag));
+            AppSettingsService.Save(_settings);
+            if (Owner is MainWindow main)
+                main.ApplyInterfaceScale(_settings.UiScale);
+            ShowStatus(string.Format(LocalizationManager.Text("Settings.UiScaleSaved"),
+                $"{ChoiceTitle(choice)} ({_settings.UiScale.ToString("P0", CultureInfo.CurrentCulture)})"));
+        }
+
+        private static double ParseTag(object? tag) =>
+            double.TryParse(tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 1.0;
+
+        private static string ChoiceTitle(RadioButton choice) =>
+            System.Windows.Automation.AutomationProperties.GetName(choice);
+
+        private static Panel? FindWrapPanel(DependencyObject root)
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is WrapPanel panel)
+                    return panel;
+                if (FindWrapPanel(child) is { } nested)
+                    return nested;
+            }
+            return null;
+        }
+
+        /// <summary>El aviso del pie cambia con un fundido para que se note.</summary>
+        private void ShowStatus(string text)
+        {
+            StatusText.Text = text;
+            UiMotion.FadeIn(StatusText, 220);
+        }
 
         private async void BtnGoogleUpload_Click(object sender, RoutedEventArgs e)
         {
@@ -138,7 +245,7 @@ namespace Hud.App.Views
                 ReportsFolderText.Text = dlg.FolderName;
                 SyncSettingsFromControls();
                 AppSettingsService.Save(_settings);
-                StatusText.Text = LocalizationManager.Text("Settings.ReportsFolderSaved");
+                ShowStatus(LocalizationManager.Text("Settings.ReportsFolderSaved"));
             }
         }
 
@@ -238,15 +345,17 @@ namespace Hud.App.Views
             {
                 _settings.Palette = key;
                 ThemePaletteManager.Apply(key);
-                
-                // Actualizar seleccion visual
+                // El tema se guarda al instante, como el idioma.
+                SyncSettingsFromControls();
+                AppSettingsService.Save(_settings);
+
+                // La marca pasa al tema elegido sin rehacer la cuadricula.
                 if (PalettePreviewList.ItemsSource is List<PalettePreview> previews)
                 {
                     foreach (var p in previews) p.IsSelected = p.Key == key;
-                    PalettePreviewList.Items.Refresh();
                 }
 
-                StatusText.Text = string.Format(LocalizationManager.Text("Common.PreviewApplied"), ThemePaletteManager.Get(key).Name);
+                ShowStatus(string.Format(LocalizationManager.Text("Common.PreviewApplied"), ThemePaletteManager.Get(key).Name));
             }
         }
 
@@ -271,18 +380,51 @@ namespace Hud.App.Views
                 ? null
                 : ReportsFolderText.Text.Trim();
             _settings.ProtectReportsWithPassword = ProtectReportsCheck.IsChecked == true && ReportSecurityService.HasPassword(_settings);
-            _settings.Language = LocalizationManager.NormalizeLanguage(LanguageCombo.SelectedItem?.ToString());
+            _settings.Language = LocalizationManager.NormalizeLanguage(LanguageCombo.SelectedValue?.ToString());
             _settings.Palette = _settings.Palette ?? ThemePaletteManager.DefaultPaletteKey;
         }
 
-        private sealed class PalettePreview
+        /// <summary>Idioma en la lista: clave interna y nombre que se ve.</summary>
+        private sealed record LanguageOption(string Key, string Display)
         {
-            public bool IsSelected { get; set; }
+            public static LanguageOption From(string key) => new(key, key switch
+            {
+                "Espanol" => "Español",
+                "Francais" => "Français",
+                "Portugues" => "Português",
+                _ => key
+            });
+        }
+
+        /// <summary>Tarjeta de un tema: sus propios colores, para verlo antes de elegirlo.</summary>
+        private sealed class PalettePreview : INotifyPropertyChanged
+        {
+            private bool _isSelected;
+
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set
+                {
+                    if (_isSelected == value)
+                        return;
+                    _isSelected = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+                }
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
             public required string Key { get; init; }
             public required string Name { get; init; }
             public required string Description { get; init; }
+            public required Brush BackgroundBrush { get; init; }
+            public required Brush PanelBrush { get; init; }
+            public required Brush PreviewBrush { get; init; }
             public required Brush CardBrush { get; init; }
             public required Brush BorderBrush { get; init; }
+            public required Brush TextBrush { get; init; }
+            public required Brush TextDimBrush { get; init; }
             public required Brush AccentBrush { get; init; }
             public required Brush SecondaryBrush { get; init; }
             public required Brush DangerBrush { get; init; }
@@ -294,13 +436,24 @@ namespace Hud.App.Views
                     Key = palette.Key,
                     Name = palette.Name,
                     Description = palette.Description,
-                    CardBrush = new SolidColorBrush(palette.Card),
-                    BorderBrush = new SolidColorBrush(palette.Border),
-                    AccentBrush = new SolidColorBrush(palette.Accent),
-                    SecondaryBrush = new SolidColorBrush(palette.Secondary),
-                    DangerBrush = new SolidColorBrush(palette.Danger),
-                    GoldBrush = new SolidColorBrush(palette.Gold)
+                    BackgroundBrush = Frozen(new SolidColorBrush(palette.Background)),
+                    PanelBrush = Frozen(new SolidColorBrush(palette.Panel)),
+                    PreviewBrush = Frozen(new LinearGradientBrush(palette.Background, palette.Card, 35)),
+                    CardBrush = Frozen(new SolidColorBrush(palette.Card)),
+                    BorderBrush = Frozen(new SolidColorBrush(palette.Border)),
+                    TextBrush = Frozen(new SolidColorBrush(palette.Text)),
+                    TextDimBrush = Frozen(new SolidColorBrush(palette.TextDim)),
+                    AccentBrush = Frozen(new SolidColorBrush(palette.Accent)),
+                    SecondaryBrush = Frozen(new SolidColorBrush(palette.Secondary)),
+                    DangerBrush = Frozen(new SolidColorBrush(palette.Danger)),
+                    GoldBrush = Frozen(new SolidColorBrush(palette.Gold))
                 };
+
+            private static Brush Frozen(Brush brush)
+            {
+                brush.Freeze();
+                return brush;
+            }
         }
     }
 }

@@ -440,22 +440,29 @@ namespace Hud.App.Services.Solver
                 {
                     Array.Clear(result, 0, n);
                     var opp = 1 - p;
-                    var masked = Rent(_n[opp]);
-                    var maskedSelf = Rent(n);
-                    var child = Rent(n);
-                    for (var i = 0; i < node.Children.Length; i++)
+                    var children = new double[node.Children.Length][];
+                    Parallel.For(0, node.Children.Length, CardParallelism, i =>
                     {
                         var blockedOpp = _blocked[i][opp];
                         var blockedSelf = _blocked[i][p];
+                        var masked = Rent(_n[opp]);
+                        var maskedSelf = Rent(n);
+                        var child = Rent(n);
                         for (var o = 0; o < _n[opp]; o++) masked[o] = blockedOpp[o] ? 0 : reachOpp[o];
                         for (var h = 0; h < n; h++) maskedSelf[h] = blockedSelf[h] ? 0 : reachSelf[h];
                         Traverse(node.Children[i], p, masked, maskedSelf, child);
+                        Return(masked);
+                        Return(maskedSelf);
+                        children[i] = child;
+                    });
+                    for (var i = 0; i < node.Children.Length; i++)
+                    {
+                        var blockedSelf = _blocked[i][p];
+                        var child = children[i];
                         for (var h = 0; h < n; h++)
                             if (!blockedSelf[h]) result[h] += child[h] * RunoutWeight;
+                        Return(child);
                     }
-                    Return(masked);
-                    Return(maskedSelf);
-                    Return(child);
                     return;
                 }
             }
@@ -742,6 +749,17 @@ namespace Hud.App.Services.Solver
                 for (var h = 0; h < n; h++) result[h] += childValue[h];
             }
         }
+
+        /// <summary>
+        /// Cada carta que puede salir es un subarbol independiente: se recorren en paralelo, con todos
+        /// los hilos del procesador menos dos (PokerStars y la lectura de las mesas siguen fluidas).
+        /// Los resultados se suman despues en el mismo orden que antes, asi que la estrategia sale
+        /// identica a la de un solo hilo, solo que mucho antes.
+        /// </summary>
+        private static readonly ParallelOptions CardParallelism = new()
+        {
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 2)
+        };
 
         private static double[] Rent(int length)
         {

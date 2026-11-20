@@ -49,10 +49,17 @@ namespace Hud.App.Views
             }
             finally
             {
-                if (overlay.Parent is Panel host)
-                    host.Children.Remove(overlay);
                 if (content is not null)
                     content.IsEnabled = true;
+                // La capa de carga se desvanece y el contenido entra con un fundido.
+                overlay.IsHitTestVisible = false;
+                UiMotion.FadeOut(overlay, 220, () =>
+                {
+                    if (overlay.Parent is Panel host)
+                        host.Children.Remove(overlay);
+                });
+                if (content is not null)
+                    UiMotion.FadeIn(content, 260);
             }
         }
 
@@ -87,31 +94,24 @@ namespace Hud.App.Views
                 FontSize = 18,
                 FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 12)
+                Margin = new Thickness(0, 0, 0, 0)
             };
             text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
 
-            var bar = new ProgressBar
-            {
-                IsIndeterminate = true,
-                Width = 260,
-                Height = 6
-            };
-            bar.SetResourceReference(Control.ForegroundProperty, "Brush.Accent");
-            bar.SetResourceReference(Control.BackgroundProperty, "Brush.Border");
-            bar.BorderThickness = new Thickness(0);
+            // La pica de APH girando, en lugar de una barra de progreso sin fin.
+            var loader = new SpadeLoader(78) { Margin = new Thickness(0, 0, 0, 16) };
 
             var panel = new StackPanel
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
+            panel.Children.Add(loader);
             panel.Children.Add(text);
-            panel.Children.Add(bar);
 
             var overlay = new Border { Child = panel };
             overlay.SetResourceReference(Border.BackgroundProperty, "Brush.Bg");
-            overlay.Opacity = 0.92;
+            overlay.Opacity = 0.94;
 
             host.Children.Add(overlay);
             return overlay;

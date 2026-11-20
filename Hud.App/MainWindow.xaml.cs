@@ -65,6 +65,7 @@ namespace Hud.App
                 if (_isCashMode == value) return;
                 _isCashMode = value;
                 OnPropertyChanged(nameof(IsCashMode));
+                _revealChart = true;
                 RefreshFilteredData();
                 // La retroalimentacion de las etiquetas cambia con el modo (ficticio o dinero real).
                 UpdatePlayerTags();
@@ -176,6 +177,66 @@ namespace Hud.App
             Closing += MainWindow_Closing;
             ThemePaletteManager.PaletteApplied += ThemePaletteManager_PaletteApplied;
             LocalizationManager.LanguageChanged += LocalizationManager_LanguageChanged;
+
+            // Avisos flotantes, el oscurecido detras de las ventanas de dialogo y el tamaño de la interfaz.
+            Toast.Register(ToastHost);
+            System.Windows.Interop.ComponentDispatcher.EnterThreadModal += OnEnterThreadModal;
+            System.Windows.Interop.ComponentDispatcher.LeaveThreadModal += OnLeaveThreadModal;
+            Closed += (_, _) =>
+            {
+                System.Windows.Interop.ComponentDispatcher.EnterThreadModal -= OnEnterThreadModal;
+                System.Windows.Interop.ComponentDispatcher.LeaveThreadModal -= OnLeaveThreadModal;
+            };
+            ApplyInterfaceScale(AppSettingsService.Load().UiScale);
+
+            // Al ver mesas de PokerStars abiertas, pregunta si arranca Tiempo real (MainWindow.TableWatch.cs).
+            StartTableWatch();
+        }
+
+        // Ventanas de dialogo abiertas ahora mismo (una puede abrir otra: Configuracion > contraseña).
+        private int _openDialogs;
+
+        /// <summary>Mientras hay una ventana de dialogo encima, la principal se oscurece un poco.</summary>
+        private void OnEnterThreadModal(object? sender, EventArgs e)
+        {
+            if (++_openDialogs == 1)
+                AnimateDim(0.42);
+        }
+
+        private void OnLeaveThreadModal(object? sender, EventArgs e)
+        {
+            _openDialogs = Math.Max(0, _openDialogs - 1);
+            if (_openDialogs == 0)
+                AnimateDim(0);
+        }
+
+        private void AnimateDim(double to)
+        {
+            DimOverlay.Visibility = Visibility.Visible;
+            if (!UiMotion.Enabled)
+            {
+                DimOverlay.BeginAnimation(OpacityProperty, null);
+                DimOverlay.Opacity = to;
+                if (to <= 0)
+                    DimOverlay.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(to, TimeSpan.FromMilliseconds(to > 0 ? 180 : 140));
+            if (to <= 0)
+                fade.Completed += (_, _) =>
+                {
+                    if (_openDialogs == 0)
+                        DimOverlay.Visibility = Visibility.Collapsed;
+                };
+            DimOverlay.BeginAnimation(OpacityProperty, fade);
+        }
+
+        /// <summary>Tamaño de la interfaz (Configuracion > Apariencia): 90 %, 100 %, 110 % o 125 %.</summary>
+        public void ApplyInterfaceScale(double scale)
+        {
+            scale = AppSettings.NormalizeUiScale(scale);
+            ShellRoot.LayoutTransform = Math.Abs(scale - 1) < 0.001 ? Transform.Identity : new ScaleTransform(scale, scale);
         }
 
         private void FitHeightToScreen()
@@ -244,6 +305,8 @@ namespace Hud.App
             }
 
             _ = Task.Run(BackupConfiguredHandHistoryFolders);
+            // Ritmo de la sala: cuanto se retira de verdad la gente, leido de los historiales (en segundo plano).
+            Hud.App.Services.Trainer.TrainerRoomRhythm.Shared.Start();
             UpdateLastSessionFromReports();
         }
 
@@ -336,8 +399,11 @@ namespace Hud.App
             var sessions = ReportSessionIndexService.LoadSessions();
             if (sessions.Count > 0)
             {
-                var last = sessions[0];
-                var date = last.StartedAt ?? last.CreatedAt;
+                // La sesion jugada mas reciente (no el ultimo informe creado: se puede generar hoy el
+                // informe de una sesion de ayer), en hora local.
+                var date = sessions
+                    .Select(record => record.StartedAt is { } started ? ReportSessionIndexService.ToLocal(started) : record.CreatedAt)
+                    .Max();
                 LastSessionText.Text = $"{LocalizationManager.Text("Main.LastSession")} {date:dd/MM/yyyy HH:mm}";
             }
             else
@@ -426,7 +492,8 @@ namespace Hud.App
 
         private void BtnSessions_Click(object sender, RoutedEventArgs e)
         {
-            NavigateToPage("sessions", NavSessions, () => new SessionsWindow(_allTables.Where(t => t.IsCash == IsCashMode).ToList()));
+            // Las dos clases de dinero: la pagina marca cada sesion como real o ficticio.
+            NavigateToPage("sessions", NavSessions, () => new SessionsWindow(_allTables.ToList()));
             InfoText.Text = LocalizationManager.Text("Main.SessionsOpened");
         }
 
@@ -458,6 +525,16 @@ namespace Hud.App
 
         private void BtnRT_Click(object sender, RoutedEventArgs e)
         {
+            // Si Tiempo real ya esta abierto se trae al frente: dos a la vez ponian dos HUD en cada mesa.
+            var open = Application.Current.Windows.OfType<RealTimeWindow>().FirstOrDefault(window => window.IsVisible);
+            if (open is not null)
+            {
+                if (open.WindowState == WindowState.Minimized)
+                    open.WindowState = WindowState.Normal;
+                open.Activate();
+                return;
+            }
+
             if (Application.Current.Resources["HandReaderService"] is HandReaderService handService)
             {
                 var rtWindow = new RealTimeWindow
@@ -557,10 +634,14 @@ namespace Hud.App
             };
 
             _paletteChanged = false;
-            if (window.ShowDialog() == true)
+            var shown = window.ShowDialog();
+            // El tamaño de la interfaz se ve al momento, aunque se cierre sin guardar la carpeta.
+            ApplyInterfaceScale(AppSettingsService.Load().UiScale);
+            if (shown == true)
             {
                 RefreshLocalizedDashboardText();
                 InfoText.Text = LocalizationManager.Text("Common.SettingsSaved");
+                Toast.Show(InfoText.Text, ToastKind.Success);
             }
             else
             {
@@ -722,11 +803,47 @@ namespace Hud.App
             GlobalStatsLiteHeader.Visibility = liteVisibility;
             RecentTablesLiteHeader.Visibility = liteVisibility;
 
-            LiteModePrimaryText.Text = _isLiteMode ? "PRO" : "LITE";
-            LiteModeSecondaryText.Text = "MODE";
+            // El boton es solo un icono: su nombre y su ayuda dicen a que modo cambia.
+            var modeLabel = _isLiteMode ? "Modo pro" : LocalizationManager.Text("Main.RailLiteMode");
+            LiteModeButton.Content = modeLabel;
+            System.Windows.Automation.AutomationProperties.SetName(LiteModeButton, modeLabel);
         }
 
         private async Task AnalyzeAndLoadFolderAsync(string folder, string pokerRoom, string successMessage)
+        {
+            ShowLoading(true);
+            try
+            {
+                await AnalyzeAndLoadFolderCoreAsync(folder, pokerRoom, successMessage);
+            }
+            finally
+            {
+                ShowLoading(false);
+            }
+        }
+
+        /// <summary>La capa de "Cargando manos" con la pica: aparece al empezar y se desvanece al tener los datos.</summary>
+        private void ShowLoading(bool show)
+        {
+            if (show)
+            {
+                LoadingOverlay.BeginAnimation(OpacityProperty, null);
+                LoadingOverlay.Opacity = 0.94;
+                LoadingOverlay.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (LoadingOverlay.Visibility != Visibility.Visible)
+                return;
+            UiMotion.FadeOut(LoadingOverlay, 260, () =>
+            {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                LoadingOverlay.BeginAnimation(OpacityProperty, null);
+                LoadingOverlay.Opacity = 0.94;
+            });
+        }
+
+        private async Task AnalyzeAndLoadFolderCoreAsync(string folder, string pokerRoom, string successMessage)
         {
             ResetPageCache();
             DashboardPlayers.Clear();
@@ -766,11 +883,14 @@ namespace Hud.App
                 UpdatePlayerTags();
 
                 RefreshFilteredData();
+                // Los datos del panel ya estan: se quita la capa de carga y la grafica se completa despues.
+                ShowLoading(false);
 
                 // La grafica mano a mano (con la linea sin suerte) se calcula aparte: lee cada mano.
                 var tablesForSeries = result.Tables.ToList();
                 _handSeries = await Task.Run(() => BuildHandSeries(tablesForSeries));
                 UpdateHeroSummary();
+                _revealChart = true;
                 DrawPerformanceChart();
 
                 await Task.Run(() => VillainHistoryStore.RebuildFromTables(result.Tables));
@@ -778,6 +898,7 @@ namespace Hud.App
                 InfoText.Text = result.Tables.Count > 0
                     ? successMessage
                     : string.Format(LocalizationManager.Text("Common.NoHandsDetected"), pokerRoom);
+                Toast.Show(InfoText.Text, result.Tables.Count > 0 ? ToastKind.Success : ToastKind.Warning);
             }
             catch (Exception ex)
             {
@@ -817,7 +938,7 @@ namespace Hud.App
             WorstRecentTableSummary = $"{worst.TableName}  {worst.NetBb:0.#} bb";
             WorstRecentTableDetail = $"{worst.GameFormat} · {worst.PlayedDate}";
             PerformanceTotalText.Text = TotalEarningsLabel;
-            
+
             OnPropertyChanged(nameof(TotalEarningsLabel));
             OnPropertyChanged(nameof(WinrateLabel));
             OnPropertyChanged(nameof(TotalTablesCount));
@@ -830,6 +951,9 @@ namespace Hud.App
         /// Cada mano del heroe de cada mesa, en orden de hora: lo que gano o perdio y la suerte en un
         /// all-in con showdown antes del river (lo que cobro menos lo que le tocaba con su equity).
         /// </summary>
+        // La proxima vez que se dibuje la grafica, sus lineas se dibujan de izquierda a derecha.
+        private bool _revealChart = true;
+
         private static IReadOnlyList<HandPoint> BuildHandSeries(IReadOnlyList<TableSessionStats> tables)
         {
             var points = new List<HandPoint>();
@@ -1104,7 +1228,7 @@ namespace Hud.App
                     var idx = (labelCount <= 1) ? 0 : i * (orderedTables.Count - 1) / (labelCount - 1);
                     var x = X(idx);
                     var dateStr = orderedTables[idx].PlayedDate;
-                    
+
                     // Intentar acortar la fecha si es muy larga (ej: 2026-02-05 -> 02-05)
                     if (dateStr.Length > 5 && dateStr.Contains("-"))
                         dateStr = dateStr.Substring(dateStr.IndexOf("-") + 1);
@@ -1197,6 +1321,16 @@ namespace Hud.App
             PerformanceChart.Children.Add(adjustedLine);
             PerformanceChart.Children.Add(realLine);
 
+            // Recien cargadas las manos, las lineas se dibujan de izquierda a derecha y los puntos
+            // de cada mesa aparecen al final. Al cambiar el tamaño de la ventana se redibuja sin animar.
+            var reveal = _revealChart && width > plotLeft + 10;
+            if (reveal)
+            {
+                _revealChart = false;
+                UiMotion.Reveal(adjustedLine, plotLeft, width, height, 900);
+                UiMotion.Reveal(realLine, plotLeft, width, height, 900);
+            }
+
             // Un punto al final de cada mesa, con su resumen al pasar el raton.
             foreach (var table in orderedTables)
             {
@@ -1227,6 +1361,8 @@ namespace Hud.App
                 Canvas.SetLeft(dot, X(last) - 4);
                 Canvas.SetTop(dot, Y(real[last]) - 4);
                 PerformanceChart.Children.Add(dot);
+                if (reveal)
+                    UiMotion.FadeIn(dot, 200, 120 + 760 * (X(last) - plotLeft) / Math.Max(1, plotRight - plotLeft));
             }
 
             // Eje de abajo: manos.

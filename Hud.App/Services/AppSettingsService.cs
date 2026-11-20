@@ -22,6 +22,21 @@ namespace Hud.App.Services
         public bool GoogleSyncEnabled { get; set; }
         public bool EmailSyncEnabled { get; set; }
         public string? LastIrtSession { get; set; }
+
+        /// <summary>Al ver mesas de PokerStars abiertas con Tiempo real cerrado, preguntar si se arranca.</summary>
+        public bool AskToStartRealTime { get; set; } = true;
+
+        /// <summary>Animaciones de la interfaz: "Normal", "Reduced" u "Off" (Configuración > Apariencia).</summary>
+        public string AnimationLevel { get; set; } = "Normal";
+
+        /// <summary>Tamaño de la ventana principal: 0.9, 1, 1.1 o 1.25.</summary>
+        public double UiScale { get; set; } = 1.0;
+
+        public static readonly double[] UiScales = { 0.9, 1.0, 1.1, 1.25 };
+
+        /// <summary>El tamaño permitido mas cercano (un archivo editado a mano no rompe la ventana).</summary>
+        public static double NormalizeUiScale(double scale) =>
+            double.IsFinite(scale) ? UiScales.OrderBy(s => Math.Abs(s - scale)).First() : 1.0;
     }
 
     public static class AppSettingsService

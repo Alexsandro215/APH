@@ -37,13 +37,24 @@ namespace Hud.App.Services.Trainer
         public bool IsTrapper => HasSample && !IsManiac && Vpip >= Limits.TrapperVpip && Pfr <= Limits.TrapperPfr && Af >= Limits.TrapperAf;
 
         /// <summary>
+        /// Manos para fiarse del tipo de un rival. Medido el 20-11-2026 con 1.788 jugadores reales de
+        /// NL25: con 30 manos el tipo exacto acierta el 36% y la familia el 68%; con 100, el 58% y el 81%.
+        /// Hasta aqui el HUD marca el tipo con "?" y no se le hacen faroles.
+        /// </summary>
+        public const int KnownHands = 100;
+
+        /// <summary>
         /// Fuga que se explota en vivo, solo con muestra para su rango (40+ manos); null si no hay
-        /// datos o juega sin una fuga clara (ahi manda el GTO: juego reservado).
+        /// datos o juega sin una fuga clara (ahi manda el GTO: juego reservado). Las fugas que piden
+        /// farolear (nit, se retira mucho) solo con <see cref="KnownHands"/> manos: hasta saber que tipo
+        /// de jugador es, se juega cerrado y por valor. Las de valor (pagador, maniaco, trampero) cuestan
+        /// poco si la lectura falla y siguen desde las 40.
         /// </summary>
         public string? Leak => !UseStatsForRange ? null
             : IsManiac ? "maníaco"
             : IsTrapper ? "trampero"
             : IsCallingStation ? "pagador"
+            : Hands < KnownHands ? null
             : IsNit ? "nit"
             : FoldsToCBets ? "se retira mucho"
             : null;

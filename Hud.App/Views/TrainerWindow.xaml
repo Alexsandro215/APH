@@ -62,9 +62,9 @@
     <!-- Cabecera -->
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
       <TextBlock Text="MODO ENTRENADOR" Style="{StaticResource SectionEyebrow}"/>
-      <TextBlock Text="Lector de cartas en vivo y correccion de decisiones" Style="{StaticResource SectionHeading}"/>
+      <TextBlock Text="Lector de cartas en vivo y corrección de decisiones" Style="{StaticResource SectionHeading}"/>
       <TextBlock Style="{StaticResource DimText}" Margin="0,4,0,0"
-                 Text="Solo funciona en mesas de DINERO FICTICIO de PokerStars (Hold'em sin limite 6-max). Las mesas de dinero real o de torneo se bloquean: usar ayudas en vivo con dinero real esta prohibido por las salas. La decision la recomienda APH, pero el clic lo hace siempre el alumno. Iniciar lee UNA mesa en vivo; Corregir todas sigue el historial de todas las mesas de dinero ficticio abiertas y corrige cada decision al terminar la mano, sin leer la pantalla."/>
+                 Text="Solo funciona en mesas de DINERO FICTICIO de PokerStars (Hold'em sin límite 6-max). Las mesas de dinero real o de torneo se bloquean: usar ayudas en vivo con dinero real esta prohibido por las salas. La decisión la recomienda APH, pero el clic lo hace siempre el alumno. Iniciar lee UNA mesa en vivo; Corregir todas sigue el historial de todas las mesas de dinero ficticio abiertas y corrige cada decisión al terminar la mano, sin leer la pantalla."/>
     </StackPanel>
 
     <!-- Seleccion de mesa -->
@@ -74,7 +74,7 @@
           <Button x:Name="BtnDetect" Content="Detectar mesas" Style="{StaticResource Btn.Primary}" Margin="8,0,0,0" Click="BtnDetect_Click"/>
           <Button x:Name="BtnCalibrate" Content="Calibrar lector" Style="{StaticResource Btn.Primary}" Margin="8,0,0,0" Click="BtnCalibrate_Click"/>
           <Button x:Name="BtnStart" Content="Iniciar en vivo" Style="{StaticResource Btn.Primary}" Margin="8,0,0,0" Click="BtnStart_Click"
-                  ToolTip="Lee esta mesa en vivo (cartas, equity y decision en el turno del alumno) y corrige sus manos."/>
+                  ToolTip="Lee esta mesa en vivo (cartas, equity y decisión en el turno del alumno) y corrige sus manos."/>
           <Button x:Name="BtnGradeAll" Content="Corregir todas" Style="{StaticResource Btn.Primary}" Margin="8,0,0,0" Click="BtnGradeAll_Click"
                   ToolTip="Corrige al terminar cada mano todas las mesas de dinero ficticio abiertas (solo con el historial, sin leer la pantalla)."/>
           <Button x:Name="BtnStop" Content="Detener" Style="{StaticResource Btn.Primary}" Margin="8,0,0,0" Click="BtnStop_Click" IsEnabled="False"/>
@@ -138,7 +138,7 @@
             <StackPanel>
               <DockPanel>
                 <TextBlock x:Name="PositionText" DockPanel.Dock="Right" FontWeight="Bold" FontSize="13"
-                           Foreground="{DynamicResource Brush.Warning}" Text="Posicion: ?"/>
+                           Foreground="{DynamicResource Brush.Warning}" Text="Posición: ?"/>
                 <TextBlock x:Name="LiveTitle" Text="EN VIVO" Style="{StaticResource SectionEyebrow}"/>
               </DockPanel>
 
@@ -146,7 +146,7 @@
               <Border x:Name="DecisionBanner" CornerRadius="10" Padding="14,10" Margin="0,10,0,0"
                       Background="#2D6CDF" Visibility="Collapsed">
                 <StackPanel>
-                  <TextBlock Text="DECISION EN VIVO" FontSize="11" FontWeight="Bold" Foreground="White" Opacity="0.85"/>
+                  <TextBlock Text="DECISIÓN EN VIVO" FontSize="11" FontWeight="Bold" Foreground="White" Opacity="0.85"/>
                   <TextBlock x:Name="DecisionAction" FontSize="26" FontWeight="Black" Foreground="White" TextWrapping="NoWrap"/>
                   <TextBlock x:Name="DecisionReason" FontSize="13" Foreground="White" Margin="0,4,0,0"/>
                 </StackPanel>
@@ -159,7 +159,7 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
 
-              <TextBlock Text="Heroe" Style="{StaticResource DimText}" Margin="0,10,0,4"/>
+              <TextBlock Text="Héroe" Style="{StaticResource DimText}" Margin="0,10,0,4"/>
               <ContentControl x:Name="HeroCardsView" ContentTemplate="{StaticResource BigCardChips}" MinHeight="56"/>
 
               <TextBlock Text="Board" Style="{StaticResource DimText}" Margin="0,10,0,4"/>

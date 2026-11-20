@@ -47,9 +47,9 @@
     <Border Grid.Column="2" Style="{StaticResource PanelCard}">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
-          <TextBlock Text="CALIBRACION" Style="{StaticResource SectionEyebrow}"/>
+          <TextBlock Text="CALIBRACIÓN" Style="{StaticResource SectionEyebrow}"/>
           <TextBlock Style="{StaticResource DimText}" Margin="0,4,0,8"
-                     Text="Lo normal es no hacer nada: al pulsar Iniciar el lector se calibra solo en cuanto ve el flop y tus dos cartas a la vez. Aqui puedes hacerlo a mano o comprobarlo.&#x0a;Automatico: con el flop y tus cartas a la vista pulsa Capturar de nuevo y Autocalibrar.&#x0a;Manual: elige una zona de la lista y arrastra un rectangulo sobre la ESQUINA de esa carta (el numero/letra y el palo pequeno de debajo), dejando un poco de blanco alrededor. Repite con las 7 zonas y pulsa Guardar.&#x0a;Usa la baraja de caras blancas (mejor con 4 colores)."/>
+                     Text="Lo normal es no hacer nada: al pulsar Iniciar el lector se calibra solo en cuanto ve el flop y tus dos cartas a la vez. Aquí puedes hacerlo a mano o comprobarlo.&#x0a;Automático: con el flop y tus cartas a la vista pulsa Capturar de nuevo y Autocalibrar.&#x0a;Manual: elige una zona de la lista y arrastra un rectángulo sobre la ESQUINA de esa carta (el numero/letra y el palo pequeño de debajo), dejando un poco de blanco alrededor. Repite con las 7 zonas y pulsa Guardar.&#x0a;Usa la baraja de caras blancas (mejor con 4 colores)."/>
 
           <ListBox x:Name="SlotsList" DisplayMemberPath="Label" Height="190" Margin="0,0,0,8"
                    Background="{DynamicResource Brush.Inset}" Foreground="{DynamicResource Brush.Text}"
@@ -68,8 +68,8 @@
 
           <TextBlock Text="ENSENAR (opcional)" Style="{StaticResource SectionEyebrow}" Margin="0,6,0,4"/>
           <TextBlock Style="{StaticResource DimText}" Margin="0,0,0,6"
-                     Text="El lector aprende solo al terminar cada mano. Para acelerar, escribe las cartas que se ven en la captura (ej.: heroe 'Ah Kd', board 'Qs 7h 2c Td 9s')."/>
-          <TextBlock Text="Cartas del heroe" Style="{StaticResource DimText}"/>
+                     Text="El lector aprende solo al terminar cada mano. Para acelerar, escribe las cartas que se ven en la captura (ej.: héroe 'Ah Kd', board 'Qs 7h 2c Td 9s')."/>
+          <TextBlock Text="Cartas del héroe" Style="{StaticResource DimText}"/>
           <TextBox x:Name="TeachHero" Margin="0,2,0,6"/>
           <TextBlock Text="Board (en orden)" Style="{StaticResource DimText}"/>
           <TextBox x:Name="TeachBoard" Margin="0,2,0,6"/>

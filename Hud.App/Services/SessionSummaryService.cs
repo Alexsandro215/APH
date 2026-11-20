@@ -23,6 +23,11 @@ namespace Hud.App.Services
         SessionHand? Best,
         SessionHand? Worst)
     {
+        /// <summary>Dinero real (CASH) o ficticio (PLAY): cada modo se agrupa por separado.</summary>
+        public bool IsCash { get; init; }
+
+        public string MoneyLabel => LocalizationManager.Text(IsCash ? "Sessions.MoneyReal" : "Sessions.MoneyPlay");
+
         public double AdjustedBb => NetBb - LuckBb;
         public TimeSpan Duration => End - Start;
         public double BbPer100 => Hands == 0 ? 0 : NetBb * 100 / Hands;

@@ -116,6 +116,12 @@ namespace Hud.App.Services
 
         public double SizeFactor => Size switch { 0 => 0.85, 2 => 1.25, _ => 1.0 };
 
+        /// <summary>Tabla de rango en la mesa: 0 chica, 1 normal, 2 grande.</summary>
+        public int RangeSize { get; set; } = 1;
+
+        /// <summary>Lado de cada casilla de la tabla de rango, en proporcion a la letra del HUD.</summary>
+        public double RangeCellFactor => RangeSize switch { 0 => 0.8, 2 => 1.45, _ => 1.1 };
+
         public (double X, double Y) CenterFor(int tableSize, int place)
         {
             if (Positions.TryGetValue(Key(tableSize, place), out var saved) && saved.Length == 2)

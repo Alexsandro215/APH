@@ -429,8 +429,15 @@ public class TrainerObviousSpotsTests
     [Fact]
     public void El_farol_por_mesa_solo_se_usa_contra_quien_se_retira()
     {
-        var folder = new TrainerVillainProfile("Plegador", 60, 24, 15, 4, 2, 78, 22, "sesion");
+        var folder = new TrainerVillainProfile("Plegador", 120, 24, 15, 4, 2, 78, 22, "sesion");
         Assert.Equal("se retira mucho", folder.Leak);
+
+        // Con menos de 100 manos aun no se sabe que tipo es: cerrado y por valor, sin farol ni aviso.
+        var young = folder with { Hands = 60 };
+        Assert.Null(young.Leak);
+        var youngOn = FlopVs(young, bluffMode: true);
+        Assert.Equal("Check", youngOn.Kind);
+        Assert.Null(youngOn.BluffNote);
 
         var on = FlopVs(folder, bluffMode: true);
         Assert.Equal("Bet", on.Kind);
@@ -713,6 +720,19 @@ public class TrainerObviousSpotsTests
         Assert.Equal(0.55, drawHeadsUp.MaxBet, 2);
         var topPair = TrainerDecisionRules.PlayMoneyAggression(Cards("Ah Kd"), Cards("Ac 7s 2d"), "FLOP", 90, 30, opponents: 2);
         Assert.Equal(0.6, topPair.MaxBet, 2);
+    }
+
+    [Fact]
+    public void En_una_mesa_peligrosa_sin_pareja_tampoco_se_farolea()
+    {
+        // AQ con as alto en 5-2-9-6-4 (escalera posible): antes dejaba apostar 35% del bote, y con el
+        // ritmo de la sala ese farol salia rentable (20-11, mano 262759330215).
+        var aceHigh = TrainerDecisionRules.PlayMoneyAggression(Cards("Ac Qs"), Cards("5d 2d 9s 6s 4c"), "RIVER", 90, 10, opponents: 2);
+        Assert.Equal(0, aceHigh.MaxBet);
+        Assert.False(aceHigh.CanRaise);
+        // Con pareja en la misma mesa sigue la apuesta chica.
+        var pair = TrainerDecisionRules.PlayMoneyAggression(Cards("9c Qs"), Cards("5d 2d 9s 6s 4c"), "RIVER", 90, 10, opponents: 2);
+        Assert.True(pair.MaxBet > 0);
     }
 
     [Fact]
